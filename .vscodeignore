@@ -1,0 +1,7 @@
+.vscode/**
+.github/**
+test/**
+AGENTS.md
+CONTRIBUTING.md
+.gitignore
+.vscodeignore

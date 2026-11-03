@@ -1,0 +1,43 @@
+{
+  "name": "jbsearch",
+  "displayName": "JB Search",
+  "description": "A VS Code search extension inspired by JetBrains IDEs (scaffold).",
+  "version": "0.0.1",
+  "publisher": "idfedorov09",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/idfedorov09/jbsearch.git"
+  },
+  "bugs": {
+    "url": "https://github.com/idfedorov09/jbsearch/issues"
+  },
+  "homepage": "https://github.com/idfedorov09/jbsearch#readme",
+  "engines": {
+    "vscode": "^1.85.0",
+    "node": ">=22"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./src/extension.js",
+  "activationEvents": [
+    "onCommand:jbsearch.checkInstallation"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "jbsearch.checkInstallation",
+        "title": "JB Search: Check Installation"
+      }
+    ]
+  },
+  "scripts": {
+    "check": "node --check src/extension.js",
+    "test": "node --test test/*.test.js",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@vscode/vsce": "^4.1.0"
+  }
+}

@@ -1,0 +1,12 @@
+node_modules/
+*.vsix
+.vscode-test/
+coverage/
+*.log
+.DS_Store
+
+# Keep shared agent and extension-debug configuration in version control.
+!AGENTS.md
+!.vscode/
+.vscode/*
+!.vscode/launch.json
