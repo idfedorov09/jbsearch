@@ -14,7 +14,7 @@ for Visual Studio Code.
 
 [![Install](https://img.shields.io/badge/Install-007ACC?style=for-the-badge)](#installation)
 [![GitHub](https://img.shields.io/badge/GitHub-24292F?style=for-the-badge&logo=github&logoColor=white)](https://github.com/idfedorov09/jbsearch)
-[![Report a bug](https://img.shields.io/badge/Report_a_bug-6E40C9?style=for-the-badge)](https://github.com/idfedorov09/jbsearch/issues/new)
+[![Report a bug](https://img.shields.io/badge/Report_a_bug-6E40C9?style=for-the-badge)](https://github.com/idfedorov09/jbsearch/issues/new/choose)
 [![Donate via Tribute](https://img.shields.io/badge/Donate_via_Tribute-26A5E4?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/tribute/app?startapp=dTvL)
 
 **Preview build** — follow development in `dev`.<br>
@@ -230,6 +230,9 @@ Release readiness and outstanding platform checks are tracked in the
 Bug reports, reproducible examples, platform testing, and pull requests are welcome.
 Start with [CONTRIBUTING.md](CONTRIBUTING.md). Development happens in `dev`;
 `master` is the stable branch.
+
+Please follow the [Code of Conduct](.github/CODE_OF_CONDUCT.md). To report an
+undisclosed vulnerability privately, see the [Security Policy](.github/SECURITY.md).
 
 Write and maintain all repository content in **English**, including documentation,
 specifications, development and validation reports, code comments, and future

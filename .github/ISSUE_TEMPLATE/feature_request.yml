@@ -1,0 +1,29 @@
+name: Feature request
+description: Suggest an improvement to JB Search.
+title: "[Feature]: "
+body:
+  - type: markdown
+    attributes:
+      value: Please search existing issues for similar ideas before submitting.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe the task, limitation, or use case.
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: What would you like to happen?
+      description: Describe the behavior or workflow you would find useful.
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Optionally include alternatives, examples, or screenshots.

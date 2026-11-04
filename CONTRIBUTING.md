@@ -1,5 +1,17 @@
 # Contributing to JB Search
 
+## Community and reports
+
+Please follow the [Code of Conduct](.github/CODE_OF_CONDUCT.md) when
+participating. Report undisclosed vulnerabilities privately using the
+[Security Policy](.github/SECURITY.md), not a public issue.
+
+For bugs and feature ideas, use [GitHub Issues](https://github.com/idfedorov09/jbsearch/issues).
+Include clear steps and environment details when reporting a bug. Redact private
+code, search queries, credentials, and other sensitive information before posting.
+When submitting a pull request, describe the change and report the checks that
+actually ran. Ordinary development pull requests should target `dev`.
+
 ## Branches: dev as the trunk
 
 The project uses only two long-lived branches:

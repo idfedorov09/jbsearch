@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Report a security vulnerability privately
+    url: https://github.com/idfedorov09/jbsearch/security/policy
+    about: Please follow the security policy instead of filing a public issue.
