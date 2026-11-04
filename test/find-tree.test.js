@@ -128,7 +128,7 @@ test('groups preserve snapshot order, stable identities, duplicate workspace nam
 
 test('remote resource paths and encoded filename characters remain intact without resolving icons', t => {
   const h = fixture(t);
-  const names = ['src/a#b.bl', 'src/c?d.bl', 'src/e%f.bl', 'src/проба.bl'];
+  const names = ['src/a#b.bl', 'src/c?d.bl', 'src/e%f.bl', 'src/\u043f\u0440\u043e\u0431\u0430.bl'];
   const results = names.map((name, index) => result(String(index), name, {
     uri: `vscode-remote://ssh-remote+host/Work%20dir/${name.split('/').map(encodeURIComponent).join('/')}`
   }));

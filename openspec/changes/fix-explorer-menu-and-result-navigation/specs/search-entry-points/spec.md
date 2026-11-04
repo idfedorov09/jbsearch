@@ -4,32 +4,32 @@
 
 ### Requirement: Explorer folder search
 
-Расширение SHALL предлагать **JB Search: Find in Files…** в контекстном меню
-файловой папки Explorer, включая корень workspace и Remote filesystem workspace.
-Видимость и Directory MUST определяться ресурсом, на котором открыто меню,
-независимо от количества ранее выделенных ресурсов.
+The extension SHALL offer **JB Search: Find in Files…** in the Explorer context
+menu for a filesystem folder, including a workspace root and a Remote filesystem
+workspace. Visibility and Directory MUST be determined by the resource on which
+the menu was opened, regardless of how many resources were previously selected.
 
 #### Scenario: Selected nested directory
-- **WHEN** пользователь вызывает JB Search: Find in Files… для папки workspace
-- **THEN** открывается существующий Find-диалог с выбранной Directory и точным
-  путём этой папки; результаты ограничены её содержимым и подпапками
+- **WHEN** the user invokes JB Search: Find in Files… for a workspace folder
+- **THEN** the existing Find dialog opens with Directory selected and the exact
+  folder path; results are limited to its contents and subfolders
 
 #### Scenario: Workspace root and multiple roots
-- **WHEN** пользователь вызывает action на корне или папке второго workspace root
-- **THEN** областью становится выбранная папка, а не первый root
+- **WHEN** the user invokes the action on the root or a folder of a second workspace root
+- **THEN** the selected folder becomes the scope, rather than the first root
 
 #### Scenario: File or multiple selection
-- **WHEN** меню открыто на файле, ресурсе неподдерживаемой файловой системы
-  либо при выделении нескольких ресурсов
-- **THEN** пункт JB Search: Find in Files… скрыт для файла и неподдерживаемой
-  файловой системы, но доступен на поддерживаемой папке независимо от выделения
+- **WHEN** the menu is opened on a file, an unsupported filesystem resource,
+  or while multiple resources are selected
+- **THEN** JB Search: Find in Files… is hidden for files and unsupported
+  filesystems, but available on a supported folder regardless of the selection
 
 #### Scenario: Multiple selected resources
-- **WHEN** несколько папок или файлов выделены, а контекстное меню открыто на папке
-- **THEN** пункт JB Search: Find in Files… доступен и ищет только в этой папке,
-  не объединяя её с другими выделенными ресурсами
+- **WHEN** multiple folders or files are selected and the context menu is opened on a folder
+- **THEN** JB Search: Find in Files… is available and searches only that folder,
+  without combining it with other selected resources
 
 #### Scenario: Distinguishable built-in search
-- **WHEN** в меню доступен также встроенный Find in Folder
-- **THEN** собственный пункт содержит видимый префикс JB Search и различим
-  без знания категории команды
+- **WHEN** the built-in Find in Folder is also available in the menu
+- **THEN** the extension's item has a visible JB Search prefix and can be
+  distinguished without knowing the command category

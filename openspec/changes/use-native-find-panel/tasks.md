@@ -2,20 +2,20 @@
 
 ## 1. Native Find panel
 
-- [x] 1.1 Реализовать FindTree с native file/folder resource icons, стабильными ids, highlights/INVALID и переключателем сессий; проверить node tests провайдера и ADR 0008.
-- [x] 1.2 Подключить contributed Panel/views, toolbar/context commands и controller lifecycle вместо Find editor tabs; проверить controller/manifest tests и обновить подписи modal.
+- [x] 1.1 Implement FindTree with native file/folder resource icons, stable ids, highlights/INVALID, and a session switcher; check the provider's node tests and ADR 0008.
+- [x] 1.2 Connect contributed Panel/views, toolbar/context commands, and the controller lifecycle instead of Find editor tabs; check controller/manifest tests and update modal labels.
 
-## 2. Центральный редактор и сохранённый поиск
+## 2. Central editor and saved search
 
-- [x] 2.1 Перевести FindPreview в текущую editor group без split; проверить гонки, фокус, decorations и отсутствие newGroupRight в unit tests.
-- [x] 2.2 Сохранить snapshot validation/Undo/replace guards/Edit Search/New Search/Close Search; проверить controller tests, обновить README и AGENTS.
-- [x] 2.3 Сделать INVALID заметнее по запросу пользователя: красный ThemeIcon ошибки через errorForeground и подпись перед сниппетом; проверить возврат обычного вида после validation/Undo.
+- [x] 2.1 Move FindPreview to the current editor group without a split; check races, focus, decorations, and the absence of newGroupRight in unit tests.
+- [x] 2.2 Preserve snapshot validation/Undo/replace guards/Edit Search/New Search/Close Search; check controller tests and update README and AGENTS.
+- [x] 2.3 Make INVALID more visible at the user's request: a red error ThemeIcon through errorForeground and a label before the snippet; check restoration of the ordinary appearance after validation/Undo.
 
-## 3. Интеграция
+## 3. Integration
 
-- [x] 3.1 Выполнить GUI smoke в изолированном stock VS Code: Panel, штатные иконки, click в центральный editor, отсутствие split, сессии/gear/INVALID; записать результаты и отдельный manual checklist с границами платформ.
-- [x] 3.2 Удалить устаревшее HTML-дерево из runtime/VSIX, выполнить npm run check, npm test, npm run spec:check и npm run package; записать проверку пакета.
+- [x] 3.1 Run a GUI smoke in isolated stock VS Code: Panel, native icons, click into the central editor, no split, sessions/gear/INVALID; record results and a separate manual checklist with platform boundaries.
+- [x] 3.2 Remove the obsolete HTML tree from runtime/VSIX, run npm run check, npm test, npm run spec:check, and npm run package; record package validation.
 
 ## Workflow follow-up
 
-- Архивирование и синхронизацию baseline выполнять отдельным согласованным шагом после проверки.
+- Archive and synchronize the baseline as a separately agreed step after validation.

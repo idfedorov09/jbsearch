@@ -2,57 +2,60 @@
 
 ## Purpose
 
-Точки входа JB Search используют контекст Explorer, чтобы открывать существующий
-поиск с нужной областью без ручного выбора директории и потери параметров.
+JB Search entry points use the Explorer context to open the existing search
+dialog with the required scope, without manually choosing a directory or losing
+search parameters.
+
 
 ## ADDED Requirements
 
 ### Requirement: Explorer folder search
 
-Расширение SHALL предлагать **Find in Files…** в контекстном меню одной файловой
-папки Explorer, включая корень workspace и Remote filesystem workspace.
+The extension SHALL offer **Find in Files…** in the context menu for a single
+filesystem folder in Explorer, including workspace roots and Remote filesystem workspaces.
 
 #### Scenario: Selected nested directory
-- **WHEN** пользователь вызывает Find in Files… для папки workspace
-- **THEN** открывается существующий Find-диалог с выбранной Directory и точным
-  путём этой папки; результаты ограничены её содержимым и подпапками
+- **WHEN** the user invokes Find in Files… for a workspace folder
+- **THEN** the existing Find dialog opens with Directory selected and the exact
+  folder path; results are limited to that folder's contents and subfolders
 
 #### Scenario: Workspace root and multiple roots
-- **WHEN** пользователь вызывает action на корне или папке второго workspace root
-- **THEN** областью становится выбранная папка, а не первый root
+- **WHEN** the user invokes the action on a root or a folder in the second workspace root
+- **THEN** the selected folder becomes the scope instead of the first root
 
 #### Scenario: File or multiple selection
-- **WHEN** выбран файл, несколько ресурсов либо неподдерживаемая файловая система
-- **THEN** пункт JB Search Find in Files… не предлагается
+- **WHEN** a file, multiple resources, or an unsupported filesystem is selected
+- **THEN** the JB Search Find in Files… item is not offered
 
 ### Requirement: Search context and saved results remain coherent
 
-Контекстный поиск SHALL сохранять запрос и настройки поиска, но MUST NOT менять
-сохранённую выдачу Find Panel или привязывать новый поиск к её редактированию.
+Contextual search SHALL preserve the query and search settings, but MUST NOT
+change saved Find Panel results or attach the new search to editing those results.
 
 #### Scenario: Existing modal
-- **WHEN** выбранная папка меняется через Explorer при уже открытом или открывающемся modal
-- **THEN** прежняя выдача очищается, выполнявшийся поиск отменяется, новый поиск выполняется для последней
-  выбранной папки с сохранением текста запроса, масок и флагов
+- **WHEN** the selected folder changes through Explorer while the modal is open or opening
+- **THEN** previous results are cleared, the running search is cancelled, and a new search runs for the last
+  selected folder while preserving the query text, masks, and flags
 
 #### Scenario: Saved search or its draft
-- **WHEN** контекстный поиск запускается из сохранённой Find-сессии или её draft
-- **THEN** открывается независимый Find с копией параметров и новой Directory;
-  старый снимок и параметры его draft сохраняются
+- **WHEN** contextual search starts from a saved Find session or its draft
+- **THEN** an independent Find opens with copied parameters and a new Directory;
+  the previous snapshot and its draft parameters are preserved
 
 #### Scenario: Default entry points
-- **WHEN** пользователь открывает обычный Find или Replace по клавишам
-- **THEN** действует прежняя логика; Explorer не меняет scope без вызова action
+- **WHEN** the user opens regular Find or Replace with a keyboard shortcut
+- **THEN** the existing behavior applies; Explorer does not change the scope unless the action is invoked
 
 ### Requirement: Reject an unavailable search directory
 
-Расширение MUST проверить URI и существование папки workspace перед изменением
-поиска и SHALL сообщить об ошибке без неявного расширения области поиска.
+The extension MUST validate the URI and the existence of the workspace folder
+before changing the search, and SHALL report an error without silently widening
+the search scope.
 
 #### Scenario: Invalid command argument
-- **WHEN** команда получает пустой аргумент, файл, папку вне workspace или ошибку stat
-- **THEN** текущая сессия остаётся прежней и показывается понятная ошибка
+- **WHEN** the command receives an empty argument, a file, a folder outside the workspace, or a stat error
+- **THEN** the current session remains unchanged and a clear error is shown
 
 #### Scenario: Replacement in progress
-- **WHEN** контекстный поиск запрошен во время выполняющейся замены
-- **THEN** параметры и область этой замены не меняются
+- **WHEN** contextual search is requested while a replacement is running
+- **THEN** that replacement's parameters and scope remain unchanged

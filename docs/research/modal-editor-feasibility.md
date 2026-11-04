@@ -1,45 +1,47 @@
-# Штатный плавающий диалог: проверка осуществимости
+# Native floating dialog: feasibility study
 
-Дата: 2026-11-03. Результат исследования, не реализованная функция JB Search.
+Date: 2026-11-03. Research result, not an implemented JB Search feature.
 
-## Вывод
+## Conclusion
 
-Обычное расширение, установленное из VSIX в немодифицированный VS Code 1.144.1,
-может открыть собственный custom editor/webview в штатном modal editor поверх
-workbench. Диалог перемещается и меняет размер; Esc закрывает его; перенос во
-вкладку сохраняет UI. Отдельное приложение, proposed API и модификация установки
-не требуются. Однако **открытие использует внутреннюю команду и внутренний номер
-группы**, а не стабильный публичный контракт Extension API.
+An ordinary extension installed from a VSIX in unmodified VS Code 1.144.1 can open
+its own custom editor/webview in a native modal editor over the workbench. The
+dialog can be moved and resized; Esc closes it; moving to a tab preserves the UI.
+A separate application, proposed API, or installation patch is unnecessary.
+However, **opening uses an internal command and internal group number**, rather
+than a stable public Extension API contract.
 
-![Тестовый VSIX в обычном VS Code](assets/modal-stock-vscode.png)
+![Test VSIX in stock VS Code](assets/modal-stock-vscode.png)
 
-На снимке реальные VS Code и custom editor. Результаты и preview демонстрационные;
-это доказательство контейнера, а не готовый поисковый движок или финальный UI.
+The screenshot shows real VS Code and a custom editor. The results and preview
+are demonstration data; this proves the container, not a finished search engine
+or final UI.
 
-## Проверенная среда
+## Tested environment
 
-- Официальный stable Linux x64, `1.144.1`, commit
+- Official stable Linux x64, `1.144.1`, commit
   `261c84cb1eddf11235f9e2c921425e9663fbe556`.
-- Архив получен через официальный update API; SHA-256 проверен:
+- The archive was obtained through the official update API; SHA-256 was verified:
   `59d8d6f9dc2431353c453cf6a4da0faae3993e332007ab387f526332eef93fe4`.
-- Linux/X11 в Xvfb, окно 1440 × 900 внутри виртуального экрана 1440 × 1000.
-- Отдельные user-data/extensions/workspace каталоги. Собранный probe VSIX
-  установлен стандартным `code --install-extension` и проверен без
-  `--extensionDevelopmentPath`. Также отдельно проверялся Development Host.
-- GUI-автоматизация Playwright через CDP использовалась только для наблюдения,
-  клавиатуры, мыши и снимков в тестовом экземпляре. Расширение не подключается
-  к debugger/inspector, не инжектирует код и не получает DOM workbench.
-- `--no-sandbox` и `--disable-gpu` — флаги запуска этой контейнерной тестовой среды,
-  не требование расширения; обычный desktop sandbox в этом опыте не проверен.
-- macOS, Windows, Wayland, Remote и браузерная версия **не проверены**.
+- Linux/X11 in Xvfb, with a 1440 × 900 window inside a 1440 × 1000 virtual screen.
+- Separate user-data/extensions/workspace directories. The built probe VSIX was
+  installed with standard `code --install-extension` and tested without
+  `--extensionDevelopmentPath`. A Development Host was also tested separately.
+- Playwright GUI automation over CDP was used only for observation, keyboard,
+  mouse, and screenshots in the test instance. The extension does not connect to
+  the debugger/inspector, inject code, or obtain the workbench DOM.
+- `--no-sandbox` and `--disable-gpu` are launch flags for this containerized test
+  environment, not extension requirements; the ordinary desktop sandbox was not
+  tested in this experiment.
+- macOS, Windows, Wayland, Remote, and the browser version were **not tested**.
 
-## Механизм
+## Mechanism
 
-1. В манифесте объявлен custom editor `jbsearchProbe.session` с priority `option`.
-2. Через публичный `registerCustomEditorProvider` зарегистрирован read-only
-   CustomDocument для URI сессии, `jbsearch-probe:/Find%20in%20Files.jbsearchprobe`.
-   Реального файла сессии на диске нет; provider возвращает `{ uri, dispose() {} }`.
-3. Команда расширения вызывает:
+1. The manifest declares custom editor `jbsearchProbe.session` with priority `option`.
+2. The public `registerCustomEditorProvider` registers a read-only CustomDocument
+   for the session URI, `jbsearch-probe:/Find%20in%20Files.jbsearchprobe`. There is
+   no actual session file on disk; the provider returns `{ uri, dispose() {} }`.
+3. The extension command calls:
 
 ```js
 await vscode.commands.executeCommand(
@@ -50,106 +52,111 @@ await vscode.commands.executeCommand(
 );
 ```
 
-`-4` — внутренний `MODAL_GROUP`, не значение публичного `vscode.ViewColumn`.
-Публичный `vscode.openWith` преобразует опции, а `createWebviewPanel(..., -4)`
-не предоставляет этот маршрут. Их нельзя считать эквивалентной заменой вызова.
+`-4` is the internal `MODAL_GROUP`, not a public `vscode.ViewColumn` value.
+Public `vscode.openWith` transforms options, and `createWebviewPanel(..., -4)`
+does not provide this route. They cannot be treated as equivalent substitutes
+for the call.
 
-Внутренняя `_workbench.openWith` передаёт группу через `columnToEditorGroup`,
-а `editorGroupFinder` создаёт modal part при `workbench.editor.useModal != off`.
-В проверенном stable настройка по умолчанию `some`: менять её для эксперимента
-с установленным VSIX не пришлось. `all` не требуется и продукт не должен её
-включать. `some` оставляет обычные файлы во вкладках; некоторые системные страницы
-VS Code открывает модально сам.
+Internal `_workbench.openWith` passes the group through `columnToEditorGroup`,
+and `editorGroupFinder` creates a modal part when `workbench.editor.useModal != off`.
+In the tested stable version, the default is `some`: the setting did not need
+changing for the installed VSIX experiment. `all` is unnecessary and the product
+must not enable it. `some` leaves ordinary files in tabs; VS Code itself opens
+some system pages modally.
 
-При `off` этот внутренний маршрут **молча открывает вкладку**. Будущий адаптер
-обязан заранее проверять настройку и объяснять ограничение. Не менять её скрыто,
-не объявлять вкладку успешным открытием требуемого диалога. Даже включение `some`
-затрагивает поведение системных редакторов; выбор остаётся у пользователя.
+With `off`, this internal route **silently opens a tab**. A future adapter must
+check the setting in advance and explain the limitation. It must not change it
+silently or report the tab as successful opening of the required dialog. Even
+enabling `some` affects system editor behavior; the choice stays with the user.
 
-Для переноса используется `workbench.action.moveModalEditorToMain`.
-Штатный Esc из webview с фокусом в input закрыл диалог без собственного обработчика.
-Сохранение запроса после закрытия обеспечивал объект состояния в extension host;
-само закрытие уничтожало view. Для полноценных сессий нужен SessionController.
+Moving uses `workbench.action.moveModalEditorToMain`. Native Esc from the webview
+with focus in the input closed the dialog without a custom handler. A state object
+in the extension host preserved the query after closing; closing itself destroyed
+the view. Full sessions need a SessionController.
 
-## Результаты эксперимента
+## Experiment results
 
-Машиночитаемый протокол: [modal-editor-verification.json](modal-editor-verification.json).
+Machine-readable report: [modal-editor-verification.json](modal-editor-verification.json).
 
-| Проверка | Результат |
+| Check | Result |
 | --- | --- |
-| Ctrl+Shift+F в чистом VS Code с установленным probe VSIX | Нативный modal поверх текущего editor |
-| Начальный размер | 940 × 650 |
-| Перетаскивание заголовка | (250, 125) → (320, 170) |
-| Resize нижнего правого угла | 940 × 650 → 1016 × 686 |
-| Esc при фокусе в query | Modal закрыт штатным обработчиком VS Code |
-| Повторный вызов | Запрос `preserve this query` восстановлен из host state |
-| Тема Dark Modern → Light Modern | Фон webview изменился rgb(31,31,31) → rgb(255,255,255) |
-| Open in Editor Tab | Modal закрыт, тот же запрос во вкладке |
-| Повторный shortcut из вкладки | Сессия снова в modal |
-| Открытие обычного файла из modal | Modal закрыт, файл в основном editor |
-| `useModal: off` | Modal отсутствует, fallback во вкладку — требуется guard |
-| Без override настройки `useModal` | Modal работает; установка из VSIX подтверждена |
+| Ctrl+Shift+F in clean VS Code with the probe VSIX installed | Native modal over the current editor |
+| Initial size | 940 × 650 |
+| Dragging the title | (250, 125) → (320, 170) |
+| Resizing the bottom-right corner | 940 × 650 → 1016 × 686 |
+| Esc with query focus | Modal closed by VS Code's native handler |
+| Reopening | Query `preserve this query` restored from host state |
+| Dark Modern → Light Modern theme | Webview background changed from rgb(31,31,31) to rgb(255,255,255) |
+| Open in Editor Tab | Modal closed; the same query is in a tab |
+| Shortcut again from the tab | Session back in the modal |
+| Opening an ordinary file from the modal | Modal closed; file in the main editor |
+| `useModal: off` | No modal; fallback to a tab — guard required |
+| No `useModal` setting override | Modal works; VSIX installation confirmed |
 
-[Светлая тема во время работы](assets/modal-light.png).
+[Light theme during use](assets/modal-light.png).
 
-Исходники изолированного опыта, VSIX и вспомогательные сценарии находятся в
-`/tmp/jbsearch-window-research/`. Это временные исследовательские файлы, не часть
-продукта; VSIX и бинарник VS Code в репозиторий не добавлены. Полноценная проверка
-поиска, масок, regexp, preview, доступности и всех трёх ОС ещё впереди.
+The isolated experiment's source, VSIX, and helper scripts are in
+`/tmp/jbsearch-window-research/`. These are temporary research files, not part of
+the product; the VSIX and VS Code binary were not added to the repository.
+Full verification of search, masks, regexp, preview, accessibility, and all three
+operating systems is still ahead.
 
-## Компоненты и темы
+## Components and themes
 
-Контейнер, рамка, drag/resize, системные действия и Esc здесь принадлежат VS Code.
-Содержимое — webview: публичный API не экспортирует внутренние поля, списки и
-TextEditor workbench. Для UI предлагается `@vscode-elements/elements`: поддерживаемая
-сторонняя библиотека, воспроизводящая элементы VS Code через Web Components.
-Она использует передаваемые webview CSS-переменные `--vscode-*`; это не официальный
-пакет внутренних widgets. В этом опыте библиотека не установлена: использованы
-обычные HTML controls с переменными темы. Встроенный кодовый preview остаётся
-отдельным выбором: read-only renderer или отдельно поставляемый Monaco, без
-автоматического наследования всех расширений редактора и syntax theme.
+The container, frame, drag/resize, system actions, and Esc belong to VS Code here.
+The content is a webview: the public API does not export the workbench's internal
+fields, lists, or TextEditor. The proposed UI library is `@vscode-elements/elements`,
+a maintained third-party library that reproduces VS Code controls with Web
+Components. It uses the `--vscode-*` CSS variables passed to webviews; it is not
+an official package of internal widgets. The library was not installed for this
+experiment: ordinary HTML controls with theme variables were used. The embedded
+code preview remains a separate choice: a read-only renderer or separately
+bundled Monaco, without automatic inheritance of all editor extensions and the
+syntax theme.
 
-Microsoft Webview UI Toolkit deprecated с 2025-01-01; брать его основой нового UI
-не рекомендуется. Постоянные предпочтения можно предоставить настоящим штатным
-Settings UI через `contributes.configuration`.
+Microsoft Webview UI Toolkit has been deprecated since 2025-01-01; using it as
+the foundation of a new UI is not recommended. Persistent preferences can use
+the actual native Settings UI through `contributes.configuration`.
 
-## Как делают другие
+## Approaches used by others
 
-Найдено [IntelliJ Styled Search](https://marketplace.visualstudio.com/items?itemName=newdlops.intellij-styled-search)
-с очень близким UX. Исследован
-[исходный код](https://github.com/newdlops/intellij-styled-search) на commit
-`7bb3716bef30bfda75ede08d8551118ba62000ae`: `overlayPanel.ts` подключается к
-Electron inspector/CDP и использует `Runtime.evaluate`; POSIX-реализация включает
-inspector через SIGUSR1; отдельный документ описывает monkey-patching Monaco.
-Это существующий пример, но другой класс зависимости от внутренних механизмов.
-Его не запускали и не перенимали. Новые modal editors позволяют обходиться без
-такой инъекции и без отдельного приложения.
+[IntelliJ Styled Search](https://marketplace.visualstudio.com/items?itemName=newdlops.intellij-styled-search)
+was found with a very similar UX. Its
+[source code](https://github.com/newdlops/intellij-styled-search) was inspected at
+commit `7bb3716bef30bfda75ede08d8551118ba62000ae`: `overlayPanel.ts` connects to
+the Electron inspector/CDP and uses `Runtime.evaluate`; the POSIX implementation
+enables the inspector through SIGUSR1; a separate document describes Monaco
+monkey-patching. This is an existing example, but it has a different level of
+dependency on internals. It was neither run nor adopted. New modal editors allow
+avoiding this injection and a separate application.
 
-## Границы вывода и следующий этап
+## Boundaries of the conclusion and next steps
 
-- Механизм modal editors объявлен в 1.110 как experimental. Проверен конкретно
-  1.144.1; минимальная совместимая версия этим исследованием **не установлена**.
-  `engines.vscode` основного JB Search остаётся прежним, пока нет реализации.
-- Внутреннюю команду и `-4` изолировать в одном адаптере. Наличие команды само по
-  себе не доказывает поддержку modal. Нужны тесты выбранных stable-версий,
-  доступное объяснение отсутствующей поддержки и переход на публичный API,
-  когда он появится. Нельзя гарантировать совместимость будущих обновлений.
-- UI модальный в пределах workbench; отдельного окна в Alt+Tab этот путь не создаёт.
-  Поведение фона, menus, IME, fullscreen, несколько окон и восстановление после
-  перезапуска ещё проверить на macOS, Windows, Linux. Только Linux/X11 доказан.
-- Поставка отдельного Electron/Tauri приложения больше не является необходимым
-  кандидатом. Запрос на обычный VSIX и stock VS Code достижим с указанной
-  внутренней зависимостью. Согласование этой зависимости отделено от доказательства.
+- Modal editors were introduced in 1.110 as experimental. Only 1.144.1 was tested;
+  this study **does not establish** a minimum compatible version. The main
+  JB Search `engines.vscode` remains unchanged until implementation.
+- Isolate the internal command and `-4` in one adapter. The command's existence
+  alone does not prove modal support. Tests of selected stable versions, an
+  accessible explanation of missing support, and migration to a public API when
+  available are needed. Compatibility with future updates cannot be guaranteed.
+- The UI is modal within the workbench; this route does not create a separate
+  window in Alt+Tab. Background behavior, menus, IME, fullscreen, multiple windows,
+  and restoration after restart still need checks on macOS, Windows, and Linux.
+  Only Linux/X11 is proven.
+- Shipping a separate Electron/Tauri application is no longer a necessary
+  candidate. An ordinary VSIX and stock VS Code are achievable with the stated
+  internal dependency. Accepting that dependency is separate from proving the
+  mechanism.
 
-## Источники
+## Sources
 
-- [Официальное введение modal editors, VS Code 1.110](https://code.visualstudio.com/updates/v1_110#_modal-editors-experimental)
-- [Текущая документация интерфейса VS Code](https://code.visualstudio.com/docs/editing/getting-started/userinterface)
-- [Внутренняя команда открытия, source 1.144.0](https://github.com/microsoft/vscode/blob/1.144.0/src/vs/workbench/browser/parts/editor/editorCommands.ts#L545)
-- [Преобразование группы](https://github.com/microsoft/vscode/blob/1.144.0/src/vs/workbench/services/editor/common/editorGroupColumn.ts#L18)
-- [Выбор modal group и настройка](https://github.com/microsoft/vscode/blob/1.144.0/src/vs/workbench/services/editor/common/editorGroupFinder.ts#L143)
-- [Штатные drag и resize](https://github.com/microsoft/vscode/blob/1.144.0/src/vs/workbench/browser/parts/editor/modalEditorPart.ts#L537)
-- [Документация Custom Editor API](https://code.visualstudio.com/api/extension-guides/custom-editors)
-- [Темы webview](https://code.visualstudio.com/api/extension-guides/webview#theming-webview-content)
-- [VSCode Elements: назначение и ограничения](https://vscode-elements.github.io/guides/getting-started/#what-is-vscode-elements)
-- [Архивированный Microsoft Webview UI Toolkit](https://github.com/microsoft/vscode-webview-ui-toolkit)
+- [Official introduction of modal editors, VS Code 1.110](https://code.visualstudio.com/updates/v1_110#_modal-editors-experimental)
+- [Current VS Code UI documentation](https://code.visualstudio.com/docs/editing/getting-started/userinterface)
+- [Internal open command, source 1.144.0](https://github.com/microsoft/vscode/blob/1.144.0/src/vs/workbench/browser/parts/editor/editorCommands.ts#L545)
+- [Group conversion](https://github.com/microsoft/vscode/blob/1.144.0/src/vs/workbench/services/editor/common/editorGroupColumn.ts#L18)
+- [Modal group selection and setting](https://github.com/microsoft/vscode/blob/1.144.0/src/vs/workbench/services/editor/common/editorGroupFinder.ts#L143)
+- [Native drag and resize](https://github.com/microsoft/vscode/blob/1.144.0/src/vs/workbench/browser/parts/editor/modalEditorPart.ts#L537)
+- [Custom Editor API documentation](https://code.visualstudio.com/api/extension-guides/custom-editors)
+- [Webview themes](https://code.visualstudio.com/api/extension-guides/webview#theming-webview-content)
+- [VSCode Elements: purpose and limitations](https://vscode-elements.github.io/guides/getting-started/#what-is-vscode-elements)
+- [Archived Microsoft Webview UI Toolkit](https://github.com/microsoft/vscode-webview-ui-toolkit)

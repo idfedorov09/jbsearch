@@ -1,61 +1,62 @@
-# Настоящий редактор в preview: проверка осуществимости
+# Native editor in the preview: feasibility study
 
-Дата: 2026-11-04. **Изолированный исследовательский прототип; в рабочий JB Search
-не перенесён.** Пользователь согласовал проверку прототипа, а не смену архитектуры
-поставляемого расширения.
+Date: 2026-11-04. **Isolated research prototype; not incorporated into production
+JB Search.** The user approved testing the prototype, not changing the shipped
+extension's architecture.
 
-## Вывод
+## Conclusion
 
-Настоящий `TextEditor` удалось разместить под поисковой webview внутри одного
-плавающего modal editor VS Code. Он автоматически использует клиентскую тему
-GitHub Dark Default, хотя серверный extension host этой темы не видит. BL-код
-подсвечивается, совпадения выделяются штатными decorations. Проблему отсутствия
-темы на сервере этим действительно можно обойти.
+A native `TextEditor` was successfully placed below the search webview inside a
+single floating VS Code modal editor. It automatically uses the client theme,
+GitHub Dark Default, even though the server extension host cannot see that theme.
+BL code is highlighted, and matches use native decorations. This can indeed
+bypass the problem of a theme missing on the server.
 
-Однако **найденная схема обновления preview непригодна для интерактивного поиска**:
-она временно переводит фокус из query в native editor. При обычном вводе `return`
-получилось `retrn`, а пропущенный символ попал в тестовый исходник. Read-only
-снимок защищает исходник, но отдельно подтверждённая потеря символа запроса
-сохраняется. Штатный перенос modal в main editor также не сохраняет составную
-компоновку: поиск и preview становятся отдельными вкладками.
+However, **the discovered preview update scheme is unsuitable for interactive
+search**: it temporarily moves focus from the query to the native editor. Ordinary
+typing of `return` produced `retrn`, and the missing character entered the test
+source. A read-only snapshot protects the source, but a separately confirmed loss
+of a query character remains. Moving the modal to the main editor through the
+native action also fails to preserve the composite layout: search and preview
+become separate tabs.
 
-Это отрицательный результат конкретного адаптера с переключением фокуса,
-**не доказательство невозможности любого native preview**. Внедрять его в рабочий
-плагин, перехватывать глобальный ввод или скрыто менять `useModal` не следует.
+This is a negative result for a specific adapter that switches focus,
+**not proof that all native previews are impossible**. It should not be introduced
+into the production extension, intercept global input, or silently change `useModal`.
 
-![Настоящий BL TextEditor с клиентской GitHub Dark Default](assets/native-preview-github-dark.png)
+![Native BL TextEditor with client GitHub Dark Default](assets/native-preview-github-dark.png)
 
-Это техническая компоновка прототипа, не предлагаемый окончательный UI.
+This is the prototype's technical layout, not the proposed final UI.
 
-## Среда
+## Environment
 
-- Официальный VS Code **1.143.1**, commit
+- Official VS Code **1.143.1**, commit
   `e646868227c3e3a9e3f24277c8c7220be42c0be7`, Linux x64, X11/Xvfb.
-- Настоящий Remote SSH к изолированному localhost-серверу; обычный workspace
-  extension, зарегистрированный из исходной папки, без Development Host.
-- Отдельные client user-data/extensions, server-data и синтетический workspace.
-  Рабочий профиль пользователя не перезагружался и не менялся.
-- **GitHub Theme 6.3.5** установлена только на клиенте. На сервере доступны
-  probe и существующее расширение BL; его исходники использованы только для чтения.
+- Real Remote SSH to an isolated localhost server; an ordinary workspace extension
+  registered from its source folder, without a Development Host.
+- Separate client user-data/extensions, server-data, and a synthetic workspace.
+  The user's working profile was neither reloaded nor changed.
+- **GitHub Theme 6.3.5** installed only on the client. The server has the probe and
+  the existing BL extension; its sources were used read-only.
 - `serverSeesGitHubTheme: false`, `serverSeesBL: true`,
-  `workbench.editor.useModal: some`. Proposed API в probe не включались.
-- GUI-автоматизация Playwright/CDP использовалась только в тестовом экземпляре.
-  Само расширение не получает доступ к DOM/inspector workbench.
-- macOS, Windows, Wayland и Remote SSH по сети с существенной задержкой
-  **не проверены**. Локальный loopback не подтверждает их поведение.
+  `workbench.editor.useModal: some`. No proposed APIs were enabled in the probe.
+- Playwright/CDP GUI automation was used only in the test instance. The extension
+  itself does not access the workbench DOM/inspector.
+- macOS, Windows, Wayland, and Remote SSH over a network with substantial latency
+  were **not tested**. Local loopback does not verify their behavior.
 
-## Механизм и граница API
+## Mechanism and API boundary
 
-В modal открыта поисковая webview, затем через `vscode.setEditorLayout` созданы
-две вертикальные editor groups. Верхняя содержит query/results, нижняя — настоящий
-текстовый редактор. Номера групп определяются по вкладкам, а не фиксируются как
-`ViewColumn.One/Two`: в стенде основная группа имеет column 1, search — 2,
-preview — 3.
+The search webview opens in the modal, then `vscode.setEditorLayout` creates two
+vertically stacked editor groups. The upper group contains query/results, and the
+lower group contains a native text editor. Group numbers are determined from tabs,
+not fixed as `ViewColumn.One/Two`: in the test environment, the main group is
+column 1, search is 2, and preview is 3.
 
-Обычный `showTextDocument({ viewColumn, preserveFocus: true })` не обеспечивает
-открытие в нижней modal-группе: при `useModal: some` VS Code перенаправляет такую
-группу в main editor. Явный внутренний `MODAL_GROUP = -4` пропускает эту защиту,
-но выбирает **активную** группу modal part. Поэтому проверенный адаптер использует:
+Ordinary `showTextDocument({ viewColumn, preserveFocus: true })` does not open in
+the lower modal group: with `useModal: some`, VS Code redirects that group to the
+main editor. Explicit internal `MODAL_GROUP = -4` bypasses this guard but chooses
+the **active** group of the modal part. The tested adapter therefore uses:
 
 ```js
 await vscode.commands.executeCommand('workbench.action.focusBelowGroup');
@@ -63,107 +64,110 @@ await vscode.commands.executeCommand('_workbench.open', previewUri, [-4, {
   preserveFocus: true,
   pinned: false
 }]);
-// Найти TextEditor, поставить decorations и показать выбранный диапазон.
+// Find the TextEditor, set decorations, and reveal the selected range.
 await vscode.commands.executeCommand('workbench.action.focusAboveGroup');
 await searchWebview.postMessage({ type: 'focus' });
 ```
 
-`preserveFocus` здесь сохраняет **уже изменённый** фокус. Возврат после команды
-не восстанавливает клавиши, отправленные в native editor между этими действиями.
-Debounce и очереди запросов не гарантируют, что пользователь не продолжит набор
-во время обновления preview. Проверенный внутренний маршрут не даёт отдельного
-селектора неактивной modal-группы; существование другого пригодного маршрута
-не установлено. Внутренние `_workbench.openWith`, `_workbench.open` и `-4`
-не становятся стабильным публичным API от того, что probe работает без proposed API.
+Here, `preserveFocus` preserves the **already changed** focus. Returning after the
+command does not restore keys sent to the native editor between these actions.
+Debouncing and request queues cannot guarantee that the user will stop typing
+while the preview updates. The tested internal route provides no separate
+selector for an inactive modal group; the existence of another suitable route
+has not been established. Internal `_workbench.openWith`, `_workbench.open`, and
+`-4` do not become stable public APIs because the probe works without proposed APIs.
 
-Проверены два режима: исходный URI с редактируемым настоящим документом и
-`TextDocumentContentProvider` с read-only URI `jb-native-snapshot:`. Во втором
-режиме источник снимка — актуальный `TextDocument.getText()`, включая несохранённые
-правки; после назначения языка `bl` применяется штатная TextMate-подсветка.
+Two modes were tested: the original URI with a real editable document, and
+`TextDocumentContentProvider` with a read-only `jb-native-snapshot:` URI. In the
+second mode, the snapshot source is current `TextDocument.getText()`, including
+unsaved edits; assigning language `bl` applies native TextMate highlighting.
 
-## Подтверждённые результаты
+## Confirmed results
 
-| Проверка | Результат |
+| Check | Result |
 | --- | --- |
-| Search webview и native BL editor в одной modal | Две группы внутри одного диалога |
-| GitHub Dark Default только на клиенте | Keyword `return` имеет цвет `rgb(255, 123, 114)` при `serverSeesGitHubTheme: false` |
-| Выбранное и остальные совпадения | Штатные decorations присутствуют поверх syntax colors |
-| Выбор другого результата | Native preview переключается между двумя удалёнными BL-файлами |
-| GitHub Dark Default → Light Modern → обратно | Цвет keyword меняется на `rgb(175, 0, 219)` и возвращается без собственного theme bridge |
-| Попытка печатать в read-only snapshot | Длина/dirty-state снимка и исходники не меняются |
-| Несохранённая правка исходника | Снимок и видимые строки обновляются; исходник dirty, снимок clean, диск не меняется |
-| Обычный набор `return`, 140 мс между символами | Получено `retrn`; исходный preview становится dirty, закрытие вызывает save confirmation |
-| Символ `n` через 2 мс после blur в snapshot-режиме | Ожидалось `return`, получено `retur`: read-only не спасает ввод запроса |
-| Чистый перенос modal во вкладку | Search и snapshot — отдельные tabs в одной выбранной main-группе |
-| Очистка стенда | Dirty fixtures отменены без сохранения; осталась чистая вкладка `baseline.js` |
+| Search webview and native BL editor in one modal | Two groups inside one dialog |
+| GitHub Dark Default only on the client | Keyword `return` has color `rgb(255, 123, 114)` with `serverSeesGitHubTheme: false` |
+| Selected and other matches | Native decorations appear over syntax colors |
+| Selecting another result | Native preview switches between two remote BL files |
+| GitHub Dark Default → Light Modern → back | Keyword color changes to `rgb(175, 0, 219)` and back without a custom theme bridge |
+| Attempt to type in the read-only snapshot | Snapshot length/dirty state and source files are unchanged |
+| Unsaved source edit | Snapshot and visible lines update; source dirty, snapshot clean, disk unchanged |
+| Ordinary typing of `return`, 140 ms between characters | Produced `retrn`; original preview becomes dirty, and closing triggers save confirmation |
+| Character `n` 2 ms after blur in snapshot mode | Expected `return`, received `retur`: read-only does not protect query input |
+| Clean move of modal to a tab | Search and snapshot become separate tabs in one selected main group |
+| Test environment cleanup | Dirty fixtures discarded without saving; a clean `baseline.js` tab remains |
 
-Протокол обычного ввода:
+Ordinary typing report:
 [native-preview-results-source.json](native-preview-results-source.json).
-В нём 4 успешные проверки, 1 подтверждённое ограничение и 7 ошибок. Эти ошибки
-**не являются семью независимыми дефектами**: после повреждения query результаты
-исчезли, а затем save confirmation нарушил дальнейшие проверки. Ошибки выбора
-строк, reopen и количества dialogs нельзя трактовать независимо от этого состояния.
+It contains 4 passed checks, 1 confirmed limitation, and 7 errors. These errors
+**are not seven independent defects**: after the query was corrupted, the results
+disappeared, and save confirmation then disrupted later checks. Row selection,
+reopen, and dialog-count errors cannot be interpreted independently of that state.
 
-Отдельный чистый прогон snapshot:
+Separate clean snapshot run:
 [native-preview-results-snapshot.json](native-preview-results-snapshot.json) —
-5 успешных проверок, 2 подтверждённых ограничения, 0 неожиданных ошибок.
-Здесь read-only, несохранённый текст, цвета, потеря ввода и перенос проверены
-отдельно после очистки состояния. В тесте обновления текста нормализованы
-неразрывные пробелы DOM Monaco; выбор документа определяется по фактическому URI.
+5 passed checks, 2 confirmed limitations, 0 unexpected errors.
+Read-only behavior, unsaved text, colors, input loss, and moving to a tab were
+checked separately after state cleanup. The text update test normalized Monaco
+DOM non-breaking spaces; document selection is determined by the actual URI.
 
-Дополнительные снимки:
-[save confirmation после попадания символа в исходник](assets/native-preview-input-loss.png),
-[перенос на чистом состоянии](assets/native-preview-move-to-tab.png).
+Additional screenshots:
+[save confirmation after a character entered the source](assets/native-preview-input-loss.png),
+[moving to a tab from a clean state](assets/native-preview-move-to-tab.png).
 
-## Что это меняет в выборе архитектуры
+## Implications for the architecture choice
 
-Грамматика BL и GitHub Dark Default не являются причиной отсутствия цветов:
-проверка этой же грамматики с клиентской темой дала настоящую syntax-подсветку.
-Нативный редактор решает доступ к клиентскому оформлению, но найденный способ
-его размещения нарушает сохранность ввода и требуемую единую вкладку поиска.
+The BL grammar and GitHub Dark Default are not the reason colors are missing:
+testing the same grammar with the client theme produced real syntax highlighting.
+The native editor solves access to client styling, but the discovered placement
+method breaks input preservation and the required unified search tab.
 
-Read-only snapshot также не равнозначен исходному документу для всех языков:
-другая URI-схема может исключить semantic providers. Здесь проверены BL/TextMate,
-не полнота semantic highlighting всех языковых расширений.
+A read-only snapshot is also not equivalent to the source document for every
+language: a different URI scheme may exclude semantic providers. This test covers
+BL/TextMate, not complete semantic highlighting from all language extensions.
 
-Для дальнейшего обсуждения остаются отдельные варианты:
+Separate options remain for further discussion:
 
-1. Найти способ обновлять неактивную modal-группу **без смены фокуса**, затем снова
-   проверить ввод, вкладку и платформы. Пригодный маршрут пока не найден.
-2. Сохранить существующий единый webview и передавать правила клиентской темы
-   небольшим локальным UI extension серверной части через команды VS Code.
-   Это поддерживаемый межхостовый канал без собственного SSH/сокетов, но два
-   технических extension ID, отдельная регистрация на клиенте и ещё не проверенный
-   сценарий установки/обновления. Требуется обработать includes, пользовательские
-   token customizations, смену темы и отсутствие локальной части. Передача темы
-   сама по себе не даёт все semantic tokens и клиентские grammars.
-3. Дождаться стабилизации API готовой syntax-подсветки. В проверенной 1.143.1
-   `computeFullSyntaxHighlighting` ещё относится к proposed
-   `documentSyntaxHighlighting`; это не решение для обычной стабильной поставки.
+1. Find a way to update an inactive modal group **without changing focus**, then
+   recheck input, the tab, and platforms. A suitable route has not yet been found.
+2. Keep the existing unified webview and have a small local UI extension pass
+   client theme rules to the server component through VS Code commands. This is
+   a supported channel between hosts without custom SSH/sockets, but involves
+   two technical extension IDs, separate client registration, and a still untested
+   installation/update flow. Includes, user token customizations, theme changes,
+   and a missing local component must be handled. Theme transfer alone does not
+   provide all semantic tokens or client grammars.
+3. Wait for the ready-made syntax highlighting API to stabilize. In tested 1.143.1,
+   `computeFullSyntaxHighlighting` is still part of proposed
+   `documentSyntaxHighlighting`; this is not a solution for an ordinary stable
+   release.
 
-Выбор следующего варианта и production-реализация этим исследованием не одобрены.
-Задачи OpenSpec 4.6 и 5.3 остаются открытыми; baseline specs не синхронизированы.
+This study does not authorize selection of the next option or production
+implementation. OpenSpec tasks 4.6 and 5.3 remain open; baseline specs have not
+been synchronized.
 
-## Воспроизведение и артефакты
+## Reproduction and artifacts
 
-Исходники и GUI runner изолированного probe:
-`/tmp/jbsearch-native-preview-probe/extension.js`, `verify.cjs`,
-`verify-snapshot.cjs`. Они не входят в поставку JB Search. Исходный suite
-зафиксировал source input loss; snapshot runner отдельно начинает с `reset`,
-проверяет read-only и заканчивает отменой изменений только синтетических fixtures.
-Результаты и снимки скопированы в этот каталог до остановки тестового экземпляра.
+The isolated probe's source and GUI runners:
+`/tmp/jbsearch-native-preview-probe/extension.js`, `verify.cjs`, and
+`verify-snapshot.cjs`. They are not shipped with JB Search. The original suite
+recorded source input loss; the snapshot runner separately starts with `reset`,
+checks read-only behavior, and finishes by discarding changes only to synthetic
+fixtures. Results and screenshots were copied to this directory before the test
+instance was stopped.
 
-После обновления исследовательских документов прошли `npm run check`, все
-52 текущих `npm test`, `npm run spec:check`, `git diff --check` и проверка локальных
-Markdown-ссылок. `node --check` прошёл для probe и snapshot runner. Это проверка
-репозитория и прототипа, не подтверждение исправления production preview.
-VSIX в этой итерации не пересобирался: поставляемый код и manifest не изменялись.
+After the research documents were updated, `npm run check`, all 52 current
+`npm test` tests, `npm run spec:check`, `git diff --check`, and local Markdown link
+checks passed. `node --check` passed for the probe and snapshot runner. This checks
+the repository and prototype; it does not confirm a production preview fix.
+The VSIX was not rebuilt in this iteration: shipped code and manifest were unchanged.
 
-## Первичные источники
+## Primary sources
 
-- [Выбор группы, modal redirect и activeGroup в VS Code 1.143.1](https://github.com/microsoft/vscode/blob/e646868227c3e3a9e3f24277c8c7220be42c0be7/src/vs/workbench/services/editor/common/editorGroupFinder.ts)
-- [Штатный перенос и merge modal-групп](https://github.com/microsoft/vscode/blob/e646868227c3e3a9e3f24277c8c7220be42c0be7/src/vs/workbench/browser/parts/editor/modalEditorPart.ts)
-- [Read-only virtual documents и обновление содержимого](https://code.visualstudio.com/api/extension-guides/virtual-documents)
-- [Команды между UI и workspace extensions](https://code.visualstudio.com/api/advanced-topics/remote-extensions#communicating-between-extensions-using-commands)
-- [Контракт proposed syntax highlighting](https://github.com/microsoft/vscode/blob/e646868227c3e3a9e3f24277c8c7220be42c0be7/src/vscode-dts/vscode.proposed.documentSyntaxHighlighting.d.ts)
-- [Manifest клиентской GitHub Theme 6.3.5](https://github.com/primer/github-vscode-theme/blob/v6.3.5/package.json)
+- [Group selection, modal redirect, and activeGroup in VS Code 1.143.1](https://github.com/microsoft/vscode/blob/e646868227c3e3a9e3f24277c8c7220be42c0be7/src/vs/workbench/services/editor/common/editorGroupFinder.ts)
+- [Native moving and merging of modal groups](https://github.com/microsoft/vscode/blob/e646868227c3e3a9e3f24277c8c7220be42c0be7/src/vs/workbench/browser/parts/editor/modalEditorPart.ts)
+- [Read-only virtual documents and content updates](https://code.visualstudio.com/api/extension-guides/virtual-documents)
+- [Commands between UI and workspace extensions](https://code.visualstudio.com/api/advanced-topics/remote-extensions#communicating-between-extensions-using-commands)
+- [Proposed syntax highlighting contract](https://github.com/microsoft/vscode/blob/e646868227c3e3a9e3f24277c8c7220be42c0be7/src/vscode-dts/vscode.proposed.documentSyntaxHighlighting.d.ts)
+- [Client GitHub Theme 6.3.5 manifest](https://github.com/primer/github-vscode-theme/blob/v6.3.5/package.json)

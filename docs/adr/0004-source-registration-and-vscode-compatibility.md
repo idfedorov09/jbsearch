@@ -1,59 +1,61 @@
-# ADR 0004: Регистрация исходников и совместимость с VS Code 1.143.1
+# ADR 0004: Source registration and compatibility with VS Code 1.143.1
 
-- Статус: Accepted
-- Дата: 2026-11-03
-- Дополняет [ADR 0002](0002-floating-search-host.md) в части минимальной версии.
+- Status: Accepted
+- Date: 2026-11-03
+- Supplements [ADR 0002](0002-floating-search-host.md) regarding the minimum version.
 
-## Контекст
+## Context
 
-Пользователь работает с обычным VS Code по Remote SSH и хочет, как с
-`bl-language-support`, загружать расширение прямо из исходников без пересборки
-и переустановки VSIX после каждой правки. В его профиле BL зарегистрирован
-VS Code как ресурс с расположением исходной папки. Установленная копия JB Search
-была отдельным VSIX; её файлы от изменений проекта не обновляются. На сервере
-используется VS Code 1.143.1, тогда как прежний минимум JB Search был 1.144.1.
+The user works in stock VS Code over Remote SSH and wants to load the extension
+directly from source, as with `bl-language-support`, without rebuilding and
+reinstalling a VSIX after each edit. In their profile, VS Code has registered BL as
+a resource located at the source folder. The installed JB Search copy was a
+separate VSIX; project changes do not update its files. The server runs VS Code
+1.143.1, while JB Search previously required at least 1.144.1.
 
-## Решение
+## Decision
 
-Для разработки в обычном окне использовать штатную команду VS Code
-**Developer: Install Extension from Location…**, которая регистрирует исходную
-папку в нужном профиле и extension host. После изменения исходников выполнять
-**Developer: Reload Window**. Регистрация выполняется один раз на профиль/хост;
-установка npm-зависимостей по-прежнему необходима. F5 остаётся отдельным
-Extension Development Host, VSIX — независимым способом поставки.
+For development in an ordinary window, use the native VS Code command
+**Developer: Install Extension from Location…**, which registers the source
+folder in the appropriate profile and extension host. After source changes, run
+**Developer: Reload Window**. Registration is performed once per profile/host;
+installing npm dependencies is still required. F5 remains a separate Extension
+Development Host, and VSIX remains an independent delivery method.
 
-Минимум изменён на **1.143.1** после отдельной проверки официального desktop
-VS Code этой версии на Linux/X11: регистрация из папки, Reload Window после
-изменения исходника и 17 сценариев Find/Replace. Это не доказывает поддержку
-более ранних версий либо остальных ОС. Check Installation сообщает загруженный
-путь, чтобы отличить исходную папку от установленного VSIX.
+The minimum was changed to **1.143.1** after a separate check of the official
+desktop VS Code of that version on Linux/X11: folder registration, Reload Window
+after a source edit, and 17 Find/Replace scenarios. This does not prove support
+for earlier versions or other operating systems. Check Installation reports the
+loaded path to distinguish the source folder from an installed VSIX.
 
-При Remote SSH закрытие прежнего retained webview до открытия нового создавало
-гонку: Find закрывался, а Replace не появлялся. Теперь для новой view создаётся
-свежий URI со стабильным id сессии; сначала открывается новая view и только после
-успешного открытия закрывается прежняя. Query/options остаются в host session.
-При недоступном modal существующая вкладка сохраняется. Одновременные shortcuts
-разделяют ожидающее открытие; последнее выбранное действие задаёт режим.
+Under Remote SSH, closing the previous retained webview before opening a new one
+created a race: Find closed, but Replace did not appear. A fresh URI with a stable
+session id is now created for the new view; the new view opens first, and the old
+one closes only after successful opening. Query/options stay in the host session.
+If the modal is unavailable, the existing tab is preserved. Concurrent shortcuts
+share the pending open operation; the last selected action determines the mode.
 
-## Remote SSH и ограничения
+## Remote SSH and limitations
 
-Изолированный loopback Remote SSH: extension host и файловый worker работают
-на сервере, найдено 5 совпадений в 3 файлах. На сервере `vscode.extensions.all`
-не содержит грамматики/темы, которые доступны только клиентскому host. В таком
-случае preview честно сообщает fallback и не предоставляет полную пользовательскую
-подсветку. Перенос доступных грамматик и тем между host остаётся отдельной открытой
-задачей; неподтверждённые proposed API и DOM injection не принимаются молча.
-WSL/Containers и macOS/Windows не считаются проверенными этим опытом.
+In isolated loopback Remote SSH, the extension host and file worker run on the
+server, and 5 matches were found in 3 files. On the server, `vscode.extensions.all`
+does not contain grammars/themes available only to the client host. In that case,
+the preview explicitly reports a fallback and does not provide the user's full
+highlighting. Transferring available grammars and themes between hosts remains a
+separate open task; unverified proposed APIs and DOM injection are not adopted
+silently. This test does not verify WSL/Containers or macOS/Windows.
 
-## Последствия
+## Consequences
 
-- Не нужно менять версию для каждого reload и хранить сгенерированный VSIX в Git.
-- Перезапуск window/extension host по-прежнему необходим для JavaScript и manifest;
-  hot reload не заявляется. При изменении зависимостей нужно обновить `node_modules`.
-- В другом профиле/на другом хосте исходную папку регистрируют отдельно.
-- Релизы через VSIX по-прежнему являются снимком и обновляются отдельно.
+- No version bump is needed for each reload, and generated VSIX files need not be
+  kept in Git.
+- Restarting the window/extension host is still necessary for JavaScript and
+  manifest changes; hot reload is not claimed. Dependency changes require updating
+  `node_modules`.
+- Register the source folder separately in another profile/on another host.
+- VSIX releases remain snapshots and are updated separately.
 
-## Источники
+## Sources
 
 - [VS Code 1.143.1: Install Extension from Location](https://github.com/microsoft/vscode/blob/1.143.1/src/vs/workbench/contrib/extensions/browser/extensions.contribution.ts)
-- [Текущие проверки проекта](../testing/find-replace.md)
+- [Current project checks](../testing/find-replace.md)

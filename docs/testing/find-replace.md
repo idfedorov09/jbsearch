@@ -1,242 +1,237 @@
-# Проверка Find и Replace
+# Find and Replace validation
 
-Актуальная проверка: **2026-11-04**, расширение **0.1.0**, рабочая ветка `dev`.
-После реализации отдельной Find Window прошли **141 из 141 unit-тестов** и
-**16 из 16 GUI-сценариев** в обычном desktop VS Code 1.144.1 Linux/X11 — отдельно
-из исходников и из установленного VSIX. Проверены дерево, настоящий BL-редактор
-справа, INVALID/Undo, draft/Cancel/Confirm/New Tab, Replace и смена темы.
-`check`, `spec:check` и `package` завершились успешно.
-Точная среда, ограничения, снимки и протоколы — в
-[актуальном отчёте Find Window](find-window.md).
+Latest check: **2026-11-04**, extension **0.1.0**, working branch `dev`.
+After implementing the separate Find Window, **141 of 141 unit tests** and
+**16 of 16 GUI scenarios** passed in normal desktop VS Code 1.144.1 on Linux/X11,
+separately from source and installed VSIX. Checks covered the tree, actual BL
+editor on the right, INVALID/Undo, draft/Cancel/Confirm/New Tab, Replace, and
+theme changes. `check`, `spec:check`, and `package` passed. Exact environment,
+limits, screenshots, and reports are in the [Find Window report](find-window.md).
 
-Разделы ниже сохраняют историю предыдущих проверок modal и Remote-клиентского
-канала. Описанный в них прежний перенос единого modal UI во вкладку заменён
-отдельным деревом результатов с настоящим правым редактором; исторические
-числа 75/79 и отметки о неповторённом GUI относятся к соответствующим итерациям.
+The sections below preserve the history of earlier modal and Remote client
+bridge checks. The former transfer of one shared modal UI into a tab was replaced
+by a separate results tree with an actual right-hand editor; historical counts
+of 75/79 and notes about GUI checks not being repeated belong to those iterations.
 
-Предшествующая проверка клиентского канала: **75 из 75 unit-тестов и 14 из 14
-GUI-сценариев**. `npm run check` и `npm run spec:check` завершились успешно.
-`npm run package` и отдельная проверка содержимого обоих VSIX завершились
-успешно. Дополнительный GUI-прогон проверил восемь переключений темы и обновление
-клиентского пакета с прежним номером версии. Отдельный
-GUI smoke основного VSIX в Remote workspace также прошёл: автоматическая
-установка helper, BL/JS preview, Replace shortcut и единая вкладка.
+The preceding client bridge check passed **75 of 75 unit tests and 14 of 14 GUI
+scenarios**. `npm run check`, `npm run spec:check`, `npm run package`, and separate
+content verification for both VSIX packages passed. An additional GUI run tested
+eight theme switches and a client package update with the same version number.
+A separate Remote workspace GUI smoke check of the main VSIX also passed:
+automatic helper installation, BL/JS preview, Replace shortcut, and a shared tab.
 
-## Цельная рамка совпадения, 2026-11-04
+## Continuous match border, 2026-11-04
 
-Раньше рамка рисовалась вокруг каждого TextMate-токена отдельно. Теперь один
-непрерывный диапазон на строке имеет общий контейнер выделения; вложенные токены
-сохраняют цвет, italic, bold, underline и strikethrough. Соседние отдельные
-совпадения не объединяются, многострочное совпадение выделяется на каждой строке,
-а zero-width остаётся маркером на своей позиции. Общий inline-контекст строки
-сохраняет расположение табуляции.
+Previously, each TextMate token had its own border. Each continuous range on a
+line now has one shared highlight container; nested tokens retain their color,
+italic, bold, underline, and strikethrough. Separate adjacent matches are not
+merged, multiline matches are highlighted on each line, and zero-width matches
+remain markers at their positions. A shared inline line context preserves tabs.
 
-Заливка и рамка по-прежнему берутся из соответствующих цветов активной темы для
-текущего и остальных совпадений. В проверяемом тёмном оформлении обычное совпадение
-имеет заливку, а текущее — прозрачный фон с цельной рамкой. Этот вариант сохранён
-по предпочтению пользователя; собственная фиксированная палитра не добавлялась.
+Fill and border still use the active theme's corresponding current/other match
+colors. In the tested dark theme, an ordinary match has a fill, while the current
+match has a transparent background with one continuous border. This presentation
+was retained at the user's preference; no fixed custom palette was added.
 
-DOM-регрессии проверяют несколько синтаксических токенов и пробелы внутри одного
-совпадения, частичные токены, соседние диапазоны, multiline и zero-width на
-начале, внутри токена, на границе токенов, в конце и на пустой строке.
-Полный `npm test`: **79/79**, отдельно `test/ui.test.js`: **10/10**.
+DOM regressions cover multiple syntax tokens and spaces in one match, partial
+tokens, adjacent ranges, multiline matches, and zero-width matches at the start,
+inside a token, at token boundaries, at the end, and on an empty line.
+Full `npm test`: **79/79**; `test/ui.test.js` separately: **10/10**.
 
-В headless Chromium загружены рабочие `media/search.js` и `media/search.css`
-с синтетическими переменными темы VS Code: тёмная с прозрачным текущим
-совпадением, светлая с заливкой и high contrast. Проверены один элемент и один
-browser rectangle на совпадение, сохранение цветов токенов, соседние и многострочные
-диапазоны, пять видимых zero-width маркеров без сдвига текста и совпадение позиций
-табуляции с plain text. На прежних упакованных ресурсах воспроизведены семь
-отдельных элементов выделения для `static public final guid`; на исправленных —
-один. Ошибок страницы нет.
+Headless Chromium loaded production `media/search.js` and `media/search.css`
+with synthetic VS Code theme variables: dark with a transparent current match,
+light with a fill, and high contrast. Checks confirmed one element and browser
+rectangle per match, retained token colors, adjacent/multiline ranges, five
+visible zero-width markers without text shifts, and tab positions matching plain
+text. Previous packaged resources reproduced seven separate highlight elements
+for `static public final guid`; corrected resources produced one. No page errors.
 
-[Протокол браузерной проверки](match-decoration-results.json),
-[снимок исправленного выделения](assets/match-decoration-fixed.png),
-[проверка пакета с исправленной рамкой](match-decoration-package-results.json).
-Основной VSIX: 68 файлов, 24 309 676 байт; клиентский: 31 файл, build не менялся.
-Это проверка браузерной раскладки и состава поставки. Ранее выполненные 14
-GUI-сценариев Remote SSH ниже относятся к версии до этого исправления.
+[Browser validation report](match-decoration-results.json),
+[corrected highlight screenshot](assets/match-decoration-fixed.png),
+[package validation with the border fix](match-decoration-package-results.json).
+Main VSIX: 68 files, 24,309,676 bytes; client: 31 files, unchanged build.
+These are browser layout and distribution checks. The 14 Remote SSH GUI scenarios
+below were run before this fix.
 
-## Смягчённая заливка совпадений, 2026-11-04
+## Softer match fill, 2026-11-04
 
-По следующему замечанию пользователя непрозрачность заливки в выдаче и preview
-уменьшена до 70% от значения темы. Например, непрозрачный цвет получает alpha 0,7,
-а исходный alpha 0,5 — около 0,35 с учётом округления 8-битного цвета. RGB цвета
-темы сохраняется. Текст, его собственный alpha, начертания и рамка не затемняются;
-прозрачный фон текущего совпадения остаётся прозрачным.
+Following the user's next comment, result and preview fill opacity was reduced
+to 70% of the theme value. For example, an opaque color gets alpha 0.7, while
+an original alpha of 0.5 becomes about 0.35 after 8-bit color rounding. The theme's
+RGB is retained. Text, its own alpha, font styles, and border are not dimmed;
+a transparent current-match background remains transparent.
 
-В отдельной странице Chromium проверены выдача и preview, шесть смен темы без
-перезагрузки страницы, уже полупрозрачные цвета, fallback при отсутствующем цвете
-текущего совпадения и отсутствие обоих фоновых цветов. Сравнение с исходной
-заливкой подтвердило неизменность текста, стилей и рамки. Ошибок страницы нет.
-[Протокол прозрачности](match-fill-results.json).
+A separate Chromium page checked results and preview, six theme changes without
+reloading, already translucent colors, fallback when the current-match color is
+missing, and absence of both background colors. Comparison with the original
+fill confirmed unchanged text, styles, and border. No page errors.
+[Opacity report](match-fill-results.json).
 
-После изменения прозрачности повторно прошла браузерная проверка цельных рамок,
-соседних/multiline/zero-width диапазонов и табуляции в трёх вариантах оформления.
-[Протокол раскладки](match-fill-layout-results.json),
-[актуальный снимок](assets/match-fill-fixed.png).
-`check`, 79/79 unit-тестов, `spec:check` и `package` прошли.
-[Актуальный пакет](match-fill-package-results.json): 68 файлов, 24 309 709 байт,
-клиентский пакет содержит 31 файл с прежним build. Эти браузерные проверки
-не являются повтором полного GUI-прогона VS Code.
+After this change, browser checks of continuous borders, adjacent/multiline/
+zero-width ranges, and tabs passed again in three appearances.
+[Layout report](match-fill-layout-results.json),
+[updated screenshot](assets/match-fill-fixed.png).
+`check`, 79/79 unit tests, `spec:check`, and `package` passed.
+[Updated package](match-fill-package-results.json): 68 files, 24,309,709 bytes;
+the client package has 31 files with the same build. These browser checks do not
+constitute a repeat of the complete VS Code GUI run.
 
-## Клиентская тема и grammar при Remote SSH
+## Client theme and grammar over Remote SSH
 
-Проверка проведена в обычном desktop VS Code **1.143.1**, Linux x64,
-X11/Xvfb, в отдельном профиле с Remote SSH loopback. Основное расширение
-зарегистрировано из исходников штатной командой VS Code, без Extension
-Development Host. **GitHub Theme 6.3.5 установлена только на клиенте**, BL grammar
-доступна на сервере. Серверный extension host не видит GitHub Theme,
-клиентское UI-расширение и JavaScript grammar.
+Checks ran in normal desktop VS Code **1.143.1**, Linux x64, X11/Xvfb, in a
+separate profile with Remote SSH loopback. The main extension was registered
+from source through the standard VS Code command, without an Extension Development
+Host. **GitHub Theme 6.3.5 was installed only on the client**; the BL grammar was
+available on the server. The server extension host could not see GitHub Theme,
+the client UI extension, or the JavaScript grammar.
 
-Перед первым поиском клиентская часть отсутствовала. Первый запрос preview
-автоматически установил bundled `idfedorov09.jbsearch-client` на локальный UI host
-и активировал его без ручного Reload Window. Сервер получил тему GitHub Dark
-Default: 49 правил и 82 grammar, включая JavaScript. Проверены реальные цвета
-preview: keyword — `rgb(255, 123, 114)`, string — `rgb(165, 214, 255)`, number —
-`rgb(121, 192, 255)`. Совпадения выделены поверх TextMate-подсветки.
+The client component was absent before the first search. The first preview
+request automatically installed bundled `idfedorov09.jbsearch-client` in the local
+UI host and activated it without manual Reload Window. The server received
+GitHub Dark Default: 49 rules and 82 grammars, including JavaScript. Actual preview
+colors were checked: keyword `rgb(255, 123, 114)`, string `rgb(165, 214, 255)`,
+number `rgb(121, 192, 255)`. Matches were highlighted over TextMate syntax colors.
 
-| GUI-сценарий | Результат |
+| GUI scenario | Result |
 | --- | --- |
-| Reload исходников и проверка remote inventory до установки | Клиентский helper отсутствует; тема недоступна серверу |
-| Первый поиск | Helper установлен и активирован локально автоматически |
-| JavaScript grammar только на клиенте | Preview использует клиентскую grammar и тему |
-| Light Modern → GitHub Dark Dimmed → GitHub Dark Default | UI и syntax colors обновляются без reload |
-| Global/theme-specific token customizations | Цвета, italic, underline и strikethrough применяются; настройки восстановлены |
-| Ввод с задержкой 210 мс и 4 мс на символ | Запрос `return` сохранён полностью; ноль потерь фокуса |
-| Быстрое переключение результатов | Preview соответствует последнему выбранному результату |
-| Попытка ввода в preview | Исходный документ и файл на диске не меняются |
-| Несохранённые изменения | Актуальный текст участвует в поиске и preview без сохранения |
-| Open Editors | Preview-only documents исключены, настоящие text tabs включены |
-| Replace и обычный Undo | Одиночная замена отменяется; файл не сохраняется автоматически |
-| Replace All в трёх файлах | Одна workspace Undo восстанавливает все файлы; изменения unsaved |
-| Open in Find Window, Esc и повторное открытие | Одна общая вкладка; query, preview и состояние сохранены |
-| Reload серверных исходников | Существующий клиентский build повторно использован без переустановки |
+| Reload sources and inspect remote inventory before installation | Client helper absent; theme unavailable to the server |
+| First search | Helper installed and activated locally automatically |
+| JavaScript grammar available only on the client | Preview uses the client grammar and theme |
+| Light Modern → GitHub Dark Dimmed → GitHub Dark Default | UI and syntax colors update without reload |
+| Global/theme-specific token customizations | Colors, italic, underline, and strikethrough applied; settings restored |
+| Typing at 210 ms and 4 ms per character | Query `return` retained completely; no focus losses |
+| Rapid result switching | Preview matches the last selected result |
+| Attempt to type in preview | Source document and on-disk file unchanged |
+| Unsaved edits | Current text participates in search and preview without saving |
+| Open Editors | Preview-only documents excluded; actual text tabs included |
+| Replace and normal Undo | Single replacement undone; file not automatically saved |
+| Replace All in three files | One workspace Undo restores all files; changes unsaved |
+| Open in Find Window, Esc, and reopening | One shared tab; query, preview, and state preserved |
+| Reload server sources | Existing client build reused without reinstallation |
 
-Машиночитаемый протокол: [client-bridge-results.json](client-bridge-results.json).
-Его UTC timestamp соответствует **4 ноября 2026 года в Europe/Moscow**.
-Скриншоты просмотрены после прогона и обрезаны до области поиска, чтобы исключить
-служебные логи Remote SSH: [Find](assets/bridge-find.png),
-[Replace](assets/bridge-replace.png), [единая вкладка](assets/bridge-tab.png).
-Все файлы и запросы в этом прогоне синтетические. Рабочий профиль пользователя
-и соседний проект BL не изменялись.
+Machine-readable report: [client-bridge-results.json](client-bridge-results.json).
+Its UTC timestamp corresponds to **November 4, 2026 in Europe/Moscow**.
+Screenshots were reviewed afterward and cropped to the search area to exclude
+Remote SSH service logs: [Find](assets/bridge-find.png),
+[Replace](assets/bridge-replace.png), [shared tab](assets/bridge-tab.png).
+All files and queries were synthetic. The user's working profile and the
+neighboring BL project were not changed.
 
-Unit-тесты дополнительно проверяют активацию dormant command, версию клиентского
-build, отсутствие циклической установки, запоздавшие ответы и disposal,
-переключение темы без перезапуска поиска, а также повтор TextMate-токенизации
-после `stoppedEarly`. При повторном timeout код получает явный plain-text fallback,
-а диапазоны совпадений сохраняются.
+Unit tests additionally cover dormant command activation, client build version,
+absence of installation loops, late replies and disposal, switching themes without
+restarting search, and repeating TextMate tokenization after `stoppedEarly`.
+A repeated timeout produces an explicit plain-text fallback while retaining
+match ranges.
 
-## Повторная смена темы и обновление клиента
+## Repeated theme switching and client update
 
-Отдельный GUI-прогон восемь раз чередовал Light Modern и GitHub Dark Default.
-Выбранный JavaScript preview сохранялся, keyword каждый раз получал ожидаемый
-цвет: `rgb(175, 0, 219)` для светлой темы и `rgb(255, 123, 114)` для GitHub Dark
-Default.
+A separate GUI run alternated Light Modern and GitHub Dark Default eight times.
+The selected JavaScript preview was retained; the keyword received the expected
+color every time: `rgb(175, 0, 219)` for light and `rgb(255, 123, 114)` for GitHub
+Dark Default.
 
-Затем через CLI в изолированный клиентский профиль установлен тестовый VSIX
-с тем же номером версии 0.1.0 и заведомо старым build. Основное расширение
-автоматически обновило пакет из bundled VSIX. Пока прежний код оставался
-загруженным, preview устойчиво показывал явное сообщение о необходимом
-Reload Window. Повторного цикла установки не было. После Reload Window
-загрузился ожидаемый актуальный build и подсветка восстановилась.
-[Протокол дополнительного прогона](client-bridge-upgrade-results.json).
+A test VSIX with the same 0.1.0 version and a deliberately old build was then
+installed through the CLI into the isolated client profile. The main extension
+automatically updated it from the bundled VSIX. While old code remained loaded,
+preview consistently showed an explicit Reload Window requirement. No repeated
+installation loop occurred. After Reload Window, the expected current build
+loaded and highlighting returned.
+[Additional run report](client-bridge-upgrade-results.json).
 
-## Поставка клиентского канала до исправления рамки
+## Client bridge distribution before the border fix
 
-Основной `jbsearch-0.1.0.vsix` содержит 68 файлов, размер — **24 309 502 байта**.
-Внутри действительно присутствует `bundled/jbsearch-client.vsix`: 31 файл,
-82 935 байт, версия 0.1.0. Метаданные вложенного пакета и build совпадают.
-Основной пакет содержит runtime-зависимости, `onig.wasm` и все 12 upstream
-binaries `@vscode/ripgrep-universal`; вложенный клиентский — необходимые
-`jsonc-parser` и `vscode-textmate`.
+The main `jbsearch-0.1.0.vsix` has 68 files and is **24,309,502 bytes**.
+It contains `bundled/jbsearch-client.vsix`: 31 files, 82,935 bytes, version 0.1.0.
+Nested package metadata and build match. The main package includes runtime
+dependencies, `onig.wasm`, and all 12 upstream `@vscode/ripgrep-universal`
+binaries; the nested client contains the required `jsonc-parser` and
+`vscode-textmate` dependencies.
 
-Проверка состава также выполнена на намеренно испорченных пакетах: отсутствие
-вложенного helper и несовпадающий build отклоняются с явной ошибкой.
-[Протокол упаковки, SHA-256 и negative checks](client-bridge-package-results.json).
-Это проверка фактического содержимого ZIP; GUI-сценарии текущего client bridge
-выше выполнялись с основным расширением из исходников и отдельно проверяют
-установку вложенного клиентского пакета.
+Contents were also checked with deliberately corrupted packages: a missing nested
+helper and a mismatched build were rejected with explicit errors.
+[Packaging report, SHA-256, and negative checks](client-bridge-package-results.json).
+This verifies actual ZIP contents; the client bridge GUI scenarios above used
+the main extension from source and separately verified nested client installation.
 
-## Запуск основного VSIX в Remote workspace
+## Running the main VSIX in a Remote workspace
 
-Основной `jbsearch-0.1.0.vsix` установлен штатным CLI VS Code Server в отдельную
-тестовую папку. Его запись подключена к изолированному серверному профилю вместо
-исходников на время прогона; после проверки исходная запись восстановлена.
-Проверка пути активного расширения подтвердила загрузку установленной копии,
-без Extension Development Host. Рабочий профиль пользователя не менялся.
+The main `jbsearch-0.1.0.vsix` was installed through the standard VS Code Server
+CLI into a separate test folder. Its entry temporarily replaced the source entry
+in the isolated server profile; the original entry was restored afterward.
+The active extension path confirmed loading the installed copy without an
+Extension Development Host. The user's working profile was unchanged.
 
-Клиентский helper предварительно удалён из тестового профиля. Первый Find
-установил его из вложенного VSIX на локальный UI host. BL с серверной grammar
-и JavaScript с клиентской grammar получили GitHub Dark Default без серверной
-копии темы; выделение совпадений сохранилось. Ctrl+Shift+R открыл режим Replace
-с тем же запросом. Open in Find Window
-оставил одну общую вкладку поиска. Это smoke проверка поставляемых файлов;
-полные 14 сценариев выше выполнялись отдельно с исходниками.
-[Протокол запуска установленного пакета](client-bridge-installed-results.json).
+The client helper was first removed from the test profile. The first Find
+installed it from the nested VSIX into the local UI host. BL with the server
+grammar and JavaScript with the client grammar received GitHub Dark Default
+without a server theme copy; match highlighting remained. Ctrl+Shift+R opened
+Replace with the same query. Open in Find Window left one shared search tab.
+This is a smoke check of distributed files; the full 14 scenarios above ran
+separately from source.
+[Installed package run report](client-bridge-installed-results.json).
 
-## Актуальная матрица и границы
+## Current matrix and boundaries
 
-| Среда | Статус |
+| Environment | Status |
 | --- | --- |
-| Headless Chromium, рабочие ресурсы webview | Цельная рамка и смягчённая заливка: темы, диапазоны, табуляция, исходный alpha и fallback |
-| Linux x64, X11, VS Code 1.143.1, Remote SSH loopback | 14/14 GUI-сценариев client bridge и smoke основного VSIX до исправления рамки |
-| Linux x64, X11, VS Code 1.143.1, локальные исходники | Ранее проверены 17 GUI-сценариев Find/Replace |
-| Linux x64, X11, VS Code 1.144.1, установленный VSIX до client bridge | Историческая проверка; текущий состав обоих VSIX проверен отдельно |
-| macOS x64 / ARM64 | Запуск и Cmd shortcuts не проверены |
-| Windows x64 / ARM64 | Запуск не проверен |
-| Linux Wayland / ARM64 | Отдельная проверка не выполнена |
-| Remote SSH между разными машинами | Не проверено; loopback не подтверждает поведение при реальной сетевой задержке |
-| WSL / Containers | Отдельно не проверены |
-| Web / virtual workspace | Не поддерживаются этой итерацией |
+| Headless Chromium, production webview resources | Continuous border and softer fill: themes, ranges, tabs, original alpha, and fallback |
+| Linux x64, X11, VS Code 1.143.1, Remote SSH loopback | 14/14 client bridge GUI scenarios and main VSIX smoke before the border fix |
+| Linux x64, X11, VS Code 1.143.1, local sources | Earlier 17 Find/Replace GUI scenarios passed |
+| Linux x64, X11, VS Code 1.144.1, installed VSIX before the client bridge | Historical validation; current contents of both VSIX packages checked separately |
+| macOS x64 / ARM64 | Launch and Cmd shortcuts not tested |
+| Windows x64 / ARM64 | Launch not tested |
+| Linux Wayland / ARM64 | No separate validation |
+| Remote SSH between separate machines | Not tested; loopback does not prove behavior with real network latency |
+| WSL / Containers | Not separately tested |
+| Web / virtual workspace | Unsupported in this iteration |
 
-Preview использует TextMate grammar/theme contributions. Semantic tokens языкового
-сервера не воспроизводятся. GUI-автоматизация и просмотр скриншотов не заменяют
-проверки фокуса, IME, screen reader и Cmd shortcuts на macOS/Windows. Native modal
-по-прежнему открывается внутренним адаптером `src/modal.js`; совместимость со
-всеми будущими версиями VS Code не заявляется. OpenSpec 4.2 и часть 4.6 про
-разные машины остаются открытыми.
+Preview uses TextMate grammar/theme contributions. Language server semantic
+tokens are not reproduced. GUI automation and screenshot review do not replace
+focus, IME, screen reader, and Cmd shortcut checks on macOS/Windows. The native
+modal still opens through the internal adapter `src/modal.js`; compatibility with
+all future VS Code versions is not claimed. OpenSpec 4.2 and the separate-machine
+part of 4.6 remain open.
 
-## История проверок до клиентского канала
+## Validation history before the client bridge
 
-Ниже сохранены результаты предыдущих итераций. Указанные в них 40/47 тестов,
-состав старого VSIX и недоступная клиентская тема описывают состояние тех
-проверок. Проверка client bridge выше заменяет прежний вывод о невозможности
-наследовать тему в Remote preview.
+Earlier iteration results are retained below. Their 40/47 test counts, old VSIX
+contents, and unavailable client theme describe those checks. The client bridge
+validation above supersedes the earlier conclusion that Remote preview could not
+inherit the theme.
 
-Дата: 2026-11-03. Версия расширения: 0.0.1. Рабочая ветка: `dev`.
+Date: 2026-11-03. Extension version: 0.0.1. Working branch: `dev`.
 
-Итог выполненной проверки: **40 автоматических тестов и 17 GUI-сценариев
-установленного VSIX прошли**. `check`, `spec:check`, `package` и `git diff --check`
-завершились успешно; `npm ci` выполнен при подготовке поставки. VSIX содержит
-65 файлов, размер 24 227 672 байта (около 23,1 MiB).
+Completed checks: **40 automated tests and 17 installed VSIX GUI scenarios passed**.
+`check`, `spec:check`, `package`, and `git diff --check` passed; `npm ci` ran during
+distribution preparation. The VSIX has 65 files and is 24,227,672 bytes
+(about 23.1 MiB).
 
-### Среда и границы проверки
+### Environment and validation boundaries
 
-Интеграция проверяется в официальном desktop VS Code **1.144.1**, Linux x64,
-X11/Xvfb. Расширение устанавливается из VSIX в отдельный чистый профиль;
-`extensionDevelopmentPath` не используется. GUI-автоматизация обращается к
-тестовому VS Code через Playwright/CDP. В поставляемом расширении нет CDP,
-debugger или инъекции кода в workbench.
+Integration was checked in official desktop VS Code **1.144.1**, Linux x64,
+X11/Xvfb. The VSIX was installed into a separate clean profile without
+`extensionDevelopmentPath`. GUI automation accessed the test VS Code through
+Playwright/CDP. The distributed extension contains no CDP, debugger, or workbench
+code injection.
 
-| Среда | Статус |
+| Environment | Status |
 | --- | --- |
-| Linux x64, X11, VS Code 1.144.1 | Проверка установленного VSIX в реальном GUI |
-| Linux x64, X11, VS Code 1.143.1 | 17 GUI-сценариев с обычной регистрацией исходников |
-| macOS x64 / ARM64 | Binaries включены; запуск и Cmd shortcuts ещё не проверены |
-| Windows x64 / ARM64 | Binaries включены; запуск ещё не проверен |
-| Linux Wayland / ARM64 | Отдельная проверка ещё не выполнена |
-| Remote SSH, Linux loopback, VS Code 1.143.1 | Поиск проверен; клиентские grammar/theme недоступны серверному preview |
-| WSL / Containers | Отдельно не проверены |
-| Web / virtual workspace | Не поддерживаются этой итерацией |
+| Linux x64, X11, VS Code 1.144.1 | Installed VSIX tested in the actual GUI |
+| Linux x64, X11, VS Code 1.143.1 | 17 GUI scenarios with ordinary source registration |
+| macOS x64 / ARM64 | Binaries included; launch and Cmd shortcuts not yet tested |
+| Windows x64 / ARM64 | Binaries included; launch not yet tested |
+| Linux Wayland / ARM64 | No separate validation yet |
+| Remote SSH, Linux loopback, VS Code 1.143.1 | Search tested; client grammar/theme unavailable to server preview |
+| WSL / Containers | Not separately tested |
+| Web / virtual workspace | Unsupported in this iteration |
 
-Автоматизация реального GUI и ручной просмотр скриншотов не заменяют проверку
-фокуса, IME и screen reader на пользовательских macOS/Windows. Пункт 4.2 OpenSpec
-остаётся открытым. Матрица не заявляет совместимость со всеми будущими VS Code.
+Real GUI automation and manual screenshot review do not replace focus, IME, and
+screen reader checks on the user's macOS/Windows. OpenSpec item 4.2 remains open.
+This matrix does not claim compatibility with all future VS Code versions.
 
-### Автоматические проверки
+### Automated checks
 
-Воспроизводимые команды из корня репозитория:
+Reproducible commands from the repository root:
 
 ```sh
 npm ci
@@ -247,160 +242,157 @@ npm run package
 git diff --check
 ```
 
-Тесты проверяют Unicode/UTF-16, CRLF/BOM, multiline/regex/captures, ignore/masks,
-пересечение custom scopes, вложенные workspace roots, dirty/untitled snapshots,
-лимиты/timeout/cancel, stale replacements и overlap. Controller/UI tests проверяют
-generation/preview revisions, поздние echoes ввода, быстрые toggles, блокировку
-замены до acknowledgement и обновление Open Editors при изменении состава tabs.
+Tests cover Unicode/UTF-16, CRLF/BOM, multiline/regex/captures, ignores/masks,
+custom scope intersections, nested workspace roots, dirty/untitled snapshots,
+limits/timeouts/cancellation, stale replacements, and overlap. Controller/UI tests
+cover generation/preview revisions, late input echoes, rapid toggles, blocking
+replacement until acknowledgment, and Open Editors updates when tabs change.
 
-Отдельный Chromium-сценарий с задержкой state replies 40 мс и вводом 15 мс/символ
-проверил сохранность быстрого query/replacement после исправления race.
+A separate Chromium scenario with 40 ms state reply latency and typing at
+15 ms/character verified fast query/replacement retention after the race fix.
 
-### Сценарий установленного VSIX
+### Installed VSIX scenario
 
-Используется небольшой синтетический workspace: пять `shortClassName:` в трёх
-JS-файлах, `.gitignore` и дополнительный игнорируемый файл. Проверяются Find и
-Replace на тех же данных. Результат каждого шага сохраняется в
-[installed-vsix-results.json](installed-vsix-results.json).
+A small synthetic workspace has five `shortClassName:` matches in three JS files,
+`.gitignore`, and another ignored file. Find and Replace use the same data.
+Each step's result is saved in [installed-vsix-results.json](installed-vsix-results.json).
 
-| Действие | Ожидание |
+| Action | Expectation |
 | --- | --- |
-| Ctrl+Shift+F | Modal с пятью matches, три файла; query в фокусе |
-| File mask `MetricBar.js` | Два matches в одном файле |
-| Open Editors до открытия остальных файлов | Только два matches открытой ChatView; preview-only documents не включаются |
-| Regex `[` | Понятная ошибка, старая выдача очищена |
-| Literal query с настоящим newline | Одно многострочное совпадение |
-| Regex `(?=shortClassName:)` | Zero-width marker в точной позиции перед словом |
-| Dark Modern → Light Modern | Цвета UI и TextMate tokens обновляются без reload |
-| Ctrl+Shift+R | Дополнительное replacement-поле, Preserve Case, Replace/Replace All |
-| Replace одного match | Четыре оставшихся matches; документ unsaved |
-| Undo в редакторе | Исходные пять matches восстановлены |
-| Replace All | Ноль matches; файлы на диске не сохраняются автоматически |
-| Undo всей WorkspaceEdit | Все пять исходных matches восстановлены |
-| Open in Find Window | Та же query во вкладке; modal закрыт |
-| Повторный Find shortcut | Та же сессия в modal с правильным layout |
-| Esc при открытых фильтрах | Сначала закрываются фильтры |
-| Drag заголовка | Диалог перемещается штатным контейнером |
-| Resize примерно до 680 × 410 | Основные controls/footer доступны |
-| Esc | Диалог закрыт |
+| Ctrl+Shift+F | Modal with five matches in three files; query focused |
+| File mask `MetricBar.js` | Two matches in one file |
+| Open Editors before opening other files | Only the two matches in open ChatView; preview-only documents excluded |
+| Regex `[` | Clear error; previous results cleared |
+| Literal query with an actual newline | One multiline match |
+| Regex `(?=shortClassName:)` | Zero-width marker at the exact position before the word |
+| Dark Modern → Light Modern | UI and TextMate token colors update without reload |
+| Ctrl+Shift+R | Additional replacement field, Preserve Case, Replace/Replace All |
+| Replace one match | Four matches remain; document unsaved |
+| Undo in the editor | Original five matches restored |
+| Replace All | No matches; on-disk files not automatically saved |
+| Undo the entire WorkspaceEdit | All five original matches restored |
+| Open in Find Window | Same query in a tab; modal closed |
+| Find shortcut again | Same session in the modal with the correct layout |
+| Esc with filters open | Filters close first |
+| Drag the title | Dialog moves through its native container |
+| Resize to about 680 × 410 | Main controls/footer remain accessible |
+| Esc | Dialog closed |
 
-Скриншоты установленного расширения:
-[Find](assets/find-dark.png), [Replace](assets/replace-dark.png),
-[светлая тема](assets/find-light.png).
+Installed extension screenshots: [Find](assets/find-dark.png),
+[Replace](assets/replace-dark.png), [light theme](assets/find-light.png).
 
-Undo для нескольких файлов принадлежит VS Code. Редактор может запросить
-подтверждение отмены всей WorkspaceEdit. Для автоматизации тестовый профиль
-использует `window.dialogStyle: custom`, чтобы подтверждение можно было увидеть
-и обработать. Эта настройка не изменяется продуктом.
+VS Code owns multi-file Undo. The editor may request confirmation for undoing the
+entire WorkspaceEdit. The automated test profile uses `window.dialogStyle: custom`
+so that confirmation can be observed and handled. The product does not change
+this setting.
 
-### Проверка поставки
+### Distribution checks
 
-VSIX содержит JS runtime-зависимости, `onig.wasm` и все 12 upstream binaries
-`@vscode/ripgrep-universal`. Пакет не требует скачивания executable во время
-работы. Проверка ZIP отдельно подтверждает отсутствие tests, scripts, docs,
-OpenSpec, AGENTS и dev dependencies. Наличие платформенного binary не считается
-успешным запуском на этой ОС. VSIX не добавляется в Git.
+The VSIX contains JS runtime dependencies, `onig.wasm`, and all 12 upstream
+`@vscode/ripgrep-universal` binaries. It does not download an executable at runtime.
+ZIP checks separately confirm exclusion of tests, scripts, docs, OpenSpec, AGENTS,
+and dev dependencies. A platform binary's presence is not a successful run on
+that OS. The VSIX stays out of Git.
 
-### Оставшаяся ручная проверка
+### Remaining manual validation
 
-На macOS и Windows установить тот же VSIX в обычный desktop VS Code 1.144.1+ и
-повторить таблицу выше. Дополнительно проверить Cmd/Ctrl shortcuts, несколько
-окон, fullscreen, возврат фокуса после Esc, IME composition, high contrast,
-масштаб 125–200%, пользовательскую тему и независимую сессию через New Tab.
-Зафиксировать точные версии ОС/VS Code и результат до закрытия OpenSpec 4.2.
+On macOS and Windows, install the same VSIX in normal desktop VS Code 1.144.1+
+and repeat the table above. Also check Cmd/Ctrl shortcuts, multiple windows,
+fullscreen, focus return after Esc, IME composition, high contrast, 125–200% zoom,
+a custom theme, and an independent New Tab session. Record exact OS/VS Code
+versions and results before closing OpenSpec 4.2.
 
-Preview использует TextMate grammar/theme contributions. LSP semantic tokens
-обычного редактора не воспроизводятся; без grammar показывается plain text.
-Открытие modal зависит от внутреннего API, изолированного в `src/modal.js`.
-При обновлении VS Code повторить lifecycle tab → modal: найденный дефект
-retained webview устраняется пересозданием представления с сохранением host session.
+Preview uses TextMate grammar/theme contributions. It does not reproduce normal
+editor LSP semantic tokens; without a grammar it shows plain text. Modal opening
+depends on the internal API isolated in `src/modal.js`. After a VS Code update,
+repeat the tab → modal lifecycle: the retained webview defect is handled by
+recreating the view while preserving the host session.
 
-### Обновление пакета до 0.1.0
+### Package update to 0.1.0
 
-После полной проверки 0.0.1 версия поднята до **0.1.0** в manifest и lockfile.
-Новый `jbsearch-0.1.0.vsix` установлен поверх 0.0.1 в том же тестовом профиле
-без удаления прежней установки и без `--force`. CLI подтвердил переход
-`idfedorov09.jbsearch@0.0.1` → `idfedorov09.jbsearch@0.1.0`.
+After complete 0.0.1 validation, the manifest and lockfile version was raised to
+**0.1.0**. The new `jbsearch-0.1.0.vsix` was installed over 0.0.1 in the same test
+profile without removing the previous installation or using `--force`. The CLI
+confirmed `idfedorov09.jbsearch@0.0.1` → `idfedorov09.jbsearch@0.1.0`.
 
-При запуске штатная команда **JB Search: Check Installation** показала
-`JB Search 0.1.0 is ready. Use Find in Files or Replace in Files.` — номер берётся
-из фактически загруженного расширения. Find снова нашёл пять matches, Replace
-открылся с тем же запросом. 40 tests, check, spec:check и package прошли повторно.
-Результат: [upgrade-0.1.0.json](upgrade-0.1.0.json).
+On launch, **JB Search: Check Installation** showed
+`JB Search 0.1.0 is ready. Use Find in Files or Replace in Files.` — using the
+actually loaded extension's version. Find again returned five matches, and
+Replace opened with the same query. The 40 tests, check, spec:check, and package
+passed again. Result: [upgrade-0.1.0.json](upgrade-0.1.0.json).
 
-Это проверка отдельного тестового профиля, а не подтверждение обновления
-пользовательского VS Code. Для установленной копии нужно выбрать новый VSIX
-в используемом профиле и выполнить **Developer: Reload Window**. После этого
-Check Installation позволяет убедиться, что загружена именно 0.1.0.
+This validates a separate test profile, not an update of the user's VS Code.
+For an installed copy, select the new VSIX in the relevant profile and run
+**Developer: Reload Window**. Check Installation then confirms that 0.1.0 loaded.
 
-### Исходники, VS Code 1.143.1 и Remote SSH
+### Sources, VS Code 1.143.1, and Remote SSH
 
-В отдельном профиле VS Code 1.143.1 на Linux/X11 исходная папка зарегистрирована
-через штатный **Developer: Install Extension from Location…**. После Reload
-Window все 17 GUI-сценариев Find/Replace прошли с обычным, не development, окном.
-В отдельной копии исходников изменены JavaScript и manifest: повторный Reload
-загрузил оба изменения без повторной установки и сборки VSIX.
+In a separate VS Code 1.143.1 Linux/X11 profile, the source folder was registered
+through **Developer: Install Extension from Location…**. After Reload Window,
+all 17 Find/Replace GUI scenarios passed in a normal window, not a development
+host. JavaScript and manifest were changed in a separate source copy; another
+Reload loaded both changes without reinstallation or VSIX build.
 
-В изолированном Remote SSH loopback-соединении поиск нашёл пять совпадений в
-трёх файлах. На серверном extension host отсутствовали клиентские JS grammar и
-theme; preview показал plain-text fallback. Точная подсветка в такой среде остаётся
-открытой задачей 4.6, а не считается подтверждённой по локальному тесту.
+In isolated Remote SSH loopback, search found five matches in three files. The
+server extension host lacked client JS grammar and theme; preview showed a
+plain-text fallback. Exact highlighting in that environment remained open task
+4.6, rather than being considered proven by a local test.
 
-Через штатную команду VS Code зарегистрирована исходная папка JB Search в
-рабочем серверном профиле вместо старой копии VSIX. Записи 26 других расширений,
-включая `bl-language-support`, остались без изменений. В отдельном VS Code окне
-с тем же серверным профилем Check Installation подтвердил путь к исходникам;
-на тестовом файле прошли Find, Replace All без сохранения на диск и Undo.
-Рабочее окно пользователя при этом не перезагружалось.
+The standard VS Code command registered the JB Search source folder in the
+working server profile instead of the old VSIX copy. Entries for 26 other
+extensions, including `bl-language-support`, were unchanged. In a separate VS Code
+window using the same server profile, Check Installation confirmed the source
+path; Find, Replace All without saving to disk, and Undo passed on a test file.
+The user's working window was not reloaded.
 
-После исправления гонки переключения режимов по SSH прошли **47 автоматических
-тестов**, `check`, `spec:check` и `git diff --check`. Машиночитаемый протокол:
+After fixing the SSH mode-switching race, **47 automated tests**, `check`,
+`spec:check`, and `git diff --check` passed. Machine-readable report:
 [source-location-results.json](source-location-results.json).
 
-### Уплотнение окна и настройка клавиш, 2026-11-04
+### Compact dialog and shortcut configuration, 2026-11-04
 
-В отдельном обычном VS Code 1.143.1 на Linux/Xvfb после регистрации исходников
-проверены 17 сценариев: поиск, маска, Open Editors, multiline/regex, подсветка
-совпадений, смена тёмной/светлой темы, Replace/Undo, перенос во вкладку, Esc,
-перемещение и изменение размера. Начальный modal — 820 × 640 px; в этом же
-опыте после уменьшения до 681 × 411 px footer оставался доступен. Иконки имеют
-размер 18 × 18 px, доступные имена и область кнопки примерно 30 × 29 px.
-Машиночитаемый протокол: [compact-ui-results.json](compact-ui-results.json).
-Снимок локального JavaScript preview: [compact-find-local.png](assets/compact-find-local.png).
+In a separate normal VS Code 1.143.1 Linux/Xvfb window, source registration was
+followed by 17 scenarios: search, mask, Open Editors, multiline/regex, match
+highlighting, dark/light theme changes, Replace/Undo, tab transfer, Esc, move,
+and resize. Initial modal size was 820 × 640 px; after shrinking to 681 × 411 px,
+the footer remained accessible. Icons are 18 × 18 px, with accessible names and
+button hit areas of about 30 × 29 px.
+Machine-readable report: [compact-ui-results.json](compact-ui-results.json).
+Local JavaScript preview screenshot: [compact-find-local.png](assets/compact-find-local.png).
 
-В другом изолированном профиле VS Code 1.143.1 ссылки настройки перехвата
-открыли отдельные команды в Keyboard Shortcuts. Оба сочетания переназначены
-через редактор и открыли соответствующие режимы. Переключатель перехвата
-проверен выключением и включением; при редактировании стандартной привязки её
-`when` сохраняется в пользовательской привязке.
+In another isolated VS Code 1.143.1 profile, override settings links opened the
+individual commands in Keyboard Shortcuts. Both bindings were reassigned through
+the editor and opened the corresponding modes. The override switch was checked
+by turning it off/on; editing a default binding retains its `when` clause in the
+user binding.
 
-Отдельный программный пробник с настоящей BL grammar из соседнего проекта и
-штатными темами VS Code проверил различающиеся token colors Dark/Light и диапазон
-выделения; соседний проект не изменялся.
+A separate programmatic probe used the neighboring project's real BL grammar and
+stock VS Code themes to confirm distinct Dark/Light token colors and highlight
+ranges; the neighboring project was unchanged.
 
-В изолированном Remote SSH loopback текущие исходники и настоящая BL grammar
-зарегистрированы в тестовом серверном профиле VS Code 1.143.1. Найдены три
-совпадения в двух файлах; Find → Replace сохранил запрос и результаты, маска и
-фильтр include сузили результаты. Выделение совпадений работало и в Dark Modern,
-и в Light Modern; отдельно найдено несохранённое изменение открытого BL-файла.
-При этом BL-код остался одноцветным: клиентская тема недоступна серверному preview.
-Для JS дополнительно подтвердилась недоступность клиентской grammar. При заданных
-`editor.tokenColorCustomizations` часть BL-токенов приняла указанные цвета, но
-автоматическое наследование активной темы это не восстановило. Подсветка Remote
-SSH не считается исправленной и задачи 4.6/5.3 остаются открытыми.
+In isolated Remote SSH loopback, current sources and the real BL grammar were
+registered in a VS Code 1.143.1 test server profile. Search found three matches in
+two files; Find → Replace preserved query and results, while mask and include
+filter narrowed results. Match highlighting worked in Dark Modern and Light
+Modern; an unsaved change in an open BL file was found separately. BL code still
+had one color because the client theme was unavailable to server preview. JS
+additionally confirmed the missing client grammar. With
+`editor.tokenColorCustomizations`, some BL tokens used the specified colors, but
+this did not restore automatic active-theme inheritance. Remote SSH highlighting
+was not considered fixed, and tasks 4.6/5.3 remained open.
 
-### Отдельный прототип native preview, 2026-11-04
+### Separate native preview prototype, 2026-11-04
 
-[Изолированный эксперимент](../research/native-preview-feasibility.md) проверил
-настоящий BL TextEditor внутри того же modal в обычном workspace extension,
-VS Code 1.143.1 Linux/X11, Remote SSH loopback. Тема GitHub Dark Default была
-установлена только на клиенте: native preview получил её цвета автоматически,
-включая смену темы и decorations совпадений. Отдельный чистый snapshot-прогон
-подтвердил read-only и отображение несохранённых изменений без записи на диск.
+An [isolated experiment](../research/native-preview-feasibility.md) tested an actual
+BL TextEditor inside the same modal in a normal workspace extension, VS Code
+1.143.1 Linux/X11, Remote SSH loopback. GitHub Dark Default was installed only on
+the client; native preview inherited its colors automatically, including theme
+changes and match decorations. A separate clean snapshot run confirmed read-only
+behavior and display of unsaved changes without writing to disk.
 
-Найденный адаптер временно переводит фокус в preview и теряет символы запроса;
-в source-режиме один символ попал в тестовый исходник. Read-only snapshot
-защищает документ, но не исправляет потерю ввода. Штатный перенос modal объединяет
-её группы: search и preview становятся отдельными вкладками. Поэтому прототип
-не перенесён в рабочий JB Search и не является исправлением подсветки Remote SSH.
-Проверки macOS/Windows и реальной сетевой задержки этим опытом не покрыты.
+The adapter temporarily focuses preview and loses query characters; in source
+mode, one character reached the test source. A read-only snapshot protects the
+document but does not solve input loss. Standard modal transfer merges its groups,
+leaving search and preview as separate tabs. The prototype was therefore not
+integrated into working JB Search and is not a Remote SSH highlighting fix.
+This experiment did not cover macOS/Windows or real network latency.

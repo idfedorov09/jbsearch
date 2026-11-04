@@ -1,11 +1,16 @@
-# OpenSpec в JB Search
+# OpenSpec in JB Search
 
-`specs/` описывает проверенное текущее поведение. `changes/` содержит предложения,
-дельты требований, дизайн и задачи будущих изменений. Наличие файлов и успешная
-валидация не означают принятие дизайна или готовность функции.
+`specs/` describes verified current behavior. `changes/` holds proposals,
+requirement deltas, designs, and tasks for future changes. Files existing and
+passing validation does not mean a design is approved or a feature is ready.
 
-Установка: `npm ci` (Node.js 22.12+). Используется локальный OpenSpec 1.16.0;
-глобальная версия не нужна. В `.agents/skills/` CLI создал инструкции workflow.
+All OpenSpec content is written and maintained in English, as is the rest of the
+repository. Conversation with the user stays Russian unless requested otherwise.
+Preserve requirement meaning, status history, and validation evidence when editing.
+
+Install with `npm ci` (Node.js 22.12+). The project uses local OpenSpec 1.16.0;
+a global installation is unnecessary. The CLI created workflow instructions in
+`.agents/skills/`.
 
 ```sh
 npm run openspec -- list
@@ -14,23 +19,23 @@ npm run openspec -- status --change design-floating-search
 npm run spec:check
 ```
 
-Для нового изменения сначала `npm run openspec -- new change <имя>`, затем
-`instructions <артефакт> --change <имя>`. Обсуждаем proposal/design/specs, уточняем
-ADR и только после запроса на реализацию выполняем задачи. После реализации и
-проверок архивируем изменение штатной командой OpenSpec и синхронизируем specs.
-Не архивируем невыполненный план ради отметки «готово».
+For a new change, run `npm run openspec -- new change <name>`, then
+`instructions <artifact> --change <name>`. Discuss proposal/design/specs, clarify
+ADRs, and implement tasks only after an implementation request. After implementation
+and checks, archive through the standard OpenSpec command and sync specs. Do not
+archive an unfinished plan just to mark it complete.
 
-OpenSpec и ADR — инструменты разработки, в VSIX не включаются. Причины выбора
-архитектуры находятся в [docs/adr](../docs/adr/README.md).
+OpenSpec and ADRs are development tools and are excluded from VSIX. Architectural
+rationale lives in [docs/adr](../docs/adr/README.md).
 
-Текущий baseline: `installation-check` описывает реальное уведомление версии/пути
-и регистрацию исходников; `find-results-panel` — проверенную native панель,
-центральный редактор и жизненный цикл сохранённых поисков.
+Current baseline: `installation-check` describes the actual version/path
+notification and source registration; `find-results-panel` describes the verified
+native panel, central editor, and saved-search lifecycle.
 
-Реализованный Find/Replace описан в `design-floating-search`, но change остаётся
-открытым из-за ручной приёмки macOS/Windows и физического Remote. `implement-find-window`
-сохраняет историю прежнего HTML-дерева; размещение заменено завершённым
-`use-native-find-panel`. Старая схема размещения не переносится в baseline.
-`setup-marketplace-publication` содержит подготовленный workflow, внешняя публикация
-не проверена. `prepare-initial-release` ведёт подготовку `0.1.0`, коммиты и CI в `dev`.
-Архивирование этих изменений выполняется отдельно после review.
+Implemented Find/Replace is described in `design-floating-search`, which remains
+open for macOS/Windows manual acceptance and physical Remote checks.
+`implement-find-window` preserves the old HTML tree's history; its placement was
+superseded by completed `use-native-find-panel`. The old placement is not moved
+into the baseline. `setup-marketplace-publication` contains a prepared workflow;
+external publication is unverified. `prepare-initial-release` tracks `0.1.0`
+preparation, commits, and CI on `dev`. Archive these changes separately after review.

@@ -1,52 +1,52 @@
-# ADR 0005: Доверенная публикация расширения в Marketplace
+# ADR 0005: Trusted extension publishing to Marketplace
 
-- Статус: Accepted
-- Дата: 2026-11-03
+- Status: Accepted
+- Date: 2026-11-03
 
-## Контекст
+## Context
 
-Пользователь согласовал подготовку CI, публикующего новые версии из `master`.
-Для доступа к издателю `idfedorov09` необходимо разграничить обычную проверку
-кода и публикацию. Настройка внешних сервисов и реальный выпуск выполняются
-отдельно; наличие workflow в рабочем дереве не подтверждает их выполнение.
+The user approved preparing CI that publishes new versions from `master`.
+Access to the `idfedorov09` publisher requires separating ordinary code validation
+from publication. External service setup and the actual release are performed
+separately; a workflow in the working tree does not confirm that they have happened.
 
-## Решение
+## Decision
 
-GitHub Actions использует Marketplace Trusted Publishing: отдельный job получает
-краткоживущие OIDC credentials и запускает `vsce publish --oidc`. Политика
-издателя ограничивается репозиторием, файлом workflow и Environment
-`marketplace`. Environment в GitHub отдельно ограничивается веткой `master`.
-Сам workflow дополнительно проверяет репозиторий и ref.
+GitHub Actions uses Marketplace Trusted Publishing: a separate job obtains
+short-lived OIDC credentials and runs `vsce publish --oidc`. The publisher policy
+is restricted to the repository, workflow file, and `marketplace` Environment.
+The Environment in GitHub is separately restricted to the `master` branch.
+The workflow itself also checks the repository and ref.
 
-После успешных проверок публикуется версия из `package.json`;
-`--skip-duplicate` пропускает уже опубликованную версию, не заменяя её.
-Job публикации имеет отдельный runner и после `npm ci --ignore-scripts` выполняет
-`npm run package`: подготавливает вложенный клиентский VSIX, собирает основной
-пакет и проверяет его через `scripts/verify-package.js`. Публикуется готовый VSIX
-с `--packagePath ./*.vsix`, без повторной упаковки исходников внутри `vsce publish`.
-В чистом runner этот glob выбирает один основной пакет в корне; вложенный
-клиентский пакет находится в `bundled/`. Сборка из job проверок автоматически
-не переносится; повторная сборка на runner публикации сохраняет явную проверку
-runtime-ресурсов и клиентской части без механизма передачи artifacts между jobs.
-Версия, файлы, коммиты и теги автоматически не изменяются. Запуски выпуска
-сериализуются; ограничение очереди и фактическая работа Marketplace зависят от
-внешних сервисов.
+After successful checks, the version from `package.json` is published;
+`--skip-duplicate` skips an already published version without replacing it.
+The publishing job has a separate runner and, after `npm ci --ignore-scripts`, runs
+`npm run package`: it prepares the nested client VSIX, builds the main package,
+and verifies it through `scripts/verify-package.js`. The finished VSIX is published
+with `--packagePath ./*.vsix`, without repackaging sources inside `vsce publish`.
+On a clean runner, this glob selects one main package in the root; the nested
+client package is in `bundled/`. The build from the validation job is not
+transferred automatically; rebuilding on the publishing runner retains explicit
+verification of runtime resources and the client component without an artifact
+transfer mechanism between jobs. Versions, files, commits, and tags are not
+changed automatically. Release runs are serialized; queue limits and actual
+Marketplace behavior depend on external services.
 
-## Альтернативы
+## Alternatives
 
-PAT в GitHub Secrets соответствовал бы примеру другого расширения, но является
-долгоживущим секретом, который нужно создавать и ротировать; глобальные Azure
-DevOps PAT выводятся из эксплуатации. Ручная загрузка VSIX требует отдельного
-шага на каждый выпуск. Оба подхода отклонены пользователем в пользу OIDC.
+A PAT in GitHub Secrets would follow the example of another extension, but is a
+long-lived secret that must be created and rotated; global Azure DevOps PATs are
+being retired. Manual VSIX upload requires a separate step for each release.
+The user rejected both approaches in favor of OIDC.
 
-## Последствия
+## Consequences
 
-Издатель должен один раз настроить ограниченное Environment и доверенную
-политику. После активации push новой версии в `master` может запустить
-публичный выпуск; согласование переноса должно учитывать это последствие.
-Работа с GitHub и Marketplace не проверяется одним только локальным workflow.
+The publisher must configure a restricted Environment and trust policy once.
+After activation, pushing a new version to `master` may trigger a public release;
+authorization to transfer changes must account for this consequence. A local
+workflow alone does not verify integration with GitHub and Marketplace.
 
-## Источники
+## Sources
 
 - [VS Code: Trusted Publishing](https://code.visualstudio.com/api/working-with-extensions/publishing-extension#publish-with-github-actions-and-trusted-publishing)
 - [GitHub: deployment branches and tags](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments#deployment-branches-and-tags)

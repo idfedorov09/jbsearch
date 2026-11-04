@@ -2,52 +2,53 @@
 
 ## Context
 
-См. proposal.md. Main/client уже имеют `0.1.0`, локальный пакет и GUI проверены.
-На `origin/dev` пока только scaffold `0.0.1`. Publish/check jobs используют разные
-runner: bundle, собранный в check, не попадает в publish автоматически.
+See proposal.md. Main/client already have `0.1.0`; the local package and GUI have
+been checked. `origin/dev` still contains only the `0.0.1` scaffold. Publish/check
+jobs use different runners: the bundle built in check does not automatically
+reach publish.
 
 ## Goals / Non-Goals
 
-**Goals:** воспроизводимый VSIX с клиентской частью, честная документация текущего
-кандидата и проверенная история в `dev`.
+**Goals:** a reproducible VSIX with the client component, accurate documentation
+of the current candidate, and verified history in `dev`.
 
-**Non-Goals:** реальная публикация, внешние credentials/Environment, merge в
-`master`, новые платформенные обещания, смена runtime/API или версии.
+**Non-Goals:** actual publication, external credentials/Environment, merging to
+`master`, new platform promises, runtime/API changes, or a version change.
 
 ## Decisions
 
-1. Сохранить `0.1.0`: это уже подготовленный первый функциональный выпуск после
-   scaffold `0.0.1`. Дополнительное повышение не исправляет регистрацию исходников.
-2. В publish runner явно выполнить `npm run package`, включающий prepare:client
-   и verify-package; передавать проверенный VSIX через `--packagePath`. Передача
-   artifact между jobs возможна, но добавляет механизмы без необходимости для
-   этой небольшой поставки. Контракт ADR 0005 и существующего publication spec
-   сохраняется; команды сверяются с локальным `vsce publish --help`.
-3. Отделить changelog для пользователя от release checklist разработчика.
-   Обновить limits и обзор OpenSpec. Синхронизировать только проверенные
-   installation-check и find-results-panel; старое размещение HTML-дерева и
-   незавершённые платформенные планы не переносить в baseline и не архивировать.
-4. Проверить npm ci/check/test/spec/package и упаковку из Git-дерева. Сохранить
-   VSIX и generated bundles вне Git, затем отправить связанные коммиты в `dev`.
-   Дождаться GitHub Check именно для отправленного HEAD; замечания CI исправлять
-   обычными последующими коммитами, без force push.
+1. Keep `0.1.0`: this is the already prepared first functional release after the
+   `0.0.1` scaffold. Another bump does not fix source registration.
+2. Explicitly run `npm run package` on the publish runner, including prepare:client
+   and verify-package; pass the verified VSIX through `--packagePath`. Passing an
+   artifact between jobs is possible but adds unnecessary mechanisms for this
+   small distribution. Preserve the ADR 0005 and existing publication spec
+   contract; check commands against local `vsce publish --help`.
+3. Separate the user-facing changelog from the developer release checklist.
+   Update limits and the OpenSpec overview. Synchronize only verified
+   installation-check and find-results-panel requirements; do not transfer the
+   old HTML-tree placement or unfinished platform plans to the baseline or archive them.
+4. Run npm ci/check/test/spec/package and verify packaging from the Git tree.
+   Keep VSIX and generated bundles out of Git, then push related commits to `dev`.
+   Wait for the GitHub Check for the exact pushed HEAD; address CI findings with
+   ordinary follow-up commits, without force push.
 
-Основания: [ADR 0005](../../../docs/adr/0005-marketplace-trusted-publishing.md),
+Rationale: [ADR 0005](../../../docs/adr/0005-marketplace-trusted-publishing.md),
 [ADR 0008](../../../docs/adr/0008-native-find-panel.md),
-[проверка пакета](../../../scripts/verify-package.js).
+[package verification](../../../scripts/verify-package.js).
 
 ## Risks / Trade-offs
 
-- Непроверенные macOS/Windows/Remote → оставить открытые пункты исходного change
-  и явно указать границы кандидата в release checklist.
-- Накопленная незакоммиченная работа → проверить состав staging, исключить VSIX,
-  secrets/личные данные и не менять соседний BL-проект.
-- Workflow публикации уже подготовлен → сохранить master/repository guards;
-  push `dev` запускает только обычные проверки.
+- Untested macOS/Windows/Remote → leave the original change's open items intact
+  and state the candidate's boundaries explicitly in the release checklist.
+- Accumulated uncommitted work → inspect staging contents, exclude VSIX,
+  secrets/personal information, and do not change the neighboring BL project.
+- The publication workflow is already prepared → preserve master/repository
+  guards; pushing `dev` runs only ordinary checks.
 
 ## Migration Plan
 
-После согласованной подготовки пользователь получает коммиты в `origin/dev` и
-локальный VSIX. Следующий выпуск/перенос в `master` согласуется отдельно после
-платформенной приёмки. Возврат выполняется обычным revert при необходимости;
-история удалённой ветки не переписывается.
+After the agreed preparation, the user receives commits in `origin/dev` and a
+local VSIX. Agree on the next release/transfer to `master` separately after
+platform acceptance. Use an ordinary revert if rollback is needed; do not rewrite
+remote branch history.

@@ -1,106 +1,105 @@
-# Меню Explorer и открытие результатов — 0.2.1
+# Explorer menu and result navigation — 0.2.1
 
-Дата проверки: **4 ноября 2026**. Основное расширение — **0.2.1**,
-вложенный UI client — **0.1.0**, без изменений его кода и протокола.
+Validation date: **November 4, 2026**. Main extension **0.2.1**,
+nested UI client **0.1.0**, with unchanged client code and protocol.
 
-## Исправленное поведение
+## Corrected behavior
 
-Пункт **JB Search: Find in Files…** остаётся в контекстном меню папки,
-если Explorer сохраняет несколько выделенных ресурсов. Directory определяется
-папкой, по которой открыли меню; остальные выделенные ресурсы не добавляются
-в область поиска. Префикс отличает команду от встроенного **Find in Folder**.
-На файлах и неподдерживаемых файловых системах пункт по-прежнему скрыт.
+**JB Search: Find in Files…** remains in a folder's context menu when Explorer
+retains multiple selected resources. Directory uses the folder where the menu
+was opened; other selected resources are not added to scope. The prefix
+distinguishes it from built-in **Find in Folder**. It remains hidden on files
+and unsupported filesystems.
 
-Двойной клик по сниппету или имени файла и Enter в списке Find/Replace
-открывают исходник на найденном диапазоне. Controller проверяет актуальность
-выдачи, дожидается закрытия modal и передаёт фокус центральному TextEditor.
-Новые editor groups не создаются. Изменённый результат обновляет поиск;
-ошибка закрытия оставляет диалог доступным. Если открытие редактора не удалось
-после закрытия modal, ошибка показывается штатным уведомлением VS Code.
+Double-clicking a snippet or filename, or pressing Enter in the Find/Replace
+results list, opens the source at the matching range. The controller checks
+result validity, waits for modal closure, and focuses the central TextEditor.
+No new editor groups are created. A changed result refreshes search; a closure
+failure leaves the dialog available. If opening the editor fails after modal
+closure, a native VS Code notification reports the error.
 
-![Различимое меню при выборе двух папок](assets/explorer-branded-multiselect-menu.png)
+![Distinct menu with two folders selected](assets/explorer-branded-multiselect-menu.png)
 
-![Переход из диалога на найденный диапазон](assets/modal-result-navigation.png)
+![Navigation from the dialog to the matching range](assets/modal-result-navigation.png)
 
-## Проверки исходников и упаковки
+## Source and packaging checks
 
-Изолированный снимок staged Git tree:
+Isolated staged Git tree snapshot:
 `02068093d6184dc80bc6c1dc69d054daff24c3cb`. Node.js **22.23.2**,
-npm **12.0.2**, Linux x64. Логи проверки хранились вне каталога упаковки;
-сгенерированный VSIX не включается в Git.
+npm **12.0.2**, Linux x64. Validation logs were kept outside the packaging
+directory; generated VSIX files stay out of Git.
 
-- `npm ci` — успешно; вложенный клиент подготовлен из исходников.
-- `npm run check` — успешно.
-- `npm test` — **195/195**, включая 17 вложенных subtests; без failures,
-  skips или cancellations. Покрыты стабильность DOM между кликами,
-  виртуализация, Enter, generation guards, устаревшие результаты,
-  отказ закрытия modal и ошибка открытия исходника.
-- `npm run spec:check` — **13/13**; после проверки поведения основная
-  спецификация `search-entry-points` синхронизирована с дельтой 0.2.1
-  и снова проверена. Архивирование changes не выполнялось.
-- `npm run package` и verifier — успешно: **73** файла основного пакета,
-  **31** вложенного клиента. Проверены identity, версии, build клиента,
-  runtime-зависимости, PNG и исполняемые ripgrep всех поставляемых платформ.
+- `npm ci` passed; the nested client was prepared from source.
+- `npm run check` passed.
+- `npm test`: **195/195**, including 17 nested subtests; no failures, skips, or
+  cancellations. Coverage includes DOM stability between clicks, virtualization,
+  Enter, generation guards, stale results, refused modal closure, and source
+  opening failures.
+- `npm run spec:check`: **13/13**; after behavior validation, the main
+  `search-entry-points` spec was synced with the 0.2.1 delta and validated again.
+  Changes were not archived.
+- `npm run package` and verifier passed: **73** main package files, **31** nested
+  client files. Checks cover identity, versions, client build, runtime dependencies,
+  PNG, and executable ripgrep for all distributed platforms.
 
-Размер VSIX: **24 360 724 байта**, SHA-256:
+VSIX size: **24,360,724 bytes**, SHA-256:
 `c8cbfe678c7372e58fab1764891e000cdbddd8babe6f6a9fdc21a06cbf0b2489`.
-Отчёты: [checks](explorer-navigation-checks.json),
+Reports: [checks](explorer-navigation-checks.json),
 [package](explorer-navigation-package-results.json).
 
-## Настоящий VS Code
+## Actual VS Code
 
-Проверено управлением GUI через Playwright на Linux x64 / X11 / Xvfb,
-в отдельных временных профилях:
+GUI controlled through Playwright on Linux x64 / X11 / Xvfb in separate
+temporary profiles:
 
-- **VS Code 1.143.1**, исходники через Extension Development Host — **12/12**.
-- **VS Code 1.144.1**, установленный VSIX 0.2.1 — **12/12**.
-  Main загружен из `extensions/idfedorov09.jbsearch-0.2.1`, исходный проект
-  не подключён как development extension. Отдельный probe читает состояние
-  установленного controller; runtime-файлы и manifest сверены с пакетом.
+- **VS Code 1.143.1**, sources through Extension Development Host: **12/12**.
+- **VS Code 1.144.1**, installed VSIX 0.2.1: **12/12**. Main loaded from
+  `extensions/idfedorov09.jbsearch-0.2.1`; the source project was not connected
+  as a development extension. A separate probe reads the installed controller's
+  state; runtime files and manifest were compared with the package.
 
-В обоих прогонах проверены:
+Both runs checked:
 
-- Различимое название рядом со встроенным Find in Folder.
-- Две выбранные папки и смешанный выбор файла с папкой: пункт остаётся,
-  scope ограничен контекстной папкой, результаты соседней папки не добавляются.
-- Каждый из трёх сегментов compressed folders передаёт свой путь.
-- Пункт отсутствует на файле.
-- Двойной клик по выбранному и другому сниппету/имени файла; для другого
-  результата специально выполнен host selection echo между кликами.
-  Исходный DOM target остаётся подключённым.
-- Replace открывает исходник без выполнения замены; Enter работает в обоих режимах.
-- Совпадают URI и точный диапазон, включая `[2,13 → 2,25]`;
-  modal закрыт, TextEditor активен и получает DOM focus, остаётся одна
-  центральная editor group.
+- A distinct title beside built-in Find in Folder.
+- Two selected folders and mixed file/folder selection: the menu item remains,
+  scope uses the context folder, and neighboring folder results are excluded.
+- Each of three compressed folder segments passes its own path.
+- The item is absent on a file.
+- Double click on selected/other snippets and filenames; for other results, a
+  host selection echo was deliberately processed between clicks. The original
+  DOM target remained connected.
+- Replace opens source without applying a replacement; Enter works in both modes.
+- Correct URI and exact range, including `[2,13 → 2,25]`; modal closed,
+  TextEditor active with DOM focus, and one central editor group retained.
 
-Полные состояния: [source](explorer-navigation-source-results.json),
+Full states: [source](explorer-navigation-source-results.json),
 [installed](explorer-navigation-installed-results.json).
-Скриншоты просмотрены; содержат только тестовые fixtures.
+Screenshots were reviewed and contain only test fixtures.
 
-На предыдущем установленном 0.2.0 исчезновение меню воспроизведено при
-multiselect из-за `!listMultiSelection`. Старый double click на Linux проходил
-при задержках 0/50/150/300 мс: точный пользовательский сбой на macOS этим
-прогоном не воспроизведён. Исправлены подтверждённое пересоздание DOM между
-кликами и порядок закрытия modal/открытия редактора; они закреплены тестами.
+On previous installed 0.2.0, menu disappearance was reproduced with multiselect
+because of `!listMultiSelection`. Old double click passed on Linux with delays
+of 0/50/150/300 ms: this run did not reproduce the user's exact macOS failure.
+The confirmed DOM recreation between clicks and modal-close/editor-open order
+were corrected and covered by tests.
 
-## Границы проверки
+## Validation boundaries
 
-Это автоматизированный прогон настоящего VS Code, а не ручная приёмка
-macOS, Windows или физического Remote SSH. Эти среды остаются отдельными
-проверками. Успешная проверка вложенного клиента и `vscode-remote` guard
-не подменяет проверку Remote между разными машинами.
+This is an automated actual VS Code run, not manual acceptance of macOS,
+Windows, or physical Remote SSH. Those environments need separate checks.
+Successful nested client and `vscode-remote` guard validation does not replace
+Remote validation between separate machines.
 
-Публикация, перенос в master, теги и релизы в эту поставку не входят.
+Publication, transfer to master, tags, and releases are outside this delivery.
 
-## Git и CI
+## Git and CI
 
-Исправления отправлены обычным push в `origin/dev` коммитом
+Fixes were sent by normal push to `origin/dev` in commit
 `d657bfdb6f30e60d059afe5ec9783d576518579e`
-(`fix: stabilize Explorer search menu and result navigation`). Удалённый SHA
-совпал с локальным; рабочее дерево после коммита чистое.
+(`fix: stabilize Explorer search menu and result navigation`). Remote and local
+SHAs matched; the working tree was clean after the commit.
 
 [GitHub Check #41825516841](https://github.com/idfedorov09/jbsearch/actions/runs/41825516841)
-завершился успешно **2026-11-04T12:00:36Z**: чистая установка, check,
-**195/195** тестов, **13/13** проверок OpenSpec, package и verifier. Собственные
-VS Code/Xvfb-процессы завершены. Этот протокол и отметка завершения OpenSpec
-фиксируются последующим коммитом документации; runtime и VSIX не меняются.
+completed successfully at **2026-11-04T12:00:36Z**: clean install, check,
+**195/195** tests, **13/13** OpenSpec checks, package, and verifier. The test's
+VS Code/Xvfb processes were stopped. This report and the OpenSpec completion
+mark are recorded in a subsequent documentation commit; runtime and VSIX are unchanged.

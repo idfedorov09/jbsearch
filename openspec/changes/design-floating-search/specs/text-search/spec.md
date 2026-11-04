@@ -2,143 +2,143 @@
 
 ## Purpose
 
-Определить предсказуемый текстовый поиск с фильтрами, отменой и корректным
-preview по актуальному содержимому. Regex имеет документированную ECMAScript
-семантику, одинаковую для дисковых файлов и несохранённых документов.
+Define predictable text search with filters, cancellation, and an accurate preview
+of current content. Regex has documented ECMAScript semantics, identical for files
+on disk and unsaved documents.
 
 ## ADDED Requirements
 
 ### Requirement: Query modes
-Поиск SHALL поддерживать literal, Match Case, Whole Word, regex и многострочный
-запрос; синтаксис regex документируется отдельно от Java regex JetBrains.
+Search SHALL support literal, Match Case, Whole Word, regex, and multiline queries;
+regex syntax is documented separately from JetBrains Java regex.
 
 #### Scenario: Literal versus regular expression
-- **WHEN** пользователь ищет `a.b` с выключенным Regex
-- **THEN** точка ищется буквально
-- **AND** при включении Regex точка получает значение оператора выбранного диалекта
+- **WHEN** the user searches for `a.b` with Regex off
+- **THEN** the dot is matched literally
+- **AND** enabling Regex gives the dot its operator meaning in the chosen dialect
 
 #### Scenario: Case and words
-- **WHEN** Match Case и Whole Word включены для запроса `cat`
-- **THEN** `cat` находится, а `Cat` и `catalog` не находятся
+- **WHEN** Match Case and Whole Word are enabled for query `cat`
+- **THEN** `cat` is found, while `Cat` and `catalog` are not
 
 #### Scenario: Newline
-- **WHEN** пользователь вводит настоящий перевод строки между `first` и `second`
-- **THEN** поиск находит соседние строки с этим текстом в LF и CRLF файлах
-- **AND** literal `\n` без настоящего перевода строки остаётся текстом
+- **WHEN** the user enters an actual newline between `first` and `second`
+- **THEN** search finds adjacent lines with that text in LF and CRLF files
+- **AND** literal `\n` without an actual newline remains text
 
 #### Scenario: Invalid regular expression
-- **WHEN** введено некорректное выражение
-- **THEN** у поля показана ошибка и поиск этого выражения не запускается
-- **AND** старые результаты не выдаются за результаты нового запроса
+- **WHEN** an invalid expression is entered
+- **THEN** an error appears beside the field and search does not run that expression
+- **AND** old results are not presented as results of the new query
 
 #### Scenario: Escaped newline and dotall
-- **WHEN** включён Regex и запрос содержит `first\nsecond` либо `(?s)first.second`
-- **THEN** выражение может сопоставить текст на соседних строках
-- **AND** точка без dotall не сопоставляет перевод строки
+- **WHEN** Regex is enabled and the query contains `first\nsecond` or `(?s)first.second`
+- **THEN** the expression can match text on adjacent lines
+- **AND** a dot without dotall does not match a newline
 
 ### Requirement: Search scopes
-Поиск SHALL различать весь workspace, отдельный root, directory, открытые
-текстовые вкладки и именованный custom scope; отсутствие универсальной модели
-модулей VS Code не скрывается названием Module.
+Search SHALL distinguish the whole workspace, an individual root, a directory,
+open text tabs, and a named custom scope; the absence of a universal VS Code
+module model is not concealed behind the name Module.
 
 #### Scenario: Multiple roots
-- **WHEN** в multi-root workspace выбран один root
-- **THEN** результаты ограничены этим root и содержат однозначный путь
+- **WHEN** one root is selected in a multi-root workspace
+- **THEN** results are limited to that root and contain an unambiguous path
 
 #### Scenario: Open editors
-- **WHEN** выбрана область Open Editors
-- **THEN** ищутся открытые текстовые вкладки, включая доступные untitled buffers
-- **AND** закрытый, но загруженный внутренне документ не включается автоматически
+- **WHEN** the Open Editors scope is selected
+- **THEN** open text tabs are searched, including available untitled buffers
+- **AND** a closed document loaded internally is not included automatically
 
 #### Scenario: Empty workspace
-- **WHEN** Workspace выбран без открытых корневых папок
-- **THEN** UI сообщает об отсутствии области и предлагает открыть папку или выбрать Open Editors
+- **WHEN** Workspace is selected without open root folders
+- **THEN** the UI reports the missing scope and offers to open a folder or choose Open Editors
 
 #### Scenario: Custom scope with additional include
-- **WHEN** выбран custom scope с include `src/**` и пользователь вводит include `**/*.js`
-- **THEN** ищутся только JS-файлы внутри `src`, прошедшие остальные фильтры
-- **AND** include текущего запроса не расширяет границы выбранного scope
+- **WHEN** a custom scope with include `src/**` is selected and the user enters include `**/*.js`
+- **THEN** only JS files inside `src` that pass the other filters are searched
+- **AND** the current query's include does not expand the selected scope's boundaries
 
 ### Requirement: File masks
-Поиск SHALL пересекать scope с включённой маской. Шаблоны `*`, `?`, `**` и
-`{a,b}` разделяются `;`; без `/` применяется basename, с `/` — путь от корня.
-Mask/include/exclude globs чувствительны к регистру независимо от Match Case.
-Отключённая маска сохраняет текст, но не фильтрует результаты.
+Search SHALL intersect the scope with the enabled mask. Patterns `*`, `?`, `**`,
+and `{a,b}` are separated by `;`; without `/`, they apply to the basename, and
+with `/`, to the root-relative path. Mask/include/exclude globs are case-sensitive
+regardless of Match Case. A disabled mask keeps its text but does not filter results.
 
 #### Scenario: Combined masks
-- **WHEN** выбран Directory `src` и маска `*.js;*.ts`
-- **THEN** находятся только JS/TS файлы внутри `src` и его подпапок
+- **WHEN** Directory `src` and mask `*.js;*.ts` are selected
+- **THEN** only JS/TS files inside `src` and its subdirectories are found
 
 #### Scenario: Disabled mask
-- **WHEN** пользователь выключает File mask
-- **THEN** текст маски сохраняется, а поиск включает остальные допустимые файлы scope
+- **WHEN** the user turns off File mask
+- **THEN** the mask text is preserved, and search includes other eligible files in the scope
 
 ### Requirement: Exclusions and traversal
-Поиск SHALL явно применять выбранную политику ignore и exclusions каждого root,
-не следовать symlinks за scope и не выдавать пропущенные файлы за проверенные.
+Search SHALL explicitly apply each root's selected ignore and exclusion policy,
+not follow symlinks outside the scope, and not present skipped files as checked.
 
 #### Scenario: Default exclusions
-- **WHEN** учитывание исключений включено
-- **THEN** `.gitignore`, применимые search/files exclusions и ignore-настройки ограничивают результаты
-- **AND** маска файла не возвращает исключённый файл обратно
+- **WHEN** respecting exclusions is enabled
+- **THEN** `.gitignore`, applicable search/files exclusions, and ignore settings constrain results
+- **AND** the file mask does not bring an excluded file back
 
 #### Scenario: Exclusions disabled
-- **WHEN** пользователь выключает учитывание исключений
-- **THEN** ignore и общие exclude-фильтры отключаются
-- **AND** выбранный scope с его include/exclude, include текущего запроса, маска и ограничения ресурсов сохраняются
+- **WHEN** the user disables respecting exclusions
+- **THEN** ignore and general exclude filters are disabled
+- **AND** the selected scope with its include/exclude rules, current query include, mask, and resource limits remain
 
 #### Scenario: Unsupported input
-- **WHEN** встречается бинарный, недоступный или неподдерживаемый по кодировке файл
-- **THEN** он не интерпретируется как обычный UTF-8 текст
-- **AND** неполнота поиска и причина пропуска доступны пользователю
+- **WHEN** a binary, unavailable, or unsupported-encoding file is encountered
+- **THEN** it is not interpreted as ordinary UTF-8 text
+- **AND** the user can see that search is incomplete and why the file was skipped
 
 ### Requirement: Unsaved documents
-Поиск SHALL использовать актуальные снимки изменённых открытых документов
-в выбранном scope вместо их дисковых копий, с той же семантикой сопоставления.
+Search SHALL use current snapshots of modified open documents in the selected
+scope instead of their disk copies, with the same matching semantics.
 
 #### Scenario: Unsaved edit
-- **WHEN** совпадение существует только в несохранённом изменении файла
-- **THEN** оно доступно в результатах и preview
-- **AND** результаты старой дисковой версии этого файла не дублируются
+- **WHEN** a match exists only in an unsaved file edit
+- **THEN** it is available in results and preview
+- **AND** results from that file's old disk version are not duplicated
 
 #### Scenario: Document changes during search
-- **WHEN** версия документа меняется во время поиска
-- **THEN** результаты старой версии инвалидируются и обновляются
+- **WHEN** the document version changes during search
+- **THEN** results from the old version are invalidated and updated
 
 #### Scenario: Excluded dirty file
-- **WHEN** изменённый открытый файл не проходит текущие scope/mask/ignore-правила
-- **THEN** его snapshot не добавляет совпадения в результаты
+- **WHEN** a modified open file fails the current scope/mask/ignore rules
+- **THEN** its snapshot does not add matches to the results
 
 #### Scenario: Untitled with mask
-- **WHEN** в Open Editors включена маска и открыта untitled вкладка
-- **THEN** маска проверяет её отображаемое имя, а файловые ignore-правила не применяются
+- **WHEN** a mask is enabled in Open Editors and an untitled tab is open
+- **THEN** the mask checks its displayed name, while file ignore rules do not apply
 
 ### Requirement: Cancellation and partial results
-Поиск SHALL отменять устаревшие запросы, постепенно показывать результаты
-и явно различать завершение, отмену, ошибку, пустой запрос и достижение лимита.
+Search SHALL cancel stale queries, display results incrementally, and explicitly
+distinguish completion, cancellation, error, an empty query, and a reached limit.
 
 #### Scenario: Rapid typing
-- **WHEN** новый запрос отправлен до завершения предыдущего
-- **THEN** поздние результаты предыдущего не появляются в новой выдаче
+- **WHEN** a new query is submitted before the previous one finishes
+- **THEN** late results from the previous query do not appear in the new results
 
 #### Scenario: Limit or deadline
-- **WHEN** достигнут настроенный лимит результатов, размера файла или времени
-- **THEN** интерфейс сообщает о неполном поиске и его причине
-- **AND** не показывает ограниченный счётчик как полное количество совпадений
+- **WHEN** a configured result, file size, or time limit is reached
+- **THEN** the UI reports an incomplete search and its reason
+- **AND** it does not present the limited count as the total number of matches
 
 #### Scenario: Empty query
-- **WHEN** поле запроса пусто
-- **THEN** поиск не выполняется и UI предлагает ввести запрос
+- **WHEN** the query field is empty
+- **THEN** search does not run and the UI asks for a query
 
 ### Requirement: Accurate ranges
-Поиск SHALL сохранять точные диапазоны для preview и открытия результата,
-включая Unicode, CRLF, multiline и несколько совпадений на одной строке.
+Search SHALL preserve exact ranges for preview and opening results, including
+Unicode, CRLF, multiline, and multiple matches on one line.
 
 #### Scenario: Unicode positions
-- **WHEN** перед совпадением есть emoji и кириллица
-- **THEN** выделяется сам match, без сдвига на число UTF-8 байтов
+- **WHEN** emoji and Cyrillic text precede a match
+- **THEN** the match itself is highlighted, without a shift by the UTF-8 byte count
 
 #### Scenario: Zero-width match
-- **WHEN** regex возвращает совпадение нулевой длины
-- **THEN** поиск завершается или достигает лимита без бесконечного цикла
-- **AND** позиция совпадения отображается однозначно
+- **WHEN** regex returns a zero-width match
+- **THEN** search finishes or reaches a limit without an infinite loop
+- **AND** the match position is shown unambiguously

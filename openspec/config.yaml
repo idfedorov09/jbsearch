@@ -1,9 +1,10 @@
 schema: spec-driven
 
 context: |
-  Language: Russian
-  All OpenSpec artifacts must be written in Russian.
-  The root README.md must be written and maintained in English, including all future sections, examples, and descriptions.
+  Project language: English.
+  Write and maintain all repository documentation, OpenSpec artifacts, ADRs, contributor and agent instructions, code comments, and human-readable project metadata in English.
+  Communicate with the user in Russian unless the user requests another language.
+  Preserve identifiers, commands, links, evidence, and intentional Unicode/localization fixture values; use Unicode escapes for non-English test data when useful.
   Keep OpenSpec structural headings and SHALL/MUST keywords in English.
   JB Search is a JavaScript/CommonJS VS Code extension. Find/Replace implementation is authorized and in progress. src/extension.js is the entry point; no source compilation. npm ci prepares a bundled UI-extension VSIX from client/ for Remote preview.
   Tooling: Node.js >=22.12.0, npm ci. Prefer stable public VS Code APIs.

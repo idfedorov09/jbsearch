@@ -1,16 +1,16 @@
 # Tasks
 
-## 1. README и языковое правило
+## 1. README and language rule
 
-- [x] 1.1 Переписать основной README на английском в структуре пользователя; оставить Hero и три demo placeholders, рабочие Install/GitHub/bug links, точные возможности и ограничения, сохранить ссылки на иконку.
-- [x] 1.2 Закрепить английский для корневого README в AGENTS.md, CONTRIBUTING.md и контексте OpenSpec без смены языка других документов.
+- [x] 1.1 Rewrite the main README in English using the user's structure; leave the Hero and three demo placeholders, working Install/GitHub/bug links, accurate capabilities and limitations, and preserve icon links.
+- [x] 1.2 Establish English for the root README in AGENTS.md, CONTRIBUTING.md, and the OpenSpec context without changing the language of other documents.
 
-## 2. Проверка
+## 2. Validation
 
-- [x] 2.1 Проверить порядок разделов, английский текст, локальные ссылки/anchors, соответствие shortcuts и требований manifest, check/test и валидацию этого change; записать неуточнённые материалы и фактические проверки.
+- [x] 2.1 Check section order, English text, local links/anchors, shortcuts and requirements against the manifest, check/test, and validation of this change; record unresolved materials and actual checks.
 
 ## Workflow follow-up
 
-- GIF, подтверждённая карточка Marketplace и ссылка на финансовую поддержку добавляются после предоставления пользователем.
-- По последующему явному запросу пользователя закоммитить это изменение,
-  отправить в `dev` и проверить CI отправленного коммита.
+- Add GIFs, a confirmed Marketplace card, and a financial-support link after the user supplies them.
+- Following the user's subsequent explicit request, commit this change, push to
+  `dev`, and check CI for the pushed commit.

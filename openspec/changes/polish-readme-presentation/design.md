@@ -2,47 +2,49 @@
 
 ## Context
 
-Корневой README уже английский и содержит согласованные разделы. Существующая
-иконка — media/icon.png. Изменения Explorer menu принадлежат независимой задаче.
-Пользователь уточнил персональную ссылку Tribute для Telegram:
+The root README is already in English and contains the agreed sections. The
+existing icon is media/icon.png. Explorer menu changes belong to an independent
+task. The user clarified the personal Tribute link for Telegram:
 `https://t.me/tribute/app?startapp=dTvL`.
 
 ## Goals / Non-Goals
 
-Сделать шапку и действия визуально заметными, сохранив читаемость и совместимость
-README с GitHub и VSIX. Не менять структуру продукта, код поиска или состояние выпуска.
+Make the header and actions visually prominent while preserving readability and
+README compatibility with GitHub and VSIX. Do not change product structure,
+search code, or release status.
 
 ## Decisions
 
-1. Использовать существующий PNG и HTML align без custom CSS. Сохранить Markdown
-   заголовок JB Search, 11 основных разделов и четыре места для GIF.
-2. CI badge получает состояние настоящего workflow для dev. Preview badge читает
-   package.json удалённой dev через Shields, без ручного номера при каждом bump;
-   он показывает состояние этой ветки, а не опубликованный release. VS Code minimum
-   и MIT сверяются с manifest. В параллельной работе версия поднята до 0.2.0;
-   ссылки и инструкции этого изменения сохраняются.
-3. Shields.io flat-square используется для метаданных, for-the-badge — для кнопок.
-   Это внешние HTTPS images; собственные SVG в README не встраиваются. Локальный
-   vsce допускает Shields и GitHub workflow badge; это проверяется упаковкой.
-4. Install ведёт к существующей Installation, GitHub и bug — в этот репозиторий.
-   Donate via Tribute в шапке и Support development ведут точно на предоставленный
-   пользователем `https://t.me/tribute/app?startapp=dTvL`. Проверить точный URL
-   обеих ссылок, включая startapp; денежные операции и ввод данных для проверки не нужны.
-5. Проверку VSIX выполнять с отдельным файлом в /tmp, не перезаписывая рабочий
-   установочный пакет и исторические package reports.
-6. Применить к media/icon.png прозрачную маску прямоугольника 256×256 с радиусом
-   32 px (12,5%) и сглаживанием. Цвета и непрозрачность внутри маски сохранить.
-   Изменить сам PNG, чтобы скругление работало в README и карточке расширения
-   без CSS. docs/artwork/icon.svg остаётся исходным предоставленным artwork;
-   PNG — производный экспорт со скруглением. Новые зависимости не нужны:
-   локальный Chromium Canvas поддерживает roundRect и PNG export.
+1. Use the existing PNG and HTML align without custom CSS. Preserve the JB Search
+   Markdown heading, 11 main sections, and four GIF slots.
+2. The CI badge reads the actual workflow status for dev. The preview badge reads
+   package.json from remote dev through Shields, without a manual number on every
+   bump; it shows that branch's state, rather than a published release. Check the
+   VS Code minimum and MIT against the manifest. Concurrent work bumped the
+   version to 0.2.0; preserve this change's links and instructions.
+3. Use Shields.io flat-square for metadata and for-the-badge for buttons.
+   These are external HTTPS images; do not embed custom SVGs in README. Local
+   vsce accepts Shields and the GitHub workflow badge; verify this through packaging.
+4. Install leads to the existing Installation section; GitHub and bug lead to
+   this repository. Donate via Tribute in the header and Support development
+   lead exactly to the user-supplied `https://t.me/tribute/app?startapp=dTvL`.
+   Check both exact URLs, including startapp; financial transactions and data
+   entry are unnecessary for validation.
+5. Validate VSIX using a separate file in /tmp without overwriting the working
+   installation package or historical package reports.
+6. Apply an antialiased transparent 256×256 rounded-rectangle mask with a 32 px
+   radius (12.5%) to media/icon.png. Preserve colors and opacity inside the mask.
+   Change the PNG itself so rounding works in README and the extension card
+   without CSS. docs/artwork/icon.svg remains the original supplied artwork;
+   the PNG is a derived export with rounded corners. No new dependencies are
+   needed: the local Chromium Canvas supports roundRect and PNG export.
 
 ## Risks / Trade-offs
 
-- Внешние badges зависят от своих providers → проверить HTTP и дать понятный alt.
-- Ошибка в Tribute URL → использовать точный предоставленный адрес в обеих
-  кнопках, проверить переход без выполнения платежа.
-- Параллельные изменения → править только README, media/icon.png и этот change,
-  не stage/commit чужие файлы и не менять их задачи.
-- Прозрачные края → проверить четыре угла, непрозрачный центр, неизменность
-  внутренних пикселей, светлый/тёмный фон и совпадение PNG в отдельном VSIX.
+- External badges depend on their providers → check HTTP and provide clear alt text.
+- A Tribute URL error → use the exact supplied address in both buttons and check
+  navigation without making a payment.
+- Concurrent changes → edit only README, media/icon.png, and this change; do not
+  stage/commit other files or change their tasks.
+- Transparent edges → check the four corners, opaque center, unchanged interior
+  pixels, light/dark backgrounds, and PNG equality in a separate VSIX.

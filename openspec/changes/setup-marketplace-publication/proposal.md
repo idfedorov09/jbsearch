@@ -2,35 +2,35 @@
 
 ## Why
 
-Для выпуска JB Search нужен автоматический процесс, который берёт проверенные
-исходники из `master` и публикует новые версии в VS Code Marketplace без
-ручной подготовки и загрузки VSIX.
+Releasing JB Search needs an automated process that takes validated source from
+`master` and publishes new versions to VS Code Marketplace without manually
+preparing and uploading a VSIX.
 
 ## What Changes
 
-- Добавить GitHub Actions workflow публикации из `master` после проверок.
-- Использовать доверенную публикацию Marketplace через GitHub OIDC без PAT.
-- Использовать версию, указанную в `package.json`, и не повторять уже
-  опубликованную версию; автоматически не изменять файлы и не создавать теги.
-- Описать отдельную настройку издателя и защищённого GitHub Environment, а
-  также границу между подготовкой workflow и реальной публикацией.
+- Add a GitHub Actions workflow that publishes from `master` after validation.
+- Use Marketplace trusted publishing through GitHub OIDC without a PAT.
+- Use the version specified in `package.json` and skip an already published
+  version; do not modify files or create tags automatically.
+- Document separate publisher and protected GitHub Environment setup, and the
+  boundary between preparing a workflow and actual publication.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `marketplace-publication`: проверяемый процесс выпуска расширения в
-  Marketplace из исходников защищённой ветки.
+- `marketplace-publication`: a verifiable extension release process for
+  Marketplace using source from a protected branch.
 
 ### Modified Capabilities
 
-Нет.
+None.
 
 ## Impact
 
-Затрагиваются GitHub Actions, документация проекта и настройки издателя в
-Marketplace. Реализация workflow согласована пользователем; коммит, push,
-перенос в `master`, настройка внешних сервисов и первая публикация в этот
-scope не входят. Процесс упаковки не меняет поддерживаемые платформы
-расширения. Ручная проверка расширения в VS Code и работоспособность выпуска в
-реальном Marketplace требуют отдельной фиксации.
+GitHub Actions, project documentation, and Marketplace publisher settings are
+affected. The user approved implementing the workflow; commits, push, transfer
+to `master`, external service setup, and the first publication are outside this
+scope. Packaging does not change the extension's supported platforms. Manual
+extension checks in VS Code and actual Marketplace release operation must be
+recorded separately.

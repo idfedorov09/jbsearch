@@ -1,29 +1,29 @@
 # Tasks
 
-## 1. Контракт и возможности VS Code
+## 1. VS Code contract and capabilities
 
-- [x] 1.1 Проверить штатный API групп/Secondary Side Bar и редакторских decorations на установленном desktop VS Code; сохранить первоисточники и решение ADR 0007 с явным ограничением sidebar.
+- [x] 1.1 Check the public groups/Secondary Side Bar API and editor decorations in the installed desktop VS Code; record primary sources and ADR 0007 with the explicit sidebar limitation.
 
-## 2. Снимок и живые диапазоны
+## 2. Snapshot and live ranges
 
-- [x] 2.1 Реализовать детерминированный порядок и отслеживание диапазонов без перестановки дерева; unit-проверки insert/delete/replace/multiline/UTF-16/CRLF/Undo.
-- [x] 2.2 Подключить проверку изменённого документа через worker, INVALID/pending и guards от устаревших ответов; unit-проверки ошибок, удаления и невозможности stale Replace.
+- [x] 2.1 Implement deterministic ordering and range tracking without reordering the tree; add unit checks for insert/delete/replace/multiline/UTF-16/CRLF/Undo.
+- [x] 2.2 Connect changed-document validation through the worker, INVALID/pending states, and stale-response guards; add unit checks for errors, deletion, and prevention of stale Replace.
 
-## 3. Find Window и редактирование
+## 3. Find Window and editing
 
-- [x] 3.1 Сделать отдельный виртуализированный UI дерева с toolbar, сворачиванием и клавиатурой без формы modal/кнопки Open in Find Window; проверить DOM и browser layout, описать управление.
-- [x] 3.2 Подключить настоящий правый редактор и decorations с preserveFocus и защитой от быстрой смены результатов; unit-проверки группы и отдельный GUI smoke с редактированием/Undo.
-- [x] 3.3 Сделать gear → draft modal → обновление исходной вкладки, Esc и New Tab; проверить изоляцию нескольких сессий и сохранение query/options/scope.
+- [x] 3.1 Build a dedicated virtualized tree UI with a toolbar, collapsing, and keyboard support, without the modal form/Open in Find Window button; check the DOM and browser layout, and document controls.
+- [x] 3.2 Connect a real right editor and decorations with preserveFocus and protection against fast result switching; add group unit checks and a separate GUI smoke with editing/Undo.
+- [x] 3.3 Implement gear → draft modal → original tab update, Esc, and New Tab; check isolation of multiple sessions and preservation of query/options/scope.
 
-## 4. Интеграция и поставка
+## 4. Integration and distribution
 
-- [x] 4.1 Выполнить check/test/spec:check/package, проверить оба VSIX; сохранить протокол и согласовать прежний сценарий переноса в OpenSpec/README.
-- [x] 4.2 Проверить в изолированном обычном VS Code Find/Replace → дерево, детерминированный порядок, editable preview/Undo/INVALID, rerun, gear/Cancel/Confirm/New Tab и тему; записать точную среду, снимки и ограничения.
+- [x] 4.1 Run check/test/spec:check/package, inspect both VSIX files; record the report and align the earlier transfer scenario in OpenSpec/README.
+- [x] 4.2 Check Find/Replace → tree, deterministic ordering, editable preview/Undo/INVALID, rerun, gear/Cancel/Confirm/New Tab, and the theme in isolated regular VS Code; record the exact environment, screenshots, and limitations.
 
 ## Workflow follow-up
 
-- Точное размещение native editor внутри Secondary Side Bar остаётся пожеланием,
-  ограниченным возможностями stock VS Code; обычная правая editor group не
-  считается такой sidebar-вкладкой. macOS/Windows и физический Remote клиент
-  проверяются отдельно, без переноса статуса Linux.
-- После проверки и review согласовать синхронизацию baseline и архивирование.
+- Exact native editor placement inside the Secondary Side Bar remains a request
+  limited by stock VS Code capabilities; a regular right editor group does not
+  count as such a sidebar tab. macOS/Windows and a physical Remote client are
+  checked separately, without inheriting Linux status.
+- Agree on baseline synchronization and archiving after validation and review.

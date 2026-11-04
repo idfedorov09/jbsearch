@@ -1,3 +1,3 @@
 # prepare-initial-release
 
-Подготовить JB Search 0.1.0 к выпуску: документация, проверенная упаковка, коммиты и push только в dev, без публикации.
+Prepare JB Search 0.1.0 for release: documentation, verified packaging, commits, and push only to dev, without publication.

@@ -2,206 +2,208 @@
 
 ## Purpose
 
-Дать пользователю компактный плавающий диалог поверх редактора, с preview внутри
-и переходом к снимку той же сессии во вкладке VS Code. Отдельная компоновка Find
-Window описана в изменении implement-find-window. Контракт реализуемого изменения;
-проверки платформ ведутся отдельно. Открытие зависит от внутренней команды;
-проверены stock VS Code 1.143.1/1.144.1 Linux/X11, macOS и Windows ещё требуют проверки.
+Give the user a compact floating dialog over the editor, with an internal preview
+and a way to open the same session's snapshot in a VS Code tab. The separate
+Find Window layout is described in change implement-find-window. This is the
+contract of the change being implemented; platform checks are tracked separately.
+Opening depends on an internal command; stock VS Code 1.143.1/1.144.1 Linux/X11
+has been tested, while macOS and Windows still require verification.
 
 ## ADDED Requirements
 
 ### Requirement: Floating search window
-Продукт SHALL предоставлять компактный перемещаемый и изменяемый по размеру
-диалог поверх текущего окна VS Code на macOS, Windows и Linux, как Find in Files
-JetBrains. Отдельное окно редактора не считается выполнением этого требования.
+The product SHALL provide a compact, movable, resizable dialog over the current
+VS Code window on macOS, Windows, and Linux, like JetBrains Find in Files.
+A separate editor window does not satisfy this requirement.
 
 #### Scenario: User opens search
-- **WHEN** пользователь нажимает Cmd+Shift+F на macOS в настроенном поддерживаемом контексте
-- **THEN** поверх текущего редактора появляется компактный диалог поиска с results и preview внутри
-- **AND** фокус получает поле запроса
+- **WHEN** the user presses Cmd+Shift+F on macOS in a configured, supported context
+- **THEN** a compact search dialog appears over the current editor, with results and preview inside
+- **AND** the query field receives focus
 
 #### Scenario: Existing session
-- **WHEN** пользователь повторно вызывает поиск из того же экземпляра
-- **THEN** показывается существующая сессия без потери запроса и фильтров
+- **WHEN** the user invokes search again from the same instance
+- **THEN** the existing session appears without losing the query or filters
 
 #### Scenario: Workbench size changes
-- **WHEN** пользователь уменьшает окно VS Code при открытом диалоге
-- **THEN** диалог и его основные действия остаются достижимыми в границах workbench
+- **WHEN** the user shrinks the VS Code window while the dialog is open
+- **THEN** the dialog and its primary actions remain reachable within the workbench
 
 ### Requirement: Standard extension installation
-Продукт SHALL работать как обычное расширение в стандартном VS Code поддерживаемой
-версии без отдельного приложения, модификации установки или включения debugger.
+The product SHALL work as an ordinary extension in stock VS Code of a supported
+version, without a separate application, an installation patch, or enabling a debugger.
 
 #### Scenario: VSIX installation
-- **WHEN** пользователь устанавливает VSIX в поддерживаемый VS Code
-- **THEN** команда расширения может открыть требуемый диалог без режима разработки
-- **AND** интерфейс принадлежит исходному окну VS Code
+- **WHEN** the user installs the VSIX in a supported VS Code version
+- **THEN** the extension command can open the required dialog without development mode
+- **AND** the UI belongs to the original VS Code window
 
 #### Scenario: Remote client setup
-- **WHEN** первый preview открыт в Remote workspace без клиентского компонента
-- **THEN** основной extension устанавливает включённый в его поставку UI extension штатным механизмом VS Code на клиент
-- **AND** настройка не требует отдельного приложения, debugger, скачивания темы на сервер или ручной настройки транспорта
+- **WHEN** the first preview opens in a Remote workspace without the client component
+- **THEN** the main extension installs its bundled UI extension on the client through VS Code's native mechanism
+- **AND** setup requires no separate application, debugger, theme download to the server, or manual transport configuration
 
 #### Scenario: Client setup unavailable
-- **WHEN** установка клиентского компонента не удалась либо он отключён
-- **THEN** preview явно объясняет ограничение и сохраняет выделение matches
-- **AND** новая отрисовка не запускает установку циклически; пользователь может повторить настройку командой Set Up Client Preview
+- **WHEN** client component installation fails or the component is disabled
+- **THEN** the preview explicitly explains the limitation and keeps match highlighting
+- **AND** rerendering does not trigger an installation loop; the user can retry setup with Set Up Client Preview
 
 #### Scenario: Client update
-- **WHEN** установленный клиентский компонент имеет другую сборку, чем вложенный пакет
-- **THEN** расширение обнаруживает несовпадение и выполняет ограниченную попытку обновления
-- **AND** если старый клиентский код ещё загружен, пользователю предлагается Reload Window
+- **WHEN** the installed client component has a different build from the nested package
+- **THEN** the extension detects the mismatch and makes a bounded update attempt
+- **AND** if old client code is still loaded, the user is offered Reload Window
 
 ### Requirement: Session transfer
-Продукт SHALL открывать снимок сессии во вкладке VS Code с сохранением запроса,
-фильтров и выбранного результата. Вкладка использует отдельное дерево результатов
-и настоящий редактор справа по контракту Find results window; новая вкладка
-создаёт независимую сессию. Нижнее read-only preview относится к modal.
+The product SHALL open a session snapshot in a VS Code tab while preserving its
+query, filters, and selected result. The tab uses a separate results tree and a
+native editor on the right under the Find results window contract; a new tab
+creates an independent session. The read-only preview below belongs to the modal.
 
 #### Scenario: Open in editor tab
-- **WHEN** пользователь нажимает «Открыть во вкладке»
-- **THEN** вкладка в исходном окне VS Code показывает ту же сессию
-- **AND** диалог скрывается только после готовности вкладки
-- **AND** вкладка не повторяет форму modal и кнопку Open in Find Window
-- **AND** выбранный файл открыт в настоящем редактируемом редакторе справа
+- **WHEN** the user clicks “Open in tab”
+- **THEN** a tab in the original VS Code window shows the same session
+- **AND** the dialog hides only after the tab is ready
+- **AND** the tab does not repeat the modal form or Open in Find Window button
+- **AND** the selected file is open in a native editable editor on the right
 
 #### Scenario: Edit originating search
-- **WHEN** пользователь нажимает шестерёнку Find-вкладки
-- **THEN** modal открывается с черновиком её query/options/scope
-- **AND** подтверждение обновляет исходную вкладку, а Esc оставляет её снимок без изменения
+- **WHEN** the user clicks the Find tab's gear
+- **THEN** the modal opens with a draft of its query/options/scope
+- **AND** confirmation updates the original tab, while Esc leaves its snapshot unchanged
 
 #### Scenario: Independent session
-- **WHEN** пользователь выбирает «Новая вкладка»
-- **THEN** новая сессия получает копию запроса/фильтров
-- **AND** дальнейшее изменение запроса не меняет исходную сессию
+- **WHEN** the user selects “New tab”
+- **THEN** a new session receives a copy of the query/filters
+- **AND** subsequent query changes do not affect the original session
 
 #### Scenario: Reload view
-- **WHEN** webview перезагружается при работающем extension host
-- **THEN** запрос, фильтры и доступный выбор восстанавливаются
-- **AND** восстановление не требует записи запросов или исходного кода на диск
+- **WHEN** the webview reloads while the extension host is running
+- **THEN** the query, filters, and available selection are restored
+- **AND** restoration does not require writing queries or source code to disk
 
 ### Requirement: Result preview and navigation
-В modal продукт SHALL показывать read-only preview выбранного совпадения с TextMate syntax highlighting активной темы, путём,
-номерами строк и выделением match; открытие результата адресуется исходному VS Code.
-Semantic tokens языковых серверов в контракт modal не входят. Find Window
-использует настоящий TextEditor, описанный в implement-find-window, и сохраняет
-его обычную подсветку и редактирование.
+In the modal, the product SHALL show a read-only preview of the selected match
+with the active theme's TextMate syntax highlighting, path, line numbers, and
+match highlighting; opening a result targets the original VS Code instance.
+Language server semantic tokens are not part of the modal contract. Find Window
+uses the native TextEditor described in implement-find-window and preserves its
+ordinary highlighting and editing.
 
 #### Scenario: Change selected modal result
-- **WHEN** пользователь выбирает другое совпадение в modal
-- **THEN** preview соответствует выбранному результату
-- **AND** запоздавший ответ для предыдущего выбора не подменяет preview
+- **WHEN** the user selects another match in the modal
+- **THEN** the preview corresponds to the selected result
+- **AND** a late response for the previous selection does not replace the preview
 
 #### Scenario: Match spans syntax tokens
-- **WHEN** один найденный диапазон в preview пересекает несколько TextMate-токенов
-- **THEN** фон и рамка обводят весь непрерывный диапазон строки без внутренних границ по токенам
-- **AND** цвета и начертания syntax-токенов сохраняются, а выбранное и остальные совпадения используют соответствующие цвета темы
-- **AND** соседние отдельные совпадения не объединяются, многострочный match выделяется на каждой строке и zero-width match остаётся видимым маркером
+- **WHEN** one found range in the preview spans several TextMate tokens
+- **THEN** the background and border cover the entire continuous line range without internal token boundaries
+- **AND** syntax token colors and styles are preserved, while the selected and other matches use the corresponding theme colors
+- **AND** adjacent separate matches are not merged, a multiline match is highlighted on each line, and a zero-width match remains a visible marker
 
 #### Scenario: Translucent match fill
-- **WHEN** тема задаёт фоновую заливку совпадения в выдаче или preview
-- **THEN** заливка сохраняет цвет темы с уменьшенной непрозрачностью, включая исходный alpha-канал
-- **AND** прозрачность текста, syntax styles и рамки не уменьшается
-- **AND** прозрачный фон текущего совпадения остаётся прозрачным
+- **WHEN** the theme defines a match background fill in results or preview
+- **THEN** the fill preserves the theme color with reduced opacity, including the original alpha channel
+- **AND** text, syntax style, and border opacity are not reduced
+- **AND** a transparent current-match background remains transparent
 
 #### Scenario: Open result
-- **WHEN** пользователь нажимает Enter на результате или дважды кликает его
-- **THEN** файл открывается на диапазоне совпадения в исходном экземпляре VS Code
+- **WHEN** the user presses Enter on a result or double-clicks it
+- **THEN** the file opens at the match range in the original VS Code instance
 
 #### Scenario: Deleted or changed file
-- **WHEN** файл удалён либо диапазон устарел к моменту открытия
-- **THEN** пользователь видит понятное состояние и возможность обновить результаты
-- **AND** старый диапазон не считается достоверным
+- **WHEN** the file is deleted or the range is stale by the time it is opened
+- **THEN** the user sees an understandable state and an option to refresh results
+- **AND** the old range is not treated as reliable
 
 #### Scenario: Theme installed only on client
-- **WHEN** Remote preview открыт с клиентским компонентом и активная тема установлена только на клиенте
-- **THEN** preview использует правила этой темы, её includes и editor.tokenColorCustomizations без серверной копии темы
-- **AND** поиск и чтение найденных файлов остаются на сервере; запросы и исходный текст не отправляются клиентскому компоненту
+- **WHEN** Remote preview opens with the client component and the active theme is installed only on the client
+- **THEN** the preview uses that theme's rules, its includes, and editor.tokenColorCustomizations without a server copy of the theme
+- **AND** search and reading found files remain on the server; queries and source text are not sent to the client component
 
 #### Scenario: Grammar installed only on client
-- **WHEN** grammar языка отсутствует на сервере, но доступна клиентскому компоненту
-- **THEN** preview получает и использует клиентскую grammar через команды VS Code
-- **AND** для совпадающего языка или scope доступная серверная grammar сохраняет приоритет
+- **WHEN** a language grammar is absent from the server but available to the client component
+- **THEN** the preview obtains and uses the client grammar through VS Code commands
+- **AND** an available server grammar keeps priority for the same language or scope
 
 #### Scenario: Modal preview resources unavailable
-- **WHEN** необходимая grammar или тема недоступна на обоих hosts либо превышены ограничения ресурсов
-- **THEN** preview явно сообщает об ограничении доступной подсветки и продолжает выделять совпадения
+- **WHEN** a required grammar or theme is unavailable on both hosts or resource limits are exceeded
+- **THEN** the preview explicitly reports the limitation of available highlighting and continues highlighting matches
 
 #### Scenario: Client theme changes
-- **WHEN** пользователь меняет тему, token customizations или набор расширений на клиенте при открытом Remote preview
-- **THEN** снимок ресурсов и выбранное preview обновляются без отдельного выбора палитры или переустановки темы на сервер
-- **AND** обновление preview не переносит фокус из query и не подменяет более новый выбор старым ответом
+- **WHEN** the user changes the theme, token customizations, or extension set on the client while Remote preview is open
+- **THEN** the resource snapshot and selected preview update without a separate palette selection or theme reinstallation on the server
+- **AND** updating the preview does not move focus from the query or replace a newer selection with an old response
 
 ### Requirement: Keyboard access
-В modal продукт SHALL поддерживать Tab/Shift+Tab, Space для переключателей, ввод newline,
-навигацию results стрелками и закрытие через Esc без потери сессии.
+In the modal, the product SHALL support Tab/Shift+Tab, Space for toggles, newline
+input, arrow navigation in results, and closing with Esc without losing the session.
 
 #### Scenario: Options and multiline input
-- **WHEN** пользователь переходит Tab к Match Case и нажимает Space
-- **THEN** состояние переключается и доступно screen reader
-- **AND** Shift+Enter в query вставляет перевод строки; стрелки двигают каретку
+- **WHEN** the user tabs to Match Case and presses Space
+- **THEN** the state toggles and is accessible to a screen reader
+- **AND** Shift+Enter in the query inserts a newline; arrows move the caret
 
 #### Scenario: Input method composition
-- **WHEN** пользователь подтверждает IME composition клавишей Enter
-- **THEN** действие завершает ввод и не открывает файл случайно
+- **WHEN** the user confirms IME composition with Enter
+- **THEN** the action completes input and does not accidentally open a file
 
 #### Scenario: Escape
-- **WHEN** пользователь нажимает Esc без открытого меню в диалоге
-- **THEN** окно скрывается, а запрос и фильтры сохраняются в сессии
+- **WHEN** the user presses Esc with no menu open in the dialog
+- **THEN** the window hides, while the query and filters remain in the session
 
 ### Requirement: Visual integration and accessibility
-Продукт SHALL использовать штатный контейнер modal editor VS Code и наследовать
-текущую тему в controls webview, включая high contrast, с видимым фокусом,
-доступными именами controls и изменяемым соотношением results/preview.
+The product SHALL use the native VS Code modal editor container and inherit the
+current theme in webview controls, including high contrast, with visible focus,
+accessible control names, and an adjustable results/preview ratio.
 
 #### Scenario: Theme inheritance
-- **WHEN** пользователь меняет тему VS Code при открытом диалоге
-- **THEN** оформление диалога обновляется вслед за темой без отдельного выбора палитры
+- **WHEN** the user changes the VS Code theme while the dialog is open
+- **THEN** the dialog styling follows the theme without a separate palette selection
 
 #### Scenario: Layout and zoom
-- **WHEN** пользователь меняет размер окна или масштаб интерфейса
-- **THEN** query, фильтры и основные действия остаются доступными без наложения
-- **AND** preview расположен под results, а разделитель позволяет менять его высоту
+- **WHEN** the user resizes the window or changes the UI zoom
+- **THEN** the query, filters, and primary actions remain available without overlap
+- **AND** the preview sits below results, with a divider to change its height
 
 #### Scenario: Compact controls
-- **WHEN** пользователь открывает диалог при обычном масштабе
-- **THEN** окно и строки интерфейса компактны относительно workbench и близки по плотности к присланному референсу
-- **AND** фильтры и настройки обозначены различимыми иконками с доступными названиями и достаточной областью нажатия
+- **WHEN** the user opens the dialog at ordinary zoom
+- **THEN** the window and UI rows are compact relative to the workbench and close in density to the supplied reference
+- **AND** filters and settings have distinct icons with accessible names and sufficient click targets
 
 ### Requirement: Find and Replace modes
-Продукт SHALL открывать Find по Cmd/Ctrl+Shift+F и Replace по Cmd/Ctrl+Shift+R
-в компактной компоновке JetBrains с preview снизу. Оба режима разделяют query,
-options и scopes, а Replace добавляет replacement, preserve case и действия замены.
+The product SHALL open Find with Cmd/Ctrl+Shift+F and Replace with Cmd/Ctrl+Shift+R
+in a compact JetBrains layout with a preview below. Both modes share query,
+options, and scopes; Replace adds replacement, preserve case, and replacement actions.
 
 #### Scenario: Replace shortcut
-- **WHEN** пользователь нажимает Cmd/Ctrl+Shift+R
-- **THEN** открывается Replace in Files с дополнительным полем замены
-- **AND** query и filters текущей сессии сохраняются
+- **WHEN** the user presses Cmd/Ctrl+Shift+R
+- **THEN** Replace in Files opens with an additional replacement field
+- **AND** the current session's query and filters are preserved
 
 ### Requirement: Host availability
-Продукт SHALL явно сообщать о недоступности поддерживаемого интерфейса поиска,
-потере соединения и неподдерживаемом окружении, не имитируя успешный поиск.
+The product SHALL explicitly report unavailable support for the search UI,
+connection loss, and unsupported environments without imitating successful search.
 
 #### Scenario: Unsupported dialog host
-- **WHEN** окружение не предоставляет поддерживаемого способа открыть требуемый диалог
-- **THEN** пользователь получает объяснение ограничения
-- **AND** другой контейнер не выдаётся за реализацию требуемого диалога
+- **WHEN** the environment provides no supported way to open the required dialog
+- **THEN** the user receives an explanation of the limitation
+- **AND** another container is not presented as implementing the required dialog
 
 #### Scenario: Modal editors disabled
-- **WHEN** пользователь отключил modal editors в настройках VS Code
-- **THEN** расширение объясняет ограничение до открытия
-- **AND** не меняет настройку молча и не выдаёт обычную вкладку за открытый диалог
+- **WHEN** the user has disabled modal editors in VS Code settings
+- **THEN** the extension explains the limitation before opening
+- **AND** it does not silently change the setting or present an ordinary tab as an opened dialog
 
 #### Scenario: Other editors
-- **WHEN** JB Search вызывается при штатном режиме modal editors some
-- **THEN** расширение не включает режим all
-- **AND** открытие обычных файлов сохраняет стандартное поведение вкладок
+- **WHEN** JB Search is invoked with the native modal editors mode some
+- **THEN** the extension does not enable mode all
+- **AND** ordinary files retain standard tab-opening behavior
 
 #### Scenario: Connection lost
-- **WHEN** соединение с исходным VS Code потеряно
-- **THEN** результаты помечены неактуальными и действия открытия недоступны до восстановления связи
+- **WHEN** the connection to the original VS Code instance is lost
+- **THEN** results are marked stale and opening actions are unavailable until the connection is restored
 
 #### Scenario: Unsupported virtual or browser host
-- **WHEN** поиск вызван в окружении без реализованной поддержки
-- **THEN** показывается явное ограничение
-- **AND** удалённые пути не используются для поиска на локальном диске
+- **WHEN** search is invoked in an environment without implemented support
+- **THEN** an explicit limitation is shown
+- **AND** remote paths are not used to search the local disk

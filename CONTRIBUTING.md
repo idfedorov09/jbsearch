@@ -1,27 +1,27 @@
-# Участие в разработке JB Search
+# Contributing to JB Search
 
-## Ветки: dev как trunk
+## Branches: dev as the trunk
 
-В проекте используются только две долгоживущие ветки:
+The project uses only two long-lived branches:
 
-- `dev` — единый trunk, в котором выполняется вся обычная разработка. Изменения
-  вносятся прямо в неё небольшими проверяемыми порциями и короткими итерациями.
-- `master` — стабильная точка. В неё переносится готовая, проверенная история из
-  `dev`, когда это отдельно согласовано.
+- `dev` is the single trunk for ordinary development. Make small, verifiable
+  changes directly on this branch in short iterations.
+- `master` is the stable branch. Transfer ready, verified history from `dev`
+  only when separately agreed.
 
-Feature- и release-ветки не используются; это не Git Flow. Перед работой проверьте
-`git status` и текущую ветку. Не теряйте чужие незакоммиченные изменения. Если
-развитие `master` и `dev` разошлось и безопасный перенос не очевиден, остановитесь
-и обсудите способ синхронизации, не переписывая историю молча.
+There are no feature or release branches; this is not Git Flow. Check
+`git status` and the current branch before working. Preserve other people's
+uncommitted changes. If `master` and `dev` have diverged and a safe transfer is
+unclear, stop and discuss synchronization without silently rewriting history.
 
-Для согласованного переноса линейной истории, если `master` является предком `dev`,
-можно использовать `git merge --ff-only dev` из `master`. Команда не выполняет
-обратный push; перед отправкой проверьте итоговую историю. Если fast-forward
-невозможен, сначала выясните причину, а не заменяйте его принудительной операцией.
+For an agreed transfer of linear history, if `master` is an ancestor of `dev`,
+run `git merge --ff-only dev` from `master`. This does not push anything; review
+the resulting history before pushing. If fast-forward is impossible, investigate
+the cause instead of forcing the operation.
 
-## Подготовка и проверки
+## Setup and checks
 
-Нужны VS Code, Node.js 22.12+ и npm. В корне проекта:
+Use VS Code, Node.js 22.12+, and npm. From the repository root:
 
 ```sh
 npm ci
@@ -30,92 +30,102 @@ npm test
 npm run spec:check
 ```
 
-`npm ci` не компилирует JavaScript, но его `prepare` создаёт
-`bundled/jbsearch-client.vsix` и метаданные сборки из `client/` и закреплённых
-runtime-зависимостей. Это клиентская UI-часть Remote preview, включаемая в основной
-VSIX. `npm run prepare:client` повторяет подготовку после её изменения; неизменённый
-пакет используется повторно. Генерируемые `bundled/` и `.client-build/` не включаются
-в Git. Проверяйте основной и вложенный VSIX при изменении поставки.
+`npm ci` does not compile JavaScript, but its `prepare` hook creates
+`bundled/jbsearch-client.vsix` and build metadata from `client/` and the pinned
+runtime dependencies. This client UI component supplies Remote preview resources
+and is included in the main VSIX. Run `npm run prepare:client` after changing it;
+an unchanged package is reused. Generated `bundled/` and `.client-build/`
+directories stay out of Git. Verify both main and nested VSIX packages when
+changing distribution.
 
-Проверяйте изменения релевантными автоматическими тестами и вручную там, где
-затронут интерфейс редактора. Фиксируйте отдельно, что проверено автоматически,
-а что — в реальном VS Code. Скрипты не заменяют ручную проверку интерфейса.
+Use relevant automated tests and manual checks when editor UI is affected.
+Record automated checks separately from checks in real VS Code. Scripts do not
+replace manual UI validation.
 
-Для упаковки локального установочного файла:
+To create a local installation package:
 
 ```sh
 npm run package
 ```
 
-Созданный `.vsix` — артефакт, а не исходник: не включайте его в Git. Перед
-распространением проверяйте состав поставки и работоспособность пакета.
+The generated `.vsix` is an artifact, not source; keep it out of Git. Check
+package contents and functionality before distributing it.
 
-## Быстрый цикл разработки
+## Fast development cycle
 
-Исходники — JavaScript/CommonJS, отдельная компиляция не нужна. Откройте папку
-проекта в VS Code, нажмите F5 и в отдельном окне **Extension Development Host**
-вызовите **JB Search: Find in Files** / **JB Search: Replace in Files** из палитры команд. После правки и
-сохранения исходников выполните в dev-host **Developer: Reload Window** или
-перезапустите F5. Установка VSIX и повышение версии для этого не нужны.
+Sources are JavaScript/CommonJS and need no separate compilation. Open the
+project in VS Code, press F5, then invoke **JB Search: Find in Files** or
+**JB Search: Replace in Files** in the separate **Extension Development Host**.
+After editing and saving, run **Developer: Reload Window** in that host or
+restart F5. Neither VSIX installation nor a version bump is needed.
 
-Для работы с исходниками в обычном окне используйте штатную регистрацию папки
-через **Developer: Install Extension from Location…**, как описано в README.
-После правок достаточно **Developer: Reload Window**; расширение читает ту же
-папку. Это отличается от F5, который запускает отдельный Extension Development Host.
+To use sources in a normal window, register the folder with
+**Developer: Install Extension from Location…**, as described in README.
+After editing, **Developer: Reload Window** is sufficient: the extension reads
+the same folder. F5 instead starts a separate Extension Development Host.
 
-При Remote SSH основной extension работает на сервере, а
-`idfedorov09.jbsearch-client` — в локальном UI host. Первый Remote preview
-устанавливает клиентскую часть из вложенного VSIX штатной командой VS Code.
-Она читает тему и grammar resources клиента; запросы и найденные файлы ей не
-передаются. Тема на сервере для этого не нужна. Команда **JB Search: Set Up Client
-Preview** повторяет настройку после ошибки или обновления пакета; если старый
-клиентский код ещё загружен, требуется Reload Window.
+With Remote SSH, the main extension runs on the server and
+`idfedorov09.jbsearch-client` runs in the local UI host. The first Remote preview
+installs the client from the nested VSIX using a standard VS Code command.
+It reads the client's theme and grammar resources; search queries and matched
+files are not sent to it. No server-side theme installation is needed.
+**JB Search: Set Up Client Preview** retries setup after a failure or package
+update; use Reload Window if old client code is still loaded.
 
-После изменения только серверного кода достаточно Reload Window. После изменения
-`client/` сначала выполните в корне `npm run prepare:client`, затем команду
-настройки клиентского preview. Для цикла разработки без упаковки клиентскую папку
-`client/` можно зарегистрировать из исходников **на клиенте**, установив её
-зависимости через `npm ci` в этой папке. Серверная регистрация корня репозитория
-не является локальной регистрацией `client/`; обе привязаны к выбранному профилю
-и host. Проверяйте соответствующий host, не меняя соседние проекты или рабочий
-клиентский профиль без запроса.
+Server-only changes need only Reload Window. After changing `client/`, run
+`npm run prepare:client` from the root, then the client preview setup command.
+For development without packaging, register the `client/` source folder **on the
+client** after running `npm ci` inside it. Registering the repository root on the
+server does not register `client/` locally; each registration belongs to its
+selected profile and host. Test the appropriate host without changing neighboring
+projects or the user's working client profile unless requested.
 
-Для проверки именно установленной копии VSIX после каждой правки требуется
-заново упаковать и установить пакет: установленное расширение не связано с
-исходной папкой и не обновится от изменения версии автоматически. Пошаговая
-инструкция, включая установку через Extensions, находится в [README.md](README.md).
+To test an installed VSIX copy, rebuild and reinstall after each change. It is
+not linked to the source folder and does not update automatically when the
+version changes. [README.md](README.md) includes installation steps through
+Extensions.
 
-## Изменения и версия
+## Project language
 
-Основной `README.md` и все его дальнейшие правки должны быть на английском языке,
-включая разделы, примеры и описания. Язык внутренней документации, ADR и OpenSpec
-остаётся прежним.
+Write and maintain all repository content in English, including documentation,
+OpenSpec changes and main specs, ADRs, contributor and agent guidance, changelog,
+research and testing reports, code comments, and human-readable metadata.
+Conversation with the user remains in Russian unless they request another
+language.
 
-### ADR и OpenSpec
+Preserve technical identifiers, commands, paths, URLs, dates, test evidence, and
+historical status. Non-English Unicode/localization fixtures are test data;
+keep their meaning and coverage, using Unicode escapes where appropriate.
+Historical screenshots and Git history remain unchanged.
 
-- В [docs/adr](docs/adr/README.md) записываем причины архитектурных решений.
-  Proposed означает обсуждение; Accepted — принятое решение, не готовый код.
-- В [openspec/specs](openspec/specs/) описываем проверенное текущее поведение.
-  Будущие функции обсуждаем в `openspec/changes/<имя>/`: proposal, design,
-  spec deltas; tasks составляем после прояснения существенных решений.
-- Создаём change через `npm run openspec -- new change <имя>`, затем читаем
-  `instructions <артефакт> --change <имя>`. Проверяем `npm run spec:check`.
-- После согласования scope реализуем небольшими итерациями и обновляем tasks.
-  Архивирование и перенос требований в baseline — после реализации и проверок.
-  Успешная структурная валидация не подтверждает принятие плана пользователем.
+## Changes and versions
 
-### Версии
+### ADRs and OpenSpec
 
-Расширение содержит Find/Replace; матрица реальных проверок ведётся отдельно в
-[docs/testing/find-replace.md](docs/testing/find-replace.md). Формулируйте ожидаемое поведение и границы будущей функции до её
-разработки, а выполненные проверки и известные ограничения — после. Планы и
-списки задач не подтверждают наличие функции и сами по себе не разрешают её
-реализацию.
+- Record architectural rationale in [docs/adr](docs/adr/README.md). Proposed
+  means under discussion; Accepted means the decision is made, not that code
+  is implemented.
+- [openspec/specs](openspec/specs/) describes verified current behavior.
+  Discuss future changes in `openspec/changes/<name>/`: proposal, design, and
+  spec deltas. Write tasks after resolving material design decisions.
+- Create a change with `npm run openspec -- new change <name>`, then read
+  `instructions <artifact> --change <name>`. Run `npm run spec:check`.
+- Once scope is agreed, implement in small iterations and update tasks.
+  Archive and sync requirements into the baseline after implementation and
+  validation. Structural validation alone does not establish user approval.
 
-Для выпускаемых версий придерживайтесь SemVer: исправления — patch, совместимые
-новые возможности — minor, несовместимые изменения — major. Тестирование через
-F5 не требует увеличения версии. Изменение версии, коммит, push, перенос в
-`master` и публикация согласуются отдельно. После активации подготовленного
-workflow push в `master` с новой версией может автоматически опубликовать её;
-при согласовании push необходимо учитывать это последствие. Настройка доступа,
-ограничение ветки и проверка описаны в [инструкции](docs/marketplace-publishing.md).
+### Versions
+
+The extension implements Find/Replace; the actual validation matrix lives in
+[docs/testing/find-replace.md](docs/testing/find-replace.md). Describe expected
+behavior and boundaries before development, and completed checks and known
+limitations afterward. Plans and task lists neither prove a feature exists
+nor authorize implementation by themselves.
+
+Use SemVer for release versions: patch for fixes, minor for compatible new
+features, and major for incompatible changes. F5 testing does not require a
+version bump. Version changes, commits, push, transfers to `master`, and
+publication require separate agreement. Once the prepared workflow is activated,
+a push to `master` with a new version can automatically publish it; account for
+that effect when agreeing to push. Access setup, branch restrictions, and
+validation are covered in the [publishing guide](docs/marketplace-publishing.md).

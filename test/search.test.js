@@ -49,7 +49,7 @@ test('literal punctuation, case and Unicode whole words share a matcher', () => 
     matches('cat Cat catalog scat', { query: 'cat', caseSensitive: true, wholeWord: true }).length,
     1
   );
-  assert.equal(matches('кот котик скот', { query: 'кот', wholeWord: true }).length, 1);
+  assert.equal(matches('\u043a\u043e\u0442 \u043a\u043e\u0442\u0438\u043a \u0441\u043a\u043e\u0442', { query: '\u043a\u043e\u0442', wholeWord: true }).length, 1);
   assert.equal(matches('a.b axb', { query: 'a.b', regex: true }).length, 2);
 });
 
@@ -68,7 +68,7 @@ test('typed newlines work on LF and CRLF and literal backslash-n stays literal',
 });
 
 test('ranges use UTF-16, repeated matches stay distinct and zero-width advances by code point', () => {
-  const result = matches('😀 привет cat cat\r\nкот', { query: 'cat' });
+  const result = matches('😀 \u043f\u0440\u0438\u0432\u0435\u0442 cat cat\r\n\u043a\u043e\u0442', { query: 'cat' });
   assert.equal(result[0].range.start.character, 10);
   assert.equal(result[1].range.start.character, 14);
   assert.notEqual(result[0].id, result[1].id);

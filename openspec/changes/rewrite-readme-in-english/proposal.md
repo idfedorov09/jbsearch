@@ -2,34 +2,34 @@
 
 ## Why
 
-Пользователь запросил основной README на английском с конкретной структурой
-страницы продукта. Это правило нужно сохранить для будущих правок.
+The user requested an English main README with a specific product-page structure.
+Preserve that rule for future edits.
 
 ## What Changes
 
-- Переписать корневой README по заданной структуре, сохранив точные сведения
-  о возможностях, установке, проверенных платформах и ограничениях.
-- Оставить четыре понятных места для будущих GIF без несуществующих media URLs.
-- Закрепить английский язык корневого README в AGENTS.md, CONTRIBUTING.md
-  и контексте OpenSpec.
-- Install направить к действующей инструкции установки; не выдумывать
-  публикацию Marketplace, ссылку на донаты или сроки roadmap.
+- Rewrite the root README using the specified structure while preserving accurate
+  capabilities, installation guidance, tested platforms, and limitations.
+- Leave four clear slots for future GIFs without nonexistent media URLs.
+- Establish English for the root README in AGENTS.md, CONTRIBUTING.md, and the
+  OpenSpec context.
+- Direct Install to actual installation instructions; do not invent Marketplace
+  publication, a donation link, or roadmap deadlines.
 
-Scope явно разрешён пользователем: документация и языковое правило.
-Последующим запросом пользователь также разрешил коммит и push этого изменения
-в `dev`. Публикация и изменение иконки в эту задачу не входят.
+The user explicitly authorized the scope: documentation and the language rule.
+In a subsequent request, the user also authorized commit and push of this change
+to `dev`. Publication and icon changes are outside this task.
 
 ## Capabilities
 
 ### New Capabilities
 
-Нет: меняется документация, без нового поведения расширения.
+None: documentation changes without new extension behavior.
 
 ### Modified Capabilities
 
-Нет изменений требований продукта. `skip_specs: true`.
+No product requirement changes. `skip_specs: true`.
 
 ## Impact
 
-README.md, AGENTS.md, CONTRIBUTING.md, openspec/config.yaml и этот change.
-Runtime, зависимости и версия расширения не меняются.
+README.md, AGENTS.md, CONTRIBUTING.md, openspec/config.yaml, and this change.
+Runtime, dependencies, and extension version remain unchanged.

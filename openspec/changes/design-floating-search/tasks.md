@@ -1,50 +1,51 @@
 # Tasks
 
-## 1. Контракт и поставка
+## 1. Contract and delivery
 
-- [x] 1.1 Обновить ADR/specs под подтверждённые Find/Replace и worker regex; проверка spec:check.
-- [x] 1.2 Добавить bundled ripgrep/TextMate/Oniguruma и manifest команд/shortcuts/settings; проверить npm ci и VSIX contents.
+- [x] 1.1 Update ADR/specs for confirmed Find/Replace and worker regex; run spec:check.
+- [x] 1.2 Add bundled ripgrep/TextMate/Oniguruma and the commands/shortcuts/settings manifest; check npm ci and VSIX contents.
 
-## 2. Поиск и сессия
+## 2. Search and session
 
-- [x] 2.1 Реализовать отменяемый worker search с scopes, masks, ignore и dirty snapshots; тесты Unicode/CRLF/regex/limits/cancel.
-- [x] 2.2 Реализовать SessionController и guarded modal adapter; тесты generation, off/unsupported, state lifecycle.
-- [x] 2.3 Реализовать Replace/Replace All через WorkspaceEdit с captures и stale checks; тесты literal/captures/overlap/stale/partial.
+- [x] 2.1 Implement cancellable worker search with scopes, masks, ignore, and dirty snapshots; test Unicode/CRLF/regex/limits/cancel.
+- [x] 2.2 Implement SessionController and the guarded modal adapter; test generation, off/unsupported, and state lifecycle.
+- [x] 2.3 Implement Replace/Replace All through WorkspaceEdit with captures and stale checks; test literal/captures/overlap/stale/partial.
 
-## 3. UI и preview
+## 3. UI and preview
 
-- [x] 3.1 Реализовать компактный Find/Replace UI по референсам, scopes, фильтры, keyboard/splitter; проверить browser/VS Code automation.
-- [x] 3.2 Реализовать TextMate preview из активной темы/grammars с match ranges; тесты escaping/theme/token ranges и реальный preview.
-- [x] 3.3 Реализовать перенос во вкладку, повторный вызов, смену темы и документировать использование/ограничения в README.
+- [x] 3.1 Implement the compact Find/Replace UI from the references, scopes, filters, keyboard/splitter; check with browser/VS Code automation.
+- [x] 3.2 Implement TextMate preview from the active theme/grammars with match ranges; test escaping/theme/token ranges and real preview.
+- [x] 3.3 Implement moving to a tab, reopening, and theme changes; document usage/limitations in README.
 
-## 4. Интеграция и проверка
+## 4. Integration and verification
 
-- [x] 4.1 Выполнить check/test/spec:check/package и проверить установленный VSIX в чистом Linux VS Code: Find/Replace, Undo, themes, scopes, Esc/move/resize/tab.
-- [ ] 4.2 Выполнить ручную проверку macOS и Windows: shortcuts, focus/IME, themes, resize/tab/replace; сохранить отдельную матрицу результатов.
-- [x] 4.3 Поднять установочный пакет до 0.1.0, показывать загруженную версию в Check Installation и проверить обновление прежнего VSIX.
-- [x] 4.4 Проверить штатную регистрацию из исходников и Reload Window на 1.143.1; отразить фактическую папку в Check Installation.
-- [x] 4.5 Зарегистрировать исходники в рабочем Remote SSH профиле и проверить активную запись, сохраняя другие расширения.
-- [ ] 4.6 Реализовать корректное syntax preview клиентских grammars/themes при Remote SSH и проверить на разных машинах; до этого явно показывать fallback.
+- [x] 4.1 Run check/test/spec:check/package and test the installed VSIX in clean Linux VS Code: Find/Replace, Undo, themes, scopes, Esc/move/resize/tab.
+- [ ] 4.2 Manually test macOS and Windows: shortcuts, focus/IME, themes, resize/tab/replace; keep a separate results matrix.
+- [x] 4.3 Bump the installation package to 0.1.0, show the loaded version in Check Installation, and test upgrading the previous VSIX.
+- [x] 4.4 Check native source registration and Reload Window on 1.143.1; show the actual folder in Check Installation.
+- [x] 4.5 Register sources in the working Remote SSH profile and verify the active entry while preserving other extensions.
+- [ ] 4.6 Implement correct syntax preview of client grammars/themes over Remote SSH and verify it between different machines; explicitly show fallback until then.
 
-  Клиентский канал реализован: Linux Remote SSH loopback проверен из исходников
-  и установленного основного VSIX, включая BL, клиентскую JS grammar и тему.
-  Открытой остаётся проверка на разных физических машинах; этот пункт не закрывается
-  только по loopback. Недоступность ресурсов по-прежнему обозначается явно.
+  The client channel is implemented: Linux Remote SSH loopback was tested from
+  source and the installed main VSIX, including BL, the client JS grammar, and
+  theme. Verification between different physical machines remains open; this item
+  is not completed on loopback evidence alone. Resource unavailability is still
+  reported explicitly.
 
-## 5. Замечания по референсу
+## 5. Reference feedback
 
-- [x] 5.1 Уплотнить диалог и его элементы относительно присланного референса; заменить иконки фильтра и настроек и проверить работу при изменении размера.
-- [x] 5.2 Сделать настройку сочетаний Find/Replace доступной из настроек расширения через штатный редактор клавиш VS Code и проверить её.
-- [x] 5.3 Исправить подсветку preview с учётом установленной темы и Remote SSH; сохранить выделение совпадений и явно описать непокрытые случаи.
-- [x] 5.4 Проверить и описать оставшиеся фиксированные размеры, настройки и ограничения, выполнить подходящие автоматические и интеграционные проверки.
-- [x] 5.5 По согласованию проверить изолированный прототип native TextEditor preview с клиентской темой при Remote SSH; зафиксировать read-only, несохранённый текст, потерю ввода и ограничение переноса. Это исследование не закрывает реализацию 4.6/5.3.
-- [x] 5.6 Реализовать согласованную клиентскую передачу темы/grammars через команды VS Code, поставку локального UI-компонента и настройку без ручной установки темы на сервер.
-- [x] 5.7 Проверить готовый Remote preview в едином окне и вкладке: клиентская GitHub Dark Default, BL и клиентская JS grammar, смена темы/customizations, быстрый ввод, Replace/Undo, read-only и исходники/Reload Window.
-- [x] 5.8 Исправить дробление рамки совпадения по TextMate-токенам: единый контейнер на диапазон строки, сохранение syntax styles, соседних/multiline/zero-width matches и табуляции; проверить DOM и реальный browser layout.
-- [x] 5.9 По замечанию пользователя сделать заливку совпадений прозрачнее, сохранив цвет и исходный alpha темы, текст и рамку; проверить выдачу, preview и переключение тем в браузере.
+- [x] 5.1 Make the dialog and its controls more compact relative to the supplied reference; replace filter/settings icons and verify resizing behavior.
+- [x] 5.2 Make Find/Replace shortcut customization accessible from extension settings through VS Code's native shortcut editor and verify it.
+- [x] 5.3 Fix preview highlighting for the installed theme and Remote SSH; preserve match highlighting and explicitly document uncovered cases.
+- [x] 5.4 Check and document remaining fixed dimensions, settings, and limitations; run appropriate automated and integration checks.
+- [x] 5.5 As agreed, test an isolated native TextEditor preview prototype with the client theme over Remote SSH; record read-only behavior, unsaved text, input loss, and the move-to-tab limitation. This research does not complete implementation items 4.6/5.3.
+- [x] 5.6 Implement the agreed client theme/grammar transfer through VS Code commands, local UI component delivery, and setup without manually installing the theme on the server.
+- [x] 5.7 Test the finished Remote preview in the unified window and tab: client GitHub Dark Default, BL and client JS grammar, theme/customization changes, rapid typing, Replace/Undo, read-only behavior, and source registration/Reload Window.
+- [x] 5.8 Fix match borders fragmented by TextMate tokens: one container per line range, preserving syntax styles, adjacent/multiline/zero-width matches, and tabs; check the DOM and real browser layout.
+- [x] 5.9 Following user feedback, make match fills more transparent while preserving the theme color and original alpha, text, and border; test results, preview, and theme switching in the browser.
 
-Проверки и оставшиеся платформы: [матрица](../../../docs/testing/find-replace.md).
+Checks and remaining platforms: [matrix](../../../docs/testing/find-replace.md).
 
 ## Workflow follow-up
 
-- После платформенной проверки и review синхронизировать baseline и архивировать change.
+- After platform verification and review, synchronize the baseline and archive the change.

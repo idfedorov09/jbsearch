@@ -1,100 +1,100 @@
-# Кандидат JB Search 0.2.1
+# JB Search 0.2.1 candidate
 
-Текущая версия основного расширения — **0.2.1**: исправлены видимость/название
-пункта Explorer и активация результата в modal. Вложенный UI client
-остаётся **0.1.0**, его код и протокол не менялись. Проверки этого изменения
-фиксируются в [Explorer и активация результатов](testing/explorer-navigation-fixes.md).
-Проверки добавления Directory в 0.2.0: [Explorer Find in Files](testing/explorer-find-in-files.md).
+The current main extension version is **0.2.1**: Explorer item visibility/title
+and modal result activation are fixed. The nested UI client remains **0.1.0**,
+with unchanged code and protocol. Validation is recorded in
+[Explorer and result navigation](testing/explorer-navigation-fixes.md).
+Checks for the 0.2.0 Directory addition: [Explorer Find in Files](testing/explorer-find-in-files.md).
 
-## История подготовки 0.1.0
+## 0.1.0 preparation history
 
-Дата подготовки: **4 ноября 2026**. Ветка: **dev**.
+Preparation date: **November 4, 2026**. Branch: **dev**.
 
-Это подготовка исходников и установочного пакета. Публичный выпуск и перенос
-в `master` ещё не выполнены. Версия `0.1.0` согласована в main/client manifests
-и lockfiles; в первоначальном Git scaffold была `0.0.1`.
+This prepares sources and an installation package. Public release and transfer
+to `master` have not happened. Version `0.1.0` is consistent across main/client
+manifests and lockfiles; the initial Git scaffold used `0.0.1`.
 
-## Состав
+## Contents
 
-- Find/Replace modal и native Find Panel описаны в [changelog](../CHANGELOG.md).
-- Технические границы — в [implementation-limits](implementation-limits.md).
-- Вложенный `idfedorov09.jbsearch-client` включается в основной VSIX и нужен для
-  клиентской темы/grammars preview в Remote; отдельное приложение не требуется.
-- VSIX, `bundled/`, `.client-build/`, node_modules и временные тестовые профили
-  не входят в Git. Артефакт выпуска собирается из исходников.
+- Find/Replace modal and native Find Panel are described in the [changelog](../CHANGELOG.md).
+- Technical boundaries are in [implementation-limits](implementation-limits.md).
+- Nested `idfedorov09.jbsearch-client` is included in the main VSIX and supplies
+  client theme/grammar resources for Remote preview; no separate application is needed.
+- VSIX, `bundled/`, `.client-build/`, node_modules, and temporary test profiles
+  stay out of Git. Release artifacts are built from sources.
 
-## Проверки подготовки
+## Preparation checks
 
-- [x] Чистая установка зависимостей `npm ci` на Node.js 22.
-- [x] Main/client version и lockfiles согласованы на `0.1.0`.
-- [x] `npm audit --omit=dev`: у поставляемых runtime dependencies нет известных
-  уязвимостей по ответу npm в момент подготовки.
-- [x] `npm run check`; `npm test` — **146/146**; `npm run spec:check` — **7/7**;
-  `npm run package` — успешно на Node.js **22.23.2** / npm **12.0.2**, Linux x64.
-- [x] Проверен первоначальный состав VSIX и вложенный клиент: **72** и **31** файлов,
-  main/client версии `0.1.0`, build клиента соответствует метаданным. README и
-  changelog включены; dev dependencies, тесты и исследовательские документы исключены.
-- [x] Git staging проверен: generated bundles/VSIX исключены; сканирование
-  текста и OCR **22** тестовых PNG не обнаружили credentials или личных данных.
-- [x] Исходники отправлены в `origin/dev`; GitHub Check прошёл для коммита
+- [x] Clean dependency installation with `npm ci` on Node.js 22.
+- [x] Main/client versions and lockfiles agree on `0.1.0`.
+- [x] `npm audit --omit=dev`: distributed runtime dependencies had no known
+  vulnerabilities according to npm at preparation time.
+- [x] `npm run check`; `npm test` **146/146**; `npm run spec:check` **7/7**;
+  `npm run package` passed on Node.js **22.23.2** / npm **12.0.2**, Linux x64.
+- [x] Initial main/nested VSIX contents verified: **72** and **31** files,
+  main/client version `0.1.0`, client build matches metadata. README and changelog
+  included; dev dependencies, tests, and research documents excluded.
+- [x] Git staging reviewed: generated bundles/VSIX excluded; text scanning and
+  OCR of **22** test PNGs found no credentials or personal information.
+- [x] Sources pushed to `origin/dev`; GitHub Check passed for commit
   `e4d78278d146d96358b9816320b5764a748a3d26`.
 
-Результаты первоначальной упаковки и SHA-256:
+Initial packaging results and SHA-256:
 [release-candidate-package-results.json](testing/release-candidate-package-results.json).
-Размер первоначального VSIX: **24 329 409 байт**. Наличие ripgrep для всех платформ проверено
-в архиве; это не заменяет запуск расширения на каждой из них.
+Initial VSIX size: **24,329,409 bytes**. Ripgrep presence for all platforms was
+checked in the archive; this does not replace running the extension on each OS.
 
-## Проверено ранее в настоящем VS Code
+## Earlier checks in actual VS Code
 
-- Исходники, VS Code 1.143.1 на Linux/X11: **13/13** сценариев native Find Panel.
-- Установленный VSIX, VS Code 1.144.1 на Linux/X11: **13/13** тех же сценариев.
-- Иконки Find и Explorer: **10/10** сравнений в каждом прогоне, включая BL,
-  JS/JSON, каталоги и смену icon theme.
-- INVALID/Undo, guarded replace, gear drafts, независимые поиски и открытие
-  исходника в центральной группе подтверждены GUI.
+- Sources, VS Code 1.143.1 on Linux/X11: **13/13** native Find Panel scenarios.
+- Installed VSIX, VS Code 1.144.1 on Linux/X11: the same **13/13** scenarios.
+- Find/Explorer icons: **10/10** comparisons in each run, including BL,
+  JS/JSON, folders, and icon theme changes.
+- GUI confirmed INVALID/Undo, guarded replacement, gear drafts, independent
+  searches, and source opening in the central group.
 
-Это автоматизированные GUI-прогоны реальных окон, а не ручная приёмка всех
-платформ. Точные версии пакетов и условия: [native Find Panel](testing/native-find-panel.md),
-[modal/Remote preview](testing/find-replace.md). Изменения подготовки релиза
-не меняют runtime поиска и UI; новые упаковочные проверки записываются отдельно.
+These are automated GUI runs in actual windows, not manual acceptance of all
+platforms. Exact package versions and conditions: [native Find Panel](testing/native-find-panel.md),
+[modal/Remote preview](testing/find-replace.md). Release preparation does not
+change search runtime or UI; new packaging checks are recorded separately.
 
-## Перед публичным выпуском
+## Before public release
 
-- [ ] Выполнить ручную приёмку macOS и Windows: shortcuts, focus/IME, Esc,
-  move/resize, Find/Replace, центральный редактор, INVALID и Undo.
-- [ ] Проверить физический Remote между разными машинами: клиентские theme/grammars,
-  файловые иконки в Panel, смена тем, Replace/Undo и установка клиентского bundle.
-- [ ] Провести review кандидата и подтвердить выпуск именно выбранной версии.
-- [ ] Настроить/проверить GitHub Environment и Marketplace Trusted Publishing
-  по [инструкции](marketplace-publishing.md); эти настройки пока не подтверждены.
-- [ ] Отдельно разрешить перенос в `master` и публикацию; обновить дату changelog.
-- [ ] После выпуска проверить GitHub Actions, карточку Marketplace и установку
-  в чистом VS Code.
+- [ ] Complete manual macOS and Windows acceptance: shortcuts, focus/IME, Esc,
+  move/resize, Find/Replace, central editor, INVALID, and Undo.
+- [ ] Check physical Remote between separate machines: client theme/grammars,
+  file icons in Panel, theme changes, Replace/Undo, and client bundle installation.
+- [ ] Review the candidate and confirm release of the specifically selected version.
+- [ ] Configure/verify GitHub Environment and Marketplace Trusted Publishing
+  following the [guide](marketplace-publishing.md); these settings are unconfirmed.
+- [ ] Separately authorize transfer to `master` and publication; update the changelog date.
+- [ ] After release, check GitHub Actions, the Marketplace listing, and installation
+  in clean VS Code.
 
-Иконка основного расширения добавлена по отдельному запросу пользователя:
-[PNG 256×256](../media/icon.png) из [исходного SVG](artwork/icon.svg).
-Новый VSIX с иконкой содержит **73** файла, вложенный клиент — **31**.
-Check, **146/146** тестов, **8/8** проверок OpenSpec и package прошли; результат
-записан отдельно от первоначального кандидата в
+The main extension icon was added at the user's separate request:
+[256×256 PNG](../media/icon.png) from the [source SVG](artwork/icon.svg).
+The new VSIX with the icon contains **73** files; the nested client has **31**.
+Check, **146/146** tests, **8/8** OpenSpec checks, and package passed; results
+are recorded separately from the initial candidate in
 [extension-icon-package-results.json](testing/extension-icon-package-results.json).
-PNG просмотрен, карточка расширения в настоящем VS Code вручную не проверялась.
-Невыполненные платформенные и внешние проверки остаются в
-соответствующих OpenSpec changes; подготовка `dev` не закрывает их автоматически.
+The PNG was reviewed; the extension listing in actual VS Code was not manually
+checked. Unfinished platform/external checks remain in their OpenSpec changes;
+preparing `dev` does not automatically complete them.
 
-## Git и CI
+## Git and CI
 
-Первый функциональный коммит: `e4d78278d146d96358b9816320b5764a748a3d26`
-(`feat: implement floating Find/Replace and native Find panel`). Он отправлен
-обычным push в `origin/dev`; удалённый HEAD совпал с локальным. Первый запрос
-push получил GitHub Internal Server Error, повторная отправка прошла без force.
+First functional commit: `e4d78278d146d96358b9816320b5764a748a3d26`
+(`feat: implement floating Find/Replace and native Find panel`). It was sent by
+normal push to `origin/dev`; remote and local HEAD matched. The first push request
+received GitHub Internal Server Error; retry succeeded without force.
 
 [GitHub Check #41810967859](https://github.com/idfedorov09/jbsearch/actions/runs/41810967859)
-завершился успешно **4 ноября 2026, 09:57:50 UTC** для указанного коммита:
-чистый `npm ci --ignore-scripts`, check, **146/146** тестов, **7/7** проверок
-OpenSpec, сборка и verifier основного/вложенного VSIX. Этот протокол и финальная
-отметка OpenSpec фиксируются отдельным последующим коммитом документации;
-runtime и состав поставки в нём не меняются.
+passed on **November 4, 2026, 09:57:50 UTC** for that commit: clean
+`npm ci --ignore-scripts`, check, **146/146** tests, **7/7** OpenSpec checks,
+build, and main/nested VSIX verifier. This report and the final OpenSpec mark
+are recorded in a separate subsequent documentation commit without runtime or
+distribution changes.
 
-`master` остался на `b88978d771a59fbacd2492128ff3d865dc6e8ff4`.
-`dev` запускает обычные проверки. Workflow публикации ограничен `master`;
-после настройки доверия push в эту ветку может публично выпустить версию.
+`master` remained at `b88978d771a59fbacd2492128ff3d865dc6e8ff4`.
+`dev` runs ordinary checks. Publication is restricted to `master`; after trust
+setup, pushing to that branch can publish a version publicly.

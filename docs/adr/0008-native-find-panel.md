@@ -1,71 +1,76 @@
-# ADR 0008: Штатное дерево Find в нижней панели и центральный редактор
+# ADR 0008: Native Find tree in the bottom panel and central editor
 
-Статус: **Accepted**
+Status: **Accepted**
 
-Дата: 2026-11-04
+Date: 2026-11-04
 
-## Контекст
+## Context
 
-HTML-дерево ADR 0007 показывало собственные SVG для всех файлов и папок. Пользователь
-попросил штатные клиентские иконки, в том числе при Remote. Native TreeView позволяет
-оставить SearchEngine/сессии/INVALID нашими и передать ResourceLabels workbench.
-Публичный API размещает contributed tree в View, но не в центральном Editor.
-Пользователь явно выбрал нижнюю панель с открытием результата в центре.
+The HTML tree from ADR 0007 displayed custom SVGs for all files and folders.
+The user requested native client icons, including under Remote. Native TreeView
+lets SearchEngine/sessions/INVALID remain custom while delegating ResourceLabels
+to the workbench. The public API places a contributed tree in a View, but not in
+a central Editor. The user explicitly chose the bottom panel with results opening
+in the center.
 
-## Решение
+## Decision
 
-Использовать contributed `panel` container `jbsearch-find` с TreeView
-`jbsearch.results`. FindTree получает снимки SearchController, строит данные дерева
-и передаёт `TreeItem.resourceUri` и `ThemeIcon.File`/`Folder`. Сворачиваемым file
-узлам File задаётся явно, иначе дочерние matches сделали бы их папками по умолчанию.
-Иконки, theme changes, строки, highlights и раскрытие рисует сам workbench клиента.
-Читать или пересылать JSON/шрифты/картинки клиентской icon theme не требуется.
+Use a contributed `panel` container, `jbsearch-find`, with the TreeView
+`jbsearch.results`. FindTree receives SearchController snapshots, builds the tree
+data, and supplies `TreeItem.resourceUri` and `ThemeIcon.File`/`Folder`. File is
+set explicitly on collapsible file nodes; otherwise, child matches would make
+them folders by default. The client workbench itself renders icons, theme changes,
+rows, highlights, and expansion. Reading or forwarding JSON/fonts/images from
+the client icon theme is unnecessary.
 
-Один view показывает выбранный поиск; независимые снимки доступны через Switch
-Saved Search (QuickPick). New Search и Keep as a new search сохраняют независимость
-параметров. Hide Panel сохраняет сессии, Close Search отменяет её workers/checks и
-освобождает снимок. Gear открывает isolated draft выбранного поиска; Esc оставляет
-исходные параметры, подтверждение обновляет тот же поиск.
+One view shows the selected search; independent snapshots are available through
+Switch Saved Search (QuickPick). New Search and Keep as a new search keep their
+parameters independent. Hide Panel preserves sessions; Close Search cancels that
+session's workers/checks and releases the snapshot. The gear opens an isolated
+draft of the selected search; Esc leaves the original parameters, and confirmation
+updates the same search.
 
-FindPreview открывает файл через showTextDocument в активной editor group. Новые
-группы и перенос существующих вкладок не выполняются. Click сохраняет фокус дерева;
-Open and Focus Editor / Cmd/Ctrl+Enter переводит фокус в исходник и закрепляет таб.
-Панель сама, фоновые batches и Rerun не меняют документ редактора до явного выбора.
-70%-заливка search decorations сохраняется в исходнике; в дереве используются
-обычные TreeItemLabel highlights, без собственного HTML/CSS.
-INVALID помечается префиксом перед сниппетом и штатным ThemeIcon `error` с
-ThemeColor `errorForeground`. Цвет ошибки выбирает активная тема; файловые иконки
-и текст остальных строк сохраняют штатное оформление.
+FindPreview opens a file through showTextDocument in the active editor group.
+It neither creates groups nor moves existing tabs. A click preserves tree focus;
+Open and Focus Editor / Cmd/Ctrl+Enter focuses the source and pins the tab.
+The panel itself, background batches, and Rerun do not change the editor document
+before explicit selection. The 70% fill of search decorations remains in the
+source; the tree uses ordinary TreeItemLabel highlights without custom HTML/CSS.
+INVALID is marked by a prefix before the snippet and the native ThemeIcon `error`
+with ThemeColor `errorForeground`. The active theme chooses the error color;
+file icons and the text of other rows retain their native appearance.
 
-Это заменяет **размещение и renderer** ADR 0007. Его snapshot ordering, tracking,
-worker validation, INVALID/Undo и guarded replace сохраняются. Modal и клиентский
-мост ADR 0006 не изменяются. Старые восстановленные findWindow editor URI
-перенаправляются в панель; in-memory history после Reload не восстанавливается.
+This supersedes the **placement and renderer** of ADR 0007. Its snapshot ordering,
+tracking, worker validation, INVALID/Undo, and guarded replacement remain.
+The modal and client bridge from ADR 0006 are unchanged. Restored old findWindow
+editor URIs redirect to the panel; in-memory history is not restored after Reload.
 
-## Альтернативы
+## Alternatives
 
-- Пересылать клиентскую file icon theme в webview: возможно, но требуется адаптация
-  resolver/CSS/resources и поддержание совместимости с логикой workbench.
-- Native tree в центральном editor: публичного API нет; renderer injection/patch
-  нарушил бы выбранный способ обычной установки расширения.
-- Скрытая TreeView с извлечением DOM/иконок: публичного API извлечения DOM нет.
+- Forward the client file icon theme to a webview: possible, but requires adapting
+  the resolver/CSS/resources and maintaining compatibility with workbench logic.
+- Native tree in a central editor: no public API; renderer injection/patching would
+  violate the chosen ordinary extension installation approach.
+- Hidden TreeView with DOM/icon extraction: no public API for extracting the DOM.
 
-## Последствия и проверки
+## Consequences and checks
 
-Нижняя панель заменяет отдельные editor tabs результатов; сессии переключаются
-штатным QuickPick. Положение Panel остаётся настраиваемым пользователем; расширение
-не переносит Terminal/Problems и не переписывает layout. Новых runtime dependencies,
-сокетов или proposed API нет. Дополнительная клиентская установка для дерева не нужна.
+The bottom panel replaces separate results editor tabs; sessions are switched
+through native QuickPick. The user can still configure the Panel position; the
+extension does not move Terminal/Problems or rewrite the layout. There are no new
+runtime dependencies, sockets, or proposed APIs. The tree needs no additional
+client installation.
 
-Unit-проверки покрывают resource URIs/icons, UTF-16 highlights, порядок/INVALID,
-сессии/команды и центральный редактор без split. Реальный GUI-протокол и матрица
-платформ фиксируются отдельно в [native-find-panel](../testing/native-find-panel.md).
-Ссылка на протокол не означает, что непроверенные платформы уже протестированы.
+Unit checks cover resource URIs/icons, UTF-16 highlights, ordering/INVALID,
+sessions/commands, and the central editor without splits. The real GUI report
+and platform matrix are recorded separately in
+[native-find-panel](../testing/native-find-panel.md). A link to the report does not
+mean that unverified platforms have already been tested.
 
-## Источники
+## Sources
 
 - [Tree View API](https://code.visualstudio.com/api/extension-guides/tree-view)
-- [TreeItem и resourceUri](https://code.visualstudio.com/api/references/vscode-api#TreeItem)
+- [TreeItem and resourceUri](https://code.visualstudio.com/api/references/vscode-api#TreeItem)
 - [showTextDocument](https://code.visualstudio.com/api/references/vscode-api#window.showTextDocument)
-- [Места регистрации View](https://github.com/microsoft/vscode/blob/main/src/vs/workbench/api/browser/viewsExtensionPoint.ts)
+- [View registration locations](https://github.com/microsoft/vscode/blob/main/src/vs/workbench/api/browser/viewsExtensionPoint.ts)
 - [OpenSpec change](../../openspec/changes/use-native-find-panel/)

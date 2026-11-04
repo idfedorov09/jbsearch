@@ -1,26 +1,31 @@
 # rewrite-readme-in-english
 
-Переписать основной README на английском в согласованной структуре и закрепить язык его дальнейших правок.
+Rewrite the main README in English using the agreed structure and establish the language for future edits.
 
-## Результат и проверка — 2026-11-04
+Historical scope note: this change established English for the root README only.
+The repository-wide English policy in adopt-english-project-language supersedes
+that narrower policy; the results below record the original change.
 
-- README полностью на английском; 11 разделов второго уровня идут в порядке
-  пользователя. Hero и три demo отмечены четырьмя HTML-комментариями без битых images.
-- 17 ссылок разобраны; локальные targets и внутренний anchor Installation существуют.
-  Requirements/version и основные shortcuts сверены с manifest; New Line — с media/search.js.
-- Английский для корневого README закреплён в AGENTS.md, CONTRIBUTING.md
-  и openspec/config.yaml; OpenSpec artifacts сохраняют русский язык.
-- `npm run check` и `git diff --check` — успешно.
-- `npm test` — 146/146; `npm run spec:check` — 9/9, включая этот change.
-- Новые persistent tests для текста не добавлялись. Runtime, зависимости и версия
-  не менялись; GUI и упаковка VSIX в этой задаче не выполнялись.
+## Results and validation — 2026-11-04
 
-## Что ещё нужно от пользователя
+- README is entirely in English; 11 second-level sections follow the user's
+  order. Hero and three demos are marked by four HTML comments without broken images.
+- 17 links parsed; local targets and the internal Installation anchor exist.
+  Requirements/version and main shortcuts checked against the manifest; New Line
+  checked against media/search.js.
+- English for the root README was established in AGENTS.md, CONTRIBUTING.md,
+  and openspec/config.yaml; OpenSpec artifacts retained Russian at that time.
+- `npm run check` and `git diff --check` passed.
+- `npm test`: 146/146; `npm run spec:check`: 9/9, including this change.
+- No new persistent text tests were added. Runtime, dependencies, and version
+  remained unchanged; GUI and VSIX packaging were not performed for this task.
 
-- Hero GIF и три demo GIF.
-- Подтверждённая ссылка Marketplace после публикации. Пока Install ведёт к
-  реальной инструкции установки из VSIX/исходников.
-- Ссылка на финансовую поддержку, если она нужна. Пока Support development
-  предлагает звезду на GitHub, обратную связь и платформенные проверки.
-- Дополнительные продуктовые приоритеты roadmap, если требуются: сейчас перечислены
-  только уже открытые платформенные проверки и подготовка выпуска без сроков.
+## Materials still needed from the user
+
+- A Hero GIF and three demo GIFs.
+- A confirmed Marketplace link after publication. Install currently leads to
+  actual VSIX/source installation instructions.
+- A financial-support link, if desired. Support development currently suggests
+  a GitHub star, feedback, and platform checks.
+- Additional roadmap product priorities, if needed: the current list contains
+  only existing open platform checks and release preparation, without deadlines.

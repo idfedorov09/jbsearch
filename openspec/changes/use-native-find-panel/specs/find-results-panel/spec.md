@@ -2,86 +2,86 @@
 
 ## Purpose
 
-Предоставить штатное дерево результатов поиска с клиентскими иконками VS Code
-в нижней панели и переходом к редактируемому исходнику в центральной области.
+Provide a native search results tree with VS Code client icons in the bottom
+panel and navigation to editable source in the central area.
 
 ## ADDED Requirements
 
 ### Requirement: Native Find panel
-Продукт SHALL показывать Find как штатную панель VS Code, по умолчанию в нижнем
-Panel. Дерево SHALL использовать активную тему иконок для файлов и каталогов
-и обычные средства VS Code для раскрытия, выбора и подсветки строк.
+The product SHALL display Find as a native VS Code panel, in the bottom Panel
+by default. The tree SHALL use the active icon theme for files and directories
+and standard VS Code controls for expansion, selection, and row highlighting.
 
 #### Scenario: Transfer from modal
-- **WHEN** пользователь подтверждает Open in Find Panel
-- **THEN** modal закрывается, а панель показывает дерево того же поиска
-- **AND** центральная вкладка дерева и новая editor group не создаются
-- **AND** активный исходный документ не переключается до выбора результата
+- **WHEN** the user confirms Open in Find Panel
+- **THEN** the modal closes and the panel shows the same search's tree
+- **AND** no central tree tab or new editor group is created
+- **AND** the active source document does not switch until a result is selected
 
 #### Scenario: Client file icons
-- **WHEN** для файла или папки есть иконка в активной теме либо языковом расширении
-- **THEN** дерево использует штатную иконку VS Code для этого ресурса
-- **AND** смена темы иконок применяется средствами редактора без копирования темы на сервер
+- **WHEN** a file or folder has an icon in the active theme or a language extension
+- **THEN** the tree uses VS Code's native icon for that resource
+- **AND** icon theme changes are applied by the editor without copying the theme to the server
 
 ### Requirement: Open source in central editor
-Выбор результата SHALL открывать настоящий TextEditor в текущей editor group,
-прокручивать к актуальному диапазону и выделять совпадения. Продукт MUST NOT
-создавать справа дополнительную editor group для Find.
+Selecting a result SHALL open a real TextEditor in the current editor group,
+scroll to the current range, and highlight matches. The product MUST NOT create
+an additional right editor group for Find.
 
 #### Scenario: Click occurrence
-- **WHEN** пользователь нажимает на совпадение в дереве
-- **THEN** соответствующий файл открывается в центральной области на его позиции
-- **AND** фокус сохраняется у дерева для последовательной навигации
+- **WHEN** the user clicks a match in the tree
+- **THEN** the corresponding file opens in the central area at its position
+- **AND** focus stays in the tree for sequential navigation
 
 #### Scenario: Explicit edit
-- **WHEN** пользователь выполняет Open and Focus Editor для выбранного результата
-- **THEN** фокус переходит в настоящий редактор с обычными подсветкой, Undo и сохранением
-- **AND** создание группы и перенос существующих вкладок не выполняются
+- **WHEN** the user invokes Open and Focus Editor for the selected result
+- **THEN** focus moves to the real editor with ordinary highlighting, Undo, and save
+- **AND** no group is created and no existing tabs are moved
 
 #### Scenario: Fast navigation
-- **WHEN** пользователь быстро выбирает несколько результатов
-- **THEN** редактор показывает последнее выбранное вхождение
-- **AND** завершение фонового поиска не переключает открытый документ
+- **WHEN** the user quickly selects several results
+- **THEN** the editor shows the last selected occurrence
+- **AND** background search completion does not switch the open document
 
 ### Requirement: Independent saved searches
-Find SHALL сохранять независимые поиски в памяти и позволять выбирать их через
-штатный переключатель. Скрытие панели MUST NOT удалять снимок; Close Search
-SHALL освобождать выбранную сессию и её отложенные проверки.
+Find SHALL retain independent searches in memory and allow their selection
+through a native switcher. Hiding the panel MUST NOT delete a snapshot; Close
+Search SHALL release the selected session and its scheduled checks.
 
 #### Scenario: Create another search
-- **WHEN** пользователь выбирает Keep as a new search при подтверждении modal
-- **THEN** создаётся независимый поиск, а прежний доступен в переключателе
-- **AND** отдельная editor-вкладка результатов не создаётся
+- **WHEN** the user selects Keep as a new search when confirming the modal
+- **THEN** an independent search is created and the previous one is available in the switcher
+- **AND** no separate results editor tab is created
 
 #### Scenario: Hide and close
-- **WHEN** пользователь скрывает панель и снова открывает её
-- **THEN** её поиски остаются доступными
-- **WHEN** пользователь выполняет Close Search
-- **THEN** соответствующий снимок освобождается и больше не реагирует на изменения файлов
+- **WHEN** the user hides and reopens the panel
+- **THEN** its searches remain available
+- **WHEN** the user invokes Close Search
+- **THEN** the corresponding snapshot is released and no longer responds to file changes
 
 ### Requirement: Edit active search
-Шестерёнка SHALL открывать modal с параметрами выбранного в Find поиска.
-Подтверждение SHALL обновлять этот поиск; Esc SHALL сохранять его прежние
-параметры и результаты.
+The gear button SHALL open the modal with the parameters of the search selected
+in Find. Confirmation SHALL update that search; Esc SHALL preserve its previous
+parameters and results.
 
 #### Scenario: Confirm or cancel draft
-- **WHEN** пользователь редактирует запрос через Edit Search
-- **THEN** до подтверждения прежний снимок не изменяется
-- **AND** подтверждение обновляет ту же сессию, а отмена удаляет только черновик
+- **WHEN** the user edits the query through Edit Search
+- **THEN** the previous snapshot does not change until confirmation
+- **AND** confirmation updates the same session, while cancellation deletes only the draft
 
 ### Requirement: Retain and validate snapshot
-Завершённая выдача SHALL сохранять детерминированный порядок и изменившиеся
-вхождения как INVALID/pending до Rerun. Замены SHALL использовать существующую
-проверку актуальности диапазонов, блокируя недействительные и неполные результаты.
+Completed results SHALL retain deterministic ordering and changed occurrences
+as INVALID/pending until Rerun. Replacements SHALL use the existing range
+validation, blocking invalid and incomplete results.
 
 #### Scenario: Edit and Undo
-- **WHEN** правка исходника нарушает условие поиска
-- **THEN** соответствующая строка остаётся на месте с INVALID и не заменяется
-- **AND** INVALID отображается перед сниппетом со штатным значком ошибки цвета `errorForeground` активной темы
-- **AND** Undo позволяет тому же вхождению восстановиться после проверки
-- **AND** после восстановления валидности значок ошибки и подпись INVALID исчезают
+- **WHEN** a source edit violates the search condition
+- **THEN** the corresponding row remains in place as INVALID and is not replaced
+- **AND** INVALID appears before the snippet with a native error icon in the active theme's `errorForeground` color
+- **AND** Undo allows the same occurrence to recover after validation
+- **AND** the error icon and INVALID label disappear when validity is restored
 
 #### Scenario: Unsafe replacement
-- **WHEN** пользователь запускает замену INVALID/pending либо Replace All по неполной выдаче
-- **THEN** изменение исходников блокируется с объяснением
-- **AND** Rerun Search явно строит свежую выдачу
+- **WHEN** the user invokes replacement of INVALID/pending results or Replace All on incomplete results
+- **THEN** source modification is blocked with an explanation
+- **AND** Rerun Search explicitly builds fresh results

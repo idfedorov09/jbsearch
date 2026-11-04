@@ -20,7 +20,7 @@ function fixture(t) {
     uri: directoryUri(directory), name: index ? 'Second' : 'Project'
   }));
   const folders = new Set([
-    '/workspace', '/workspace/src', '/workspace/src/nested папка',
+    '/workspace', '/workspace/src', '/workspace/src/nested \u043f\u0430\u043f\u043a\u0430',
     '/workspace/src-other', '/second root', '/second root/chosen folder'
   ]);
   const opened = [], errors = [], scheduled = [], inspected = [];
@@ -83,7 +83,7 @@ function fixture(t) {
 }
 
 test('Explorer opens the selected nested directory before rendering and retains query options', async t => {
-  const f = fixture(t), folder = directoryUri('/workspace/src/nested папка');
+  const f = fixture(t), folder = directoryUri('/workspace/src/nested \u043f\u0430\u043f\u043a\u0430');
   const options = { ...f.session.options };
   const previousAbort = new AbortController();
   f.session.abort = previousAbort;
@@ -91,7 +91,7 @@ test('Explorer opens the selected nested directory before rendering and retains 
     f.opened.push(args);
     assert.deepEqual(f.session.scope, {
       kind: 'directory', directory: folder.fsPath, path: folder.fsPath,
-      label: 'Project/src/nested папка'
+      label: 'Project/src/nested \u043f\u0430\u043f\u043a\u0430'
     });
     assert.deepEqual(f.session.results, [], 'previous results must not flash in the new scope');
     assert.equal(f.session.selectedId, null);

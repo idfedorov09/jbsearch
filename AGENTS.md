@@ -1,91 +1,95 @@
-# JB Search: инструкции для агентов
+# JB Search: agent instructions
 
-Отвечайте пользователю по-русски. Соблюдайте инструкции пользователя и
-вышестоящие инструкции, проверяя фактическое состояние проекта, а не предполагая его.
+Respond to the user in Russian. Follow user and higher-priority instructions,
+and verify the actual project state instead of making assumptions.
 
-## Порядок работы
+## Workflow
 
-- Перед изменениями проверьте текущую ветку и `git status`; сохраняйте чужие и
-  незавершённые изменения. Не переключайте ветки и не переписывайте чужую работу молча.
-- Если пользователь спрашивает, как что-то сделать, просит оценить подход или
-  неясно, требуется ли реализация, сначала кратко изложите план и спросите через
-  `functions.request_user_input`, приступать ли к реализации. Если инструмент
-  недоступен, задайте короткий прямой вопрос в чате. Однозначный запрос на
-  реализацию не требует повторного согласования ожидаемых шагов в его scope.
-- В согласованном scope идите автономно до результата, пока путь ожидаемый. При
-  неожиданной проблеме не прячьте обходное решение: объясните её и варианты
-  решения пользователю до изменения подхода.
-- План, список задач или предложение функции не является разрешением на её
-  реализацию и не является подтверждённой спецификацией уже работающего поведения.
-  Явно отличайте существующее поведение от намерений и непроверенных идей.
-- Делайте небольшие связанные изменения, добавляйте релевантные проверки и
-  честно сообщайте, что именно проверено и какие ограничения остались.
+- Before editing, check the current branch and `git status`; preserve other
+  people's and unfinished changes. Do not silently switch branches or rewrite
+  someone else's work.
+- If the user asks how to do something, requests an assessment, or leaves
+  implementation intent unclear, briefly outline a plan and ask through
+  `functions.request_user_input` whether to implement it. If the tool is
+  unavailable, ask one concise question in chat. An explicit implementation
+  request does not require another approval for expected steps within its scope.
+- Work autonomously toward the agreed result while the path is expected. If an
+  unexpected problem arises, explain it and the available solutions before
+  changing the approach; do not conceal a workaround.
+- A plan, task list, or feature proposal is neither implementation authorization
+  nor a confirmed description of working behavior. Clearly distinguish existing
+  behavior from intentions and unverified ideas.
+- Make small, related changes, add relevant checks, and report honestly what was
+  verified and which limitations remain.
 
-## Ветки и внешние действия
+## Branches and external actions
 
-- Используются две долгоживущие ветки: `dev` — единый trunk для обычной работы;
-  `master` — стабильная точка. Работайте короткими итерациями прямо в `dev`, без
-  Git Flow, feature- и release-веток. Перенос в `master` — только готовой,
-  проверенной истории и по запросу пользователя.
-- Не создавайте коммиты, не делайте push и не меняйте удалённые ветки без
-  отдельного запроса. Исключение — действия, непосредственно и явно запрошенные
-  для первоначальной инициализации репозитория и веток; не расширяйте это
-  разрешение на последующие задачи.
-- Не публикуйте расширение в Marketplace и не настраивайте автоматическую
-  публикацию без отдельного явного запроса. Не создавайте теги и релизы молча.
-- Не помещайте секреты, личные данные и сгенерированные VSIX в Git.
+- There are two long-lived branches: `dev` is the single trunk for ordinary work;
+  `master` is the stable branch. Work in short iterations directly on `dev`,
+  without Git Flow, feature branches, or release branches. Transfer only ready,
+  verified history to `master`, and only at the user's request.
+- Do not commit, push, or change remote branches without a separate request.
+  Actions directly and explicitly requested for the initial repository/branch
+  setup are an exception; do not extend that authorization to subsequent tasks.
+- Do not publish to Marketplace or configure automatic publication without a
+  separate explicit request. Do not silently create tags or releases.
+- Keep secrets, personal information, and generated VSIX files out of Git.
 
-## Проект и проверки
+## Project and validation
 
-- Основной `README.md` пишется и поддерживается на английском языке, включая
-  новые разделы, примеры и описания. Ответы пользователю остаются на русском.
-- Для требований и изменений используйте OpenSpec (`openspec/`), для причин
-  архитектурных решений — ADR (`docs/adr/`). Процесс описан в CONTRIBUTING.md.
-  Черновики в `openspec/changes/` и ADR со статусом Proposed не являются
-  реализованными возможностями или разрешением начинать реализацию.
-- CLI OpenSpec закреплён в devDependencies: `npm run openspec -- <команда>`.
-  Проверка документации: `npm run spec:check`. В `openspec/specs/` переносите
-  требования только после реализации и проверки соответствующего изменения.
-
-- Это VS Code extension на JavaScript/CommonJS. Входная точка указана в `main`
-  файла `package.json`, компиляции исходников нет. Используйте Node.js 22.12+ и `npm ci`.
-  Его `prepare` создаёт вложенный VSIX клиентской UI-части из `client/`; повторная
-  подготовка — `npm run prepare:client`. Сгенерированные пакеты в Git не добавляйте.
-- Реализованы Find/Replace в native modal custom editor и Find Panel
-  со штатным TreeView результатов; Check Installation остаётся. Modal работает через
-  внутренний adapter, поиск — worker/ripgrep, read-only preview диалога — TextMate.
-  При Remote тема и дополнительные grammars для modal поступают через обычные
-  команды от локального UI-расширения `idfedorov09.jbsearch-client`, автоматически
-  устанавливаемого из bundled VSIX. Запросы и содержимое файлов клиентской части
-  не передаются; semantic tokens внутри modal не реализованы. Find Panel
-  использует native TreeView в contributed Panel: resourceUri + ThemeIcon.File/Folder
-  выбирают клиентские иконки workbench, копирования icon theme на сервер нет.
-  Клик открывает настоящий TextEditor в активной центральной editor group; split
-  и новая правая группа не создаются. Открытие/обновление панели само не переключает
-  документ. Сниппеты дерева используют штатные label highlights; syntax/semantic
-  tokens находятся в исходнике. Завершённая выдача — снимок с детерминированным
-  порядком; UTF-16 ranges отслеживаются, изменённые файлы перепроверяются worker,
-  INVALID/pending блокируют замены. Новые совпадения появляются после Rerun Search.
-  Edit Search открывает isolated draft выбранной сессии, Esc сохраняет прежние
-  параметры, подтверждение обновляет её, Keep as a new search создаёт независимую.
-  Поиски переключаются через Switch Saved Search; Hide Panel сохраняет их,
-  Close Search освобождает снимок и отложенные проверки.
-  Сессии живут в памяти и сбрасываются при перезапуске extension host.
-  Проверенные платформы и границы сверяйте с docs/testing/find-replace.md и
-  docs/testing/native-find-panel.md (find-window.md — история прежнего renderer); из Linux-прогона не выводите совместимость
-  macOS/Windows или физического Remote SSH.
-  Не выдавайте непроверенную платформу или незавершённый пункт за готовый результат;
-  иконка, публикация и внешние действия требуют отдельного запроса.
-- Перед завершением изменений запускайте уместные `npm run check` и `npm test`;
-  для проверки упаковки — `npm run package`. Результат ручной проверки в реальном
-  VS Code фиксируйте отдельно; не утверждайте, что она выполнена, если это не так.
-- Для проверки используйте F5 → Extension Development Host либо однократную
-  регистрацию исходной папки через **Developer: Install Extension from Location…**
-  в обычном окне. После правок достаточно **Developer: Reload Window**;
-  версию повышать для reload не нужно. Установленный VSIX — отдельная копия,
-  её необходимо пересобрать и переустановить. Изменения только серверного кода
-  не требуют пересборки клиентской части. После изменения `client/` подготовьте
-  её пакет и выполните **JB Search: Set Up Client Preview**, либо используйте
-  отдельную регистрацию `client/` из исходников на локальном host клиента.
-- Не добавляйте зависимости или новые механизмы без необходимости. Внося
-  изменения в поставку, учитывайте состав VSIX и runtime-зависимости.
+- Write and maintain all repository content in English: README files,
+  CONTRIBUTING, agent instructions, OpenSpec, ADRs, research, testing and release
+  notes, code comments, and human-readable project metadata. Continue speaking
+  Russian with the user unless they request another language. Preserve
+  intentional Unicode/localization fixture values and historical binary
+  evidence; use Unicode escapes for non-English test data where appropriate.
+- Use OpenSpec (`openspec/`) for requirements and changes, and ADRs (`docs/adr/`)
+  for architectural rationale. CONTRIBUTING.md describes the process. Drafts in
+  `openspec/changes/` and Proposed ADRs are neither implemented capabilities nor
+  permission to start implementation.
+- The OpenSpec CLI is pinned in devDependencies: `npm run openspec -- <command>`.
+  Validate documentation with `npm run spec:check`. Move requirements into
+  `openspec/specs/` only after the corresponding change is implemented and verified.
+- This is a JavaScript/CommonJS VS Code extension. Its entry point is `main` in
+  package.json; source compilation is unnecessary. Use Node.js 22.12+ and `npm ci`.
+  The `prepare` hook builds a nested client UI VSIX from `client/`; run
+  `npm run prepare:client` to prepare it again. Do not add generated packages to Git.
+- Find/Replace use a native modal custom editor, and Find Panel has a native
+  results TreeView; Check Installation remains available. The modal uses an
+  internal adapter, search uses a worker/ripgrep, and its read-only preview uses
+  TextMate. In Remote, theme and additional grammars come through ordinary
+  commands from the local UI extension `idfedorov09.jbsearch-client`, installed
+  automatically from the bundled VSIX. Queries and source contents are not sent
+  to that client component; semantic tokens are not implemented in the modal.
+  Find Panel uses a native TreeView contributed to Panel: resourceUri plus
+  ThemeIcon.File/Folder let the client workbench choose icons without copying
+  the icon theme to the server. Clicking a result opens an actual TextEditor in
+  the active central editor group; it creates neither a split nor a new right
+  group. Opening or refreshing the panel does not switch the document by itself.
+  Tree snippets use native label highlights; syntax/semantic tokens are in the
+  source editor. Completed results form a deterministically ordered snapshot;
+  UTF-16 ranges are tracked, changed files are revalidated by the worker, and
+  INVALID/pending results block replacement. New matches appear after Rerun Search.
+  Edit Search opens an isolated draft of the selected session; Esc preserves its
+  previous parameters, confirmation updates it, and Keep as a new search creates
+  an independent session. Switch Saved Search selects sessions; Hide Panel keeps
+  them, and Close Search releases the snapshot and scheduled checks. Sessions
+  live in memory and reset when the extension host restarts.
+  Consult docs/testing/find-replace.md and docs/testing/native-find-panel.md for
+  tested platforms and boundaries (find-window.md records the previous renderer).
+  Do not infer macOS/Windows or physical Remote SSH support from Linux runs.
+  Do not present an untested platform or unfinished item as complete; icon work,
+  publication, and external actions require a separate request.
+- Before finishing, run the relevant `npm run check` and `npm test`; use
+  `npm run package` to verify packaging. Record real VS Code manual checks
+  separately; never claim they ran when they did not.
+- Test with F5 → Extension Development Host or register the source folder once
+  through **Developer: Install Extension from Location…** in a normal window.
+  After editing, **Developer: Reload Window** is sufficient; reloading does not
+  require a version bump. An installed VSIX is a separate copy and must be
+  rebuilt and reinstalled. Server-only changes do not require rebuilding the
+  client. After changing `client/`, prepare its package and run
+  **JB Search: Set Up Client Preview**, or separately register the `client/`
+  source folder on the local client host.
+- Add dependencies or new mechanisms only when necessary. When changing
+  distribution, account for VSIX contents and runtime dependencies.

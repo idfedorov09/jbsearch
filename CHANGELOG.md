@@ -2,66 +2,65 @@
 
 ## 0.2.1 — Unreleased
 
-### Исправлено
+### Fixed
 
-- Контекстный поиск не исчезает при нескольких выделенных ресурсах Explorer:
-  Directory берётся у папки, на которой открыто меню.
-- Пункт явно называется **JB Search: Find in Files…**, чтобы отличаться
-  от встроенного Find in Folder.
-- Двойной клик по результату modal и Enter из списка открывают исходник
-  на найденном диапазоне в центральном редакторе; диалог закрывается после
-  проверки актуальности результата.
+- Explorer context search stays available when several resources are selected:
+  Directory uses the folder where the context menu was opened.
+- The menu item is explicitly named **JB Search: Find in Files…** to distinguish
+  it from the built-in Find in Folder.
+- Double-clicking a modal result or pressing Enter in the results list opens
+  the source at the matching range in the central editor; the dialog closes
+  after the result's validity has been checked.
 
 ## 0.2.0 — Unreleased
 
-### Добавлено
+### Added
 
-- **Find in Files…** в контекстном меню одной папки Explorer: открывает Find
-  с выбранной областью Directory и точным путём папки, включая подпапки и
-  корни multi-root workspace. Запрос, маски и флаги сохраняются.
-- Контекстный запуск независим от сохранённых поисков Find Panel и их черновиков.
-  Неверная или недоступная папка не переключает поиск на весь проект.
+- **Find in Files…** in the context menu of a single Explorer folder: opens Find
+  with Directory selected and the exact folder path, including subfolders and
+  roots of a multi-root workspace. Query, masks, and flags are preserved.
+- Context search is independent of saved Find Panel searches and their drafts.
+  An invalid or unavailable folder does not widen the search to the entire project.
 
-Версия клиентской UI-части остаётся 0.1.0: её код и протокол не изменились.
-Проверки и границы платформ: [Explorer Find in Files](docs/testing/explorer-find-in-files.md).
+The client UI component remains at 0.1.0: its code and protocol are unchanged.
+Checks and platform boundaries: [Explorer Find in Files](docs/testing/explorer-find-in-files.md).
 
 ## 0.1.0 — Unreleased
 
-Первый функциональный выпуск JB Search. Кандидат подготовлен в `dev`;
-публикация в Marketplace ещё не выполнена.
+The first functional JB Search release. A candidate is prepared on `dev`;
+it has not been published to Marketplace.
 
-### Добавлено
+### Added
 
-- Иконка расширения из предоставленного SVG; PNG 256×256 включён в VSIX.
-- Компактный плавающий Find/Replace в стиле JetBrains с оформлением текущей
-  темы VS Code, перемещением и изменением размера.
-- Find по Cmd/Ctrl+Shift+F и Replace по Cmd/Ctrl+Shift+R; сочетания настраиваются
-  в штатном Keyboard Shortcuts.
-- Области Project, Folder, Directory, Open Editors и именованные scopes;
-  маски файлов, include/exclude, многострочный запрос, Match Case, Whole Words
-  и регулярные выражения.
-- Подсветка синтаксиса и совпадений в preview диалога; клиентские темы и TextMate
-  grammars доступны в Remote через встроенный клиентский компонент.
-- Нижняя Find-панель со штатным деревом и иконками файлов из темы клиента;
-  переход к результату открывает настоящий редактируемый исходник в центре.
-- Независимые сохранённые поиски, переключатель истории, Rerun и шестерёнка
-  для редактирования параметров конкретного поиска.
-- Устойчивый порядок результатов, отслеживание позиций после правок, заметный
-  INVALID со значком ошибки и восстановление совпадения после Undo.
-- Replace/Replace All через WorkspaceEdit с проверкой актуальности и запретом
-  замены недействительных, непроверенных или неполных результатов.
-- Установка из исходной папки с обновлением через Developer: Reload Window.
+- Extension icon from the supplied SVG; a 256×256 PNG is included in the VSIX.
+- Compact, movable, resizable JetBrains-style floating Find/Replace dialog
+  using the current VS Code theme.
+- Find with Cmd/Ctrl+Shift+F and Replace with Cmd/Ctrl+Shift+R; bindings are
+  configurable in the native Keyboard Shortcuts editor.
+- Project, Folder, Directory, Open Editors, and named scopes; file masks,
+  include/exclude, multiline queries, Match Case, Whole Words, and regex.
+- Syntax and match highlighting in the dialog preview; client themes and
+  TextMate grammars are available in Remote through the bundled client component.
+- Bottom Find panel with a native tree and client theme file icons;
+  navigating to a result opens the actual editable source in the center.
+- Independent saved searches, history switcher, Rerun, and a gear action
+  for editing a particular search's parameters.
+- Stable result order, position tracking after edits, prominent INVALID status
+  with an error icon, and match recovery after Undo.
+- Replace/Replace All through WorkspaceEdit, with validity checks that block
+  replacement of invalid, unchecked, or incomplete results.
+- Installation from a source folder, refreshed through Developer: Reload Window.
 
-### Ограничения кандидата
+### Candidate limitations
 
-- Нужен desktop VS Code **1.143.1+** и файловый workspace; VS Code for the Web
-  и виртуальные workspace не поддерживаются.
-- Плавающий диалог использует внутреннюю команду VS Code и TextMate preview
-  без semantic tokens. В центральном редакторе действуют обычные возможности языка.
-- История поисков хранится в памяти и сбрасывается после Reload Window.
-- Полный GUI проверен на Linux/X11. Приёмка macOS, Windows и физического Remote
-  между разными машинами остаётся открытой; предыдущий Remote loopback относится
-  к проверенному клиентскому preview и не заменяет её.
+- Requires desktop VS Code **1.143.1+** and a filesystem workspace; VS Code for
+  the Web and virtual workspaces are unsupported.
+- The floating dialog uses an internal VS Code command and TextMate preview
+  without semantic tokens. The central editor retains normal language features.
+- Search history lives in memory and resets after Reload Window.
+- Full GUI checks ran on Linux/X11. Acceptance on macOS, Windows, and physical
+  Remote between separate machines remains open; earlier Remote loopback checks
+  cover the client preview and do not replace that acceptance.
 
-Подробности: [README](README.md), [границы реализации](docs/implementation-limits.md)
-и [готовность к выпуску](docs/release-readiness.md).
+Details: [README](README.md), [implementation limits](docs/implementation-limits.md),
+and [release readiness](docs/release-readiness.md).

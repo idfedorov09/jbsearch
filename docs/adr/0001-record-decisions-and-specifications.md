@@ -1,32 +1,33 @@
-# ADR 0001: ADR и OpenSpec
+# ADR 0001: ADRs and OpenSpec
 
-- Статус: Accepted
-- Дата: 2026-11-03
-- Основание: явный запрос пользователя использовать ADR/OpenSpec и установить их.
+- Status: Accepted
+- Date: 2026-11-03
+- Basis: the user's explicit request to use and install ADR/OpenSpec tooling.
 
-## Контекст
+## Context
 
-Проект — заготовка, работающего поиска нет. Нужны долговечные записи решений,
-различающие текущие возможности, требования пользователя и предложения агента.
+The project is a scaffold with no working search yet. It needs durable decision
+records that distinguish current capabilities, user requirements, and agent
+proposals.
 
-## Решение
+## Decision
 
-Использовать Markdown ADR в `docs/adr/` и OpenSpec в `openspec/`.
-Закрепить OpenSpec 1.16.0 как devDependency, добавить `npm run spec:check` в CI.
-Поддерживать baseline только для проверенного поведения, будущие требования —
-в активных changes. Сохранять сгенерированные Codex workflow в `.agents/skills/`.
+Use Markdown ADRs in `docs/adr/` and OpenSpec in `openspec/`.
+Pin OpenSpec 1.16.0 as a devDependency and add `npm run spec:check` to CI.
+Maintain the baseline only for verified behavior; keep future requirements in
+active changes. Keep the generated Codex workflows in `.agents/skills/`.
 
-## Альтернативы
+## Alternatives
 
-- Только README: удобно начать, но смешивает решения и описание продукта.
-- Отдельный ADR CLI: лишняя зависимость для обычных Markdown-файлов.
-- Только глобальный OpenSpec: версия зависит от машины; выбран локальный lockfile.
+- README only: easy to start with, but mixes decisions with the product description.
+- Separate ADR CLI: an unnecessary dependency for ordinary Markdown files.
+- Global OpenSpec only: its version depends on the machine; a local lockfile was chosen.
 
-## Последствия
+## Consequences
 
-Для разработки нужен Node.js 22.12+, toolchain растёт, runtime расширения не меняется.
-Документы и agent workflows исключены из VSIX. `spec:check` проверяет структуру,
-но не доказывает выполнение требований. Принятие этого ADR не разрешает
-реализацию плавающего поиска.
+Development requires Node.js 22.12+ and a larger toolchain; the extension runtime
+is unchanged. Documents and agent workflows are excluded from the VSIX.
+`spec:check` validates structure, but does not prove that requirements are met.
+Acceptance of this ADR does not authorize implementation of floating search.
 
-Источник: [OpenSpec](https://github.com/Fission-AI/OpenSpec).
+Source: [OpenSpec](https://github.com/Fission-AI/OpenSpec).

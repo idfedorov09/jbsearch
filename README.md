@@ -224,10 +224,10 @@ Bug reports, reproducible examples, platform testing, and pull requests are welc
 Start with [CONTRIBUTING.md](CONTRIBUTING.md). Development happens in `dev`;
 `master` is the stable branch.
 
-Keep the root **README.md in English**, including future sections and examples.
-Architecture decisions live in [ADR](docs/adr/README.md), while requirements and
-changes are tracked with [OpenSpec](openspec/README.md). Internal development and
-validation documents are currently in Russian.
+Write and maintain all repository content in **English**, including documentation,
+specifications, development and validation reports, code comments, and future
+sections and examples. Architecture decisions live in [ADR](docs/adr/README.md),
+while requirements and changes are tracked with [OpenSpec](openspec/README.md).
 
 Extension artwork: [PNG icon](media/icon.png) and [SVG source](docs/artwork/icon.svg).
 

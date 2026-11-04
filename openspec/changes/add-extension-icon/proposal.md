@@ -2,27 +2,27 @@
 
 ## Why
 
-Пользователь предоставил SVG и разрешил добавить его как иконку расширения,
-сделать коммит и push в `dev`. Сейчас у основного расширения нет manifest icon.
+The user supplied an SVG and authorized adding it as the extension icon,
+committing, and pushing to `dev`. The main extension currently has no manifest icon.
 
 ## What Changes
 
-- Сохранить исходный SVG и получить из него PNG 256×256 без изменения рисунка.
-- Подключить PNG через `icon` основного `package.json` и проверить его в VSIX.
-- Обновить changelog и устаревшие упоминания об отсутствии иконки.
+- Preserve the source SVG and export a 256×256 PNG without changing the artwork.
+- Reference the PNG through `icon` in the main `package.json` and verify it in the VSIX.
+- Update the changelog and outdated statements that the icon is missing.
 
 ## Capabilities
 
 ### New Capabilities
 
-Нет новых функций: меняются artwork, manifest metadata и проверка поставки.
+No new features: this changes artwork, manifest metadata, and package verification.
 
 ### Modified Capabilities
 
-Контракты поиска и панели не меняются; `skip_specs: true`.
+Search and panel contracts remain unchanged; `skip_specs: true`.
 
 ## Impact
 
-Основной manifest, PNG, исходный SVG в документации, verifier пакета и документация.
-Runtime, зависимости, клиентский bundle и версия `0.1.0` остаются прежними.
-Публикация и перенос в `master` не входят в scope.
+The main manifest, PNG, source SVG in documentation, package verifier, and documentation.
+Runtime, dependencies, client bundle, and version `0.1.0` remain unchanged.
+Publication and transfer to `master` are outside the scope.

@@ -1,14 +1,15 @@
 # JB Search — Client Support
 
-Клиентская часть JB Search для Remote SSH, WSL и Dev Containers. Работает в UI
-extension host и передаёт активную тему и TextMate-грамматики основной части через
-команды VS Code. Запросы поиска и содержимое файлов этому компоненту не передаются.
+The JB Search client component for Remote SSH, WSL, and Dev Containers runs in
+the UI extension host. It supplies the active theme and TextMate grammars to the
+main extension through VS Code commands. Search queries and file contents are
+not sent to this component.
 
-Обычно устанавливается основным JB Search из включённого в поставку VSIX. Отдельного
-приложения, сетевого сервиса, своей авторизации или настройки палитры не требуется.
-Не выполняет поиск и не предоставляет самостоятельного окна.
+The main JB Search extension normally installs it from the bundled VSIX. It
+requires no separate application, network service, authentication, or palette
+setup. It performs no searches and provides no standalone window.
 
-При разработке можно один раз зарегистрировать эту папку на **клиенте** через
-Developer: Install Extension from Location, затем использовать Reload Window.
-Основная папка JB Search регистрируется на сервере. Подробности — в README основного
-репозитория.
+For development, register this folder once **on the client** through
+Developer: Install Extension from Location, then use Reload Window. Register
+the main JB Search folder on the server. See the main repository's README for
+details.

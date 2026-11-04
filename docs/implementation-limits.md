@@ -1,181 +1,178 @@
-# Фиксированные параметры и ограничения
+# Fixed parameters and limitations
 
-Это описание текущей реализации, а не список планируемых возможностей. Значения,
-для которых есть настройка VS Code, указаны как значения по умолчанию.
+This describes the current implementation, not planned capabilities. Values with
+a VS Code setting are listed as defaults.
 
-## Вид и управление
+## Appearance and controls
 
-- Начальный размер modal editor — 820 × 640 CSS px; окно можно перемещать и менять
-  его размер. Пропорция списка и preview тоже меняется разделителем. Отдельной
-  настройки начального размера нет; расположение и размер контролирует VS Code.
-- Высота строки результатов — 24 CSS px, начальная высота списка — 160 CSS px;
-  отступы, размеры иконок, адаптивные пороги и оформление элементов заданы в
-  `media/search.css`. Эти размеры относятся к modal. В Find Panel размеры строк,
-  шрифты, иконки и оформление штатного TreeView определяет workbench клиента.
-  Цвета и шрифты modal берутся из переменных темы VS Code.
-- Заливка совпадений в modal и настоящем редакторе использует цвет
-  темы с 70% исходной непрозрачности; исходный alpha тоже учитывается через CSS
-  `color-mix`. Коэффициент не имеет отдельной настройки. Цвета и непрозрачность
-  синтаксических токенов не изменяются; рамки используют цвета темы с fallback
-  transparent, когда соответствующего цвета нет. В дереве Find Panel используются
-  стандартные label highlights VS Code, без собственного CSS для заливки.
-- Пять кнопок области — In Project, Folder, Directory, Open Editors и Scope;
-  именованные наборы настраиваются через `jbsearch.scopes`. Подсказки маски
-  `*.js;*.ts`, `*.go`, `*.java`, `*.py`, `*.json` — только примеры, разрешены
-  другие маски.
-- Подписи элементов окна сейчас заданы на английском языке; отдельной
-  локализации интерфейса нет.
-- Изначально Find вызывается Cmd/Ctrl+Shift+F, Replace — Cmd/Ctrl+Shift+R;
-  это назначения VS Code, которые можно изменить в Keyboard Shortcuts. Один
-  переключатель `jbsearch.keybindings.overrideFindInFiles` по умолчанию включает
-  оба. Локальные Shift+Enter, стрелки, Space и Cmd/Ctrl+Enter обработаны самим UI.
+- The modal editor starts at 820 × 640 CSS px; the window can be moved and resized.
+  A divider also changes the list/preview ratio. There is no separate initial-size
+  setting; VS Code controls the position and size.
+- Result rows are 24 CSS px high, and the initial list height is 160 CSS px;
+  spacing, icon sizes, responsive breakpoints, and control styling are defined in
+  `media/search.css`. These dimensions apply to the modal. In Find Panel, the client
+  workbench determines the native TreeView's row sizes, fonts, icons, and styling.
+  Modal colors and fonts come from VS Code theme variables.
+- Match fills in the modal and native editor use the theme color with 70% of its
+  original opacity; the original alpha is also respected through CSS `color-mix`.
+  The factor has no separate setting. Syntax token colors and opacity are
+  unchanged; borders use theme colors with a transparent fallback when a color
+  is missing. The Find Panel tree uses standard VS Code label highlights without
+  custom fill CSS.
+- There are five scope buttons: In Project, Folder, Directory, Open Editors, and
+  Scope; named sets are configured through `jbsearch.scopes`. File mask suggestions
+  `*.js;*.ts`, `*.go`, `*.java`, `*.py`, and `*.json` are examples only; other masks
+  are allowed.
+- Window labels are currently in English; there is no separate UI localization.
+- Find initially uses Cmd/Ctrl+Shift+F, and Replace uses Cmd/Ctrl+Shift+R; these are
+  VS Code bindings that can be changed in Keyboard Shortcuts. One toggle,
+  `jbsearch.keybindings.overrideFindInFiles`, enables both by default. Local
+  Shift+Enter, arrows, Space, and Cmd/Ctrl+Enter are handled by the UI itself.
 
-## Find Panel и центральный редактор
+## Find Panel and the central editor
 
-- Это штатный TreeView «корень → каталоги → файл → вхождение» в contributed Panel
-  рядом с Terminal/Problems. Формы поиска и read-only preview внутри панели нет;
-  **Open in Find Panel** остаётся действием modal. Фрагменты строк показываются
-  plain text со штатными label highlights, без синтаксической токенизации дерева.
-  Отрисовкой, виртуализацией и раскрытием узлов управляет workbench.
-- Иконки файлов и каталогов выбирает клиентский workbench через `resourceUri` и
-  явные `ThemeIcon.File` / `ThemeIcon.Folder`. В том числе при Remote используются
-  установленная на клиенте file icon theme и language icons расширений; переносить
-  icon theme на сервер или в webview не требуется. Дополнительная клиентская
-  установка для дерева не нужна.
-- При завершении поиска порядок определяется именем корня, URI родительского
-  каталога, URI файла и UTF-16 offset; дополнительные координаты/ID разрешают
-  равенства. Сравнение строк не зависит от локали ОС и порядка выдачи ripgrep.
-  После этого начальный порядок сохраняется, даже если позиции сместились.
-- Клик по вхождению открывает исходник через `showTextDocument` в активной
-  центральной editor group. Новые группы и split не создаются, существующие
-  вкладки не переносятся. Открытие панели, фоновые batches и Rerun сами не меняют
-  открытый документ. Положение Panel пользователь меняет штатными средствами
-  VS Code; расширение не перестраивает layout.
-- В центре работает настоящий документ с языковыми расширениями, темой и semantic
-  tokens, если язык их предоставляет; редактирование, dirty state, сохранение и
-  Undo — обычные механизмы VS Code. Изменённая preview-вкладка не закрывается при
-  переходе к другому файлу. Закрытие поиска снимает его подсветку, но оставляет
-  исходники и несохранённые вкладки открытыми.
-- Клик сохраняет фокус дерева; **Open and Focus Editor** / Cmd/Ctrl+Enter
-  переводит его в исходник и закрепляет вкладку. Штатные стрелки дерева перемещают
-  фокус и раскрывают узлы; Enter выбирает вхождение и открывает исходник.
-  F4/Shift+F4 при фокусе Find переходят между вхождениями. Штатный **Collapse All**
-  сворачивает дерево. Команды замены относятся к выбранному вхождению.
-- Один view показывает выбранный поиск; независимые query/options/scope и снимки
-  переключаются через **Switch Saved Search** (QuickPick). **Edit Search** создаёт
-  отдельный черновик выбранного поиска. Подтверждение обновляет ту же сессию,
-  Esc оставляет исходные параметры и снимок, а **Keep as a new search** создаёт
-  независимый поиск. **Hide Panel** сохраняет сессии; **Close Search** освобождает
-  выбранный снимок и прекращает его проверки. Шестерёнка **JB Search Settings**
-  в modal открывает Settings VS Code.
+- This is a native “root → directories → file → occurrence” TreeView in a contributed
+  Panel beside Terminal/Problems. The panel contains no search form or read-only
+  preview; **Open in Find Panel** remains a modal action. Line snippets are plain
+  text with native label highlights, without syntax tokenization in the tree.
+  The workbench handles rendering, virtualization, and node expansion.
+- The client workbench chooses file and directory icons through `resourceUri` and
+  explicit `ThemeIcon.File` / `ThemeIcon.Folder`. This also uses the client-installed
+  file icon theme and extension language icons under Remote; the icon theme need
+  not be transferred to the server or a webview. The tree needs no additional
+  client installation.
+- When a search finishes, its order is determined by root name, parent directory
+  URI, file URI, and UTF-16 offset; additional coordinates/IDs break ties. String
+  comparison is independent of the OS locale and ripgrep output order. The initial
+  order is then preserved even if positions shift.
+- Clicking an occurrence opens the source through `showTextDocument` in the active
+  central editor group. No new groups or splits are created, and existing tabs are
+  not moved. Opening the panel, background batches, and Rerun do not themselves
+  change the open document. The user changes the Panel position through normal
+  VS Code controls; the extension does not rearrange the layout.
+- The center contains a real document with language extensions, the theme, and
+  semantic tokens if the language provides them; editing, dirty state, saving,
+  and Undo use ordinary VS Code mechanisms. A modified preview tab is not closed
+  when moving to another file. Closing a search removes its highlighting but
+  leaves source files and unsaved tabs open.
+- A click preserves tree focus; **Open and Focus Editor** / Cmd/Ctrl+Enter moves
+  focus to the source and pins the tab. Native tree arrows move focus and expand
+  nodes; Enter selects an occurrence and opens the source. F4/Shift+F4 with Find
+  focus move between occurrences. Native **Collapse All** collapses the tree.
+  Replacement commands apply to the selected occurrence.
+- One view shows the selected search; independent query/options/scope and snapshots
+  are switched through **Switch Saved Search** (QuickPick). **Edit Search** creates
+  a separate draft of the selected search. Confirmation updates the same session,
+  Esc leaves the original parameters and snapshot, and **Keep as a new search**
+  creates an independent search. **Hide Panel** preserves sessions; **Close Search**
+  releases the selected snapshot and stops its checks. The **JB Search Settings**
+  gear in the modal opens VS Code Settings.
 
-## Изменения файлов и устойчивый снимок
+## File changes and a stable snapshot
 
-- После завершения поиска новые совпадения не добавляются автоматически.
-  Существующие строки сохраняют ID и место в дереве. Изменение открытого документа
-  сдвигает диапазоны по UTF-16 событиям VS Code, затем все строки этого файла
-  помечаются Checking и проверяются тем же worker с исходным запросом, флагами,
-  regex-контекстом и captures.
-- Переставшее совпадать вхождение остаётся с INVALID, первоначальным фрагментом
-  строки и актуальной позицией. Префикс **INVALID** стоит перед сниппетом, рядом
-  отображается штатный значок ошибки цвета `errorForeground` активной темы.
-  У выбранной строки workbench переопределяет цвет значка для контраста, сохраняя
-  его форму и префикс. Undo может вернуть валидность того же ID и убрать оба маркера.
-  Отслеживание координат хранит 128 последних состояний и начальное состояние
-  файла; полные копии текста документа в этой истории не сохраняются. Отдельной
-  настройки глубины нет.
-- Во время ещё незавершённого поиска изменение релевантного файла перезапускает
-  построение снимка. Ответ отменённого поколения не публикуется поверх новых
-  координат. После завершения поиск меняет набор строк только при явном
-  Rerun Search или подтверждении новых параметров.
-- Для внешней правки закрытого файла нет старого текста и TextDocumentChangeEvent,
-  поэтому точное перемещение старых диапазонов не восстанавливается. Проверка
-  выполняется по текущим координатам; несовпадение делает строку INVALID.
-  Для полного пересчёта нужен Rerun Search. Удалённый файл остаётся недоступным
-  INVALID.
-- Перепроверка файла ограничена 50000 совпадений; предел размера и timeout берутся
-  из общих `jbsearch.search.maxFileSizeMiB` и `jbsearch.search.timeoutMs`. Ошибка,
-  timeout или неполный ответ оставляют Checking с пояснением. Задержка после
-  правок документа — 150 мс, событий файловой системы — 250 мс; эти параметры
-  проверки отдельно не настраиваются.
-- INVALID и Checking блокируют замену соответствующей строки; Replace All
-  требует весь набор валидным и проверенным, а также полный поиск. После
-  собственной замены строки снимка сохраняются и проверяются заново, поэтому
-  заменённые вхождения могут стать INVALID. Rerun Search собирает новый набор.
-  Замены применяются через WorkspaceEdit и не сохраняют файлы на диск.
+- After a search finishes, new matches are not added automatically. Existing rows
+  keep their IDs and tree positions. An open document edit shifts ranges through
+  VS Code UTF-16 events; all rows for that file are then marked Checking and
+  revalidated by the same worker with the original query, flags, regex context,
+  and captures.
+- An occurrence that no longer matches remains with INVALID, its original line
+  snippet, and its current position. The **INVALID** prefix appears before the
+  snippet, next to a native error icon using the active theme's `errorForeground`.
+  On a selected row, the workbench overrides the icon color for contrast while
+  preserving its shape and prefix. Undo can restore the same ID's validity and
+  remove both markers. Coordinate tracking keeps the last 128 states and the
+  file's initial state; full document text copies are not stored in this history.
+  There is no separate history-depth setting.
+- During an unfinished search, a relevant file change restarts snapshot creation.
+  A cancelled generation's response is not published over newer coordinates.
+  After completion, the search changes its set of rows only through explicit
+  Rerun Search or confirmation of new parameters.
+- An external edit to a closed file has no old text or TextDocumentChangeEvent,
+  so the exact movement of old ranges cannot be reconstructed. Validation uses
+  current coordinates; a mismatch makes the row INVALID. A full recalculation
+  requires Rerun Search. A deleted file remains unavailable INVALID.
+- File revalidation is limited to 50000 matches; the size limit and timeout come
+  from the shared `jbsearch.search.maxFileSizeMiB` and `jbsearch.search.timeoutMs`.
+  An error, timeout, or incomplete response leaves Checking with an explanation.
+  The delay after document edits is 150 ms, and after file-system events 250 ms;
+  these validation parameters have no separate settings.
+- INVALID and Checking block replacement of the corresponding row; Replace All
+  requires the entire set to be valid and verified, and the search to be complete.
+  After the extension's own replacement, snapshot rows are preserved and rechecked,
+  so replaced occurrences may become INVALID. Rerun Search gathers a new set.
+  Replacements use WorkspaceEdit and do not save files to disk.
 
-## Настраиваемые ограничения поиска
+## Configurable search limits
 
-| Настройка | По умолчанию | Допустимый диапазон |
+| Setting | Default | Allowed range |
 | --- | --- | --- |
-| `jbsearch.search.debounceMs` | 150 мс | 0–2000 мс |
-| `jbsearch.search.maxResults` | 5000 совпадений | 1–50000 |
-| `jbsearch.search.maxFileSizeMiB` | 2 MiB на файл | 0,01–128 MiB |
-| `jbsearch.search.timeoutMs` | 10000 мс | 100–300000 мс |
-| `jbsearch.search.respectExcludes` | включено | `true` / `false` |
+| `jbsearch.search.debounceMs` | 150 ms | 0–2000 ms |
+| `jbsearch.search.maxResults` | 5000 matches | 1–50000 |
+| `jbsearch.search.maxFileSizeMiB` | 2 MiB per file | 0.01–128 MiB |
+| `jbsearch.search.timeoutMs` | 10000 ms | 100–300000 ms |
+| `jbsearch.search.respectExcludes` | enabled | `true` / `false` |
 
-При неполной выдаче, например из-за лимита, timeout или пропущенных файлов,
-Replace All не применяется. В обработчике изменений документов дополнительно
-задержки 150 мс, файловой системы — 250 мс; они не настраиваются отдельно.
+Replace All is not applied to incomplete results, for example due to a limit,
+timeout, or skipped files. Document change handling additionally uses a 150 ms
+delay, and file-system handling uses 250 ms; these are not separately configurable.
 
-## Остальные фиксированные границы
+## Other fixed boundaries
 
-- При открытии в запрос автоматически подставляется выделение длиной до 2000
-  UTF-16 code units. Ввод query и replacement в сообщениях ограничен 20000,
-  масок и include/exclude — 4000 UTF-16 code units.
-- Read-only preview **в modal** показывает примерно 8 строк до выбранной строки
-  и 34 после неё;
-  длинное многострочное совпадение расширяет этот диапазон. Для восстановления
-  контекста grammar разбирается не более 5000 предыдущих строк. Строки от 20000
-  code units не токенизируются. На разбор строки задаётся предел 20 мс; прерванный
-  разбор повторяется с исходного состояния с пределом 100 мс. Общий бюджет
-  токенизации одного preview — 250 мс с проверкой между строками. После повторного
-  timeout, длинной строки или исчерпания бюджета оставшиеся строки выводятся
-  обычным текстом с явным сообщением; незавершённое состояние grammar не переносится
-  на следующую строку. Выделение matches при этом сохраняется.
-- Список выводит ограниченный фрагмент строки вокруг совпадения; полный файл
-  показывается при переходе к результату. Список виртуализирован; обмен с worker
-  идёт пакетами до 80 совпадений. Для старого поколения памяти Node worker задан
-  предел 256 MiB, а после отмены worker принудительно останавливается через 40 мс.
-- Поиск использует ECMAScript regex в worker и bundled ripgrep для перечисления
-  файлов, поддерживает UTF-8, не обходит symlinks и не выполняет поиск в браузерных
-  и виртуальных workspace. Эти ограничения не являются переключателями интерфейса.
-- Modal preview использует TextMate; semantic tokens внутри него не реализованы.
-  Эти ограничения не относятся к настоящему редактору Find Panel. В Remote
-  клиентская UI-часть читает действующую тему, includes и token customizations,
-  а также клиентские grammars. Снимок передаётся командами VS Code; query и файлы
-  поиска остаются на сервере. Серверная grammar имеет приоритет для того же
-  языка/scope. Ограничения и установка описаны в
-  [README](../README.md#тема-preview-и-ограничения).
-- Для клиентского канала modal preview ресурс ограничен 4 MiB, суммарный текст
-  grammars — 24 MiB,
-  число grammars — 1024, граф includes темы — 64 файла. Превышение границы или
-  отсутствие ресурса обозначается в preview. Ресурсы читаются только внутри
-  installation URI расширения; клиентские пути не открываются серверным `fs`.
-- Получение клиентского снимка ограничено 10 с, ожидание установки — 45 с.
-  Автоматическая попытка установки выполняется не более одного раза за активацию.
-  Повторить её можно командой **JB Search: Set Up Client Preview**. Версия
-  протокола — 1; несоответствие сборки клиентского компонента обнаруживается по
-  хэшу и может потребовать Reload Window. Отдельных пользовательских настроек
-  для этих технических границ нет.
-- Открытие плавающего окна использует внутреннюю команду VS Code и требует
-  `workbench.editor.useModal` не равным `off`. Совместимость будущих версий и
-  поведение macOS/Windows требуют отдельной проверки.
+- Opening automatically seeds the query with the selection if it is up to 2000
+  UTF-16 code units long. Query and replacement input in messages is limited to
+  20000 UTF-16 code units; masks and include/exclude input to 4000.
+- The read-only preview **in the modal** shows approximately 8 lines before the
+  selected line and 34 after it; a long multiline match expands this range.
+  At most 5000 preceding lines are parsed to restore grammar context. Lines of
+  20000 code units or more are not tokenized. A line parse has a 20 ms limit;
+  interrupted parsing restarts from the original state with a 100 ms limit.
+  One preview has a total tokenization budget of 250 ms, checked between lines.
+  After a second timeout, a long line, or budget exhaustion, remaining lines are
+  shown as plain text with an explicit message; incomplete grammar state is not
+  carried to the next line. Match highlighting remains.
+- The list displays a limited line fragment around the match; navigating to a
+  result shows the full file. The list is virtualized; worker communication uses
+  batches of up to 80 matches. The Node worker's old-generation heap has a 256 MiB
+  limit, and the worker is forcibly terminated 40 ms after cancellation.
+- Search uses ECMAScript regex in a worker and bundled ripgrep for file enumeration,
+  supports UTF-8, does not traverse symlinks, and does not search browser or virtual
+  workspaces. These limitations are not UI toggles.
+- Modal preview uses TextMate; semantic tokens are not implemented inside it.
+  These limitations do not apply to Find Panel's native editor. Under Remote, the
+  client UI component reads the active theme, includes, and token customizations,
+  as well as client grammars. VS Code commands transfer the snapshot; queries and
+  search files stay on the server. The server grammar has priority for the same
+  language/scope. Limitations and installation are described in the
+  [README](../README.md#requirements--limitations).
+- For the modal preview's client channel, each resource is limited to 4 MiB,
+  total grammar text to 24 MiB, grammar count to 1024, and the theme include graph
+  to 64 files. Exceeding a limit or a missing resource is reported in the preview.
+  Resources are read only within the extension's installation URI; server `fs`
+  does not open client paths.
+- Obtaining a client snapshot is limited to 10 s, and waiting for installation
+  to 45 s. Automatic installation is attempted at most once per activation.
+  **JB Search: Set Up Client Preview** can retry it. The protocol version is 1;
+  a client build mismatch is detected by hash and may require Reload Window.
+  These technical limits have no separate user settings.
+- Opening the floating window uses an internal VS Code command and requires
+  `workbench.editor.useModal` to differ from `off`. Compatibility with future
+  versions and macOS/Windows behavior need separate testing.
 
-Запросы и результаты хранятся в памяти текущего extension host и сбрасываются при
-его перезапуске; на диск история поиска не записывается. Маркер `view=findWindow`
-в старом editor URI после Reload Window перенаправляет восстановленную вкладку
-в пустую Find Panel, не восстанавливая запрос и результаты. Версия расширения
-для обновления регистрации из исходников не повышается: достаточно
-**Developer: Reload Window**. Изменения серверных исходников Find Panel не
-требуют пересборки `client/` или повторной установки клиентского компонента.
+Queries and results live in the current extension host's memory and reset when it
+restarts; search history is not written to disk. The `view=findWindow` marker in
+an old editor URI redirects the restored tab to an empty Find Panel after
+Reload Window, without restoring the query or results. A source registration
+update does not need an extension version bump: **Developer: Reload Window** is
+enough. Find Panel server source changes require neither rebuilding `client/`
+nor reinstalling the client component.
 
-Актуальная Find Panel проверена в stock VS Code 1.143.1 из исходников и 1.144.1
-из установленного VSIX на Linux/X11: по 13 GUI-сценариев, включая native иконки,
-dark/light theme, INVALID/Undo и отсутствие split. Состав сценариев и границы
-подтверждения приведены в [протоколе Find Panel](testing/native-find-panel.md).
-[Проверки прежнего HTML Find Window](testing/find-window.md), включая high contrast,
-узкое окно и 5000 вхождений, сохранены как история и не заменяют прогон новой панели.
-Из Linux-проверок не следует совместимость macOS, Windows, Wayland или Remote SSH
-между разными физическими машинами. Find Panel в физическом Remote ещё требует
-отдельной приёмки; прежний loopback modal не подтверждает её выполнение.
+The current Find Panel was tested in stock VS Code 1.143.1 from source and 1.144.1
+from an installed VSIX on Linux/X11: 13 GUI scenarios each, including native icons,
+dark/light themes, INVALID/Undo, and no split. Scenario details and verification
+boundaries are in the [Find Panel report](testing/native-find-panel.md).
+[Checks of the former HTML Find Window](testing/find-window.md), including high
+contrast, a narrow window, and 5000 occurrences, are preserved as history and do
+not replace testing of the new panel. Linux checks do not establish compatibility
+with macOS, Windows, Wayland, or Remote SSH between different physical machines.
+Find Panel over physical Remote still needs separate acceptance testing; the
+earlier loopback modal test does not confirm it.

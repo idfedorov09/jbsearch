@@ -1,19 +1,19 @@
 # Tasks
 
-## 1. Команда и область поиска
+## 1. Command and search scope
 
-- [x] 1.1 Добавить Explorer-команду, folder/scheme/multiselect guards и передачу URI; проверить manifest и activation тестами.
-- [x] 1.2 Реализовать проверку папки, Directory scope, отмену прежней выдачи и изоляцию saved/draft сессий; проверить controller и существующие directory worker тесты.
-- [x] 1.3 Описать запуск из Explorer в README, повысить main до 0.2.0 и обновить changelog; проверить согласованность manifest/lock и отсутствие изменения UI client.
+- [x] 1.1 Add the Explorer command, folder/scheme/multiselect guards, and URI forwarding; test the manifest and activation.
+- [x] 1.2 Implement folder validation, Directory scope, cancellation of previous results, and saved/draft session isolation; test the controller and existing directory worker cases.
+- [x] 1.3 Document the Explorer entry point in README, bump main to 0.2.0, and update the changelog; check manifest/lock consistency and confirm that the UI client is unchanged.
 
-## 2. Проверка и доставка
+## 2. Validation and delivery
 
-- [x] 2.1 Выполнить check, test, spec:check и package; проверить содержимое main и bundled VSIX, сохранить результаты.
-- [x] 2.2 Проверить реальный VS Code Linux: меню папки/файла, Directory и выдачу для nested/multi-root, сохранность Find-снимка и обычный Find; сохранить GUI отчёт с границами платформ.
-- [x] 2.3 Проверить diff, сделать коммит и push в dev, сверить remote SHA и результат CI.
+- [x] 2.1 Run check, test, spec:check, and package; inspect the main and bundled VSIX contents and save the results.
+- [x] 2.2 Check real VS Code on Linux: folder/file menu, Directory and results for nested/multi-root folders, preserved Find snapshots, and ordinary Find; save a GUI report with platform boundaries.
+- [x] 2.3 Review the diff, commit and push to dev, and verify the remote SHA and CI result.
 
 ## Workflow follow-up
 
-- Архивирование и синхронизация baseline выполняются после отдельного review.
-- macOS, Windows и физический Remote остаются в общей матрице приёмки; Linux
-  и unit-проверки не являются их подтверждением.
+- Archive and synchronize the baseline after a separate review.
+- macOS, Windows, and physical Remote remain in the overall acceptance matrix;
+  Linux and unit checks do not confirm them.

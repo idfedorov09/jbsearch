@@ -45,11 +45,11 @@ test('client resolves theme includes and preserves user rules without requesting
 });
 test('client supports localized theme labels, legacy built-in ids, and theme changes', async () => {
   const f = fixture({
-    '/extension/package.nls.ru.json': '{"theme":"Локальная тема"}',
+    '/extension/package.nls.ru.json': '{"theme":"\u041b\u043e\u043a\u0430\u043b\u044c\u043d\u0430\u044f \u0442\u0435\u043c\u0430"}',
     '/extension/theme.json': '{"tokenColors":[{"scope":"keyword","settings":{"foreground":"#abcdef"}}]}'
   }, { themes: [{ label: '%theme%', path: './theme.json' }, { id: 'Light Modern', path: './theme.json' }] });
   const resources = new ClientResources(f.v);
-  f.setTheme('Локальная тема');
+  f.setTheme('\u041b\u043e\u043a\u0430\u043b\u044c\u043d\u0430\u044f \u0442\u0435\u043c\u0430');
   assert.equal((await resources.snapshot({ protocol: 1 })).foundTheme, true);
   f.setTheme('Default Light Modern');
   resources.invalidate();

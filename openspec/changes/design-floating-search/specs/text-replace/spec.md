@@ -2,37 +2,37 @@
 
 ## Purpose
 
-Дать Replace in Files с безопасной проверкой актуальности и штатным Undo.
+Provide Replace in Files with safe freshness checks and native Undo.
 
 ## ADDED Requirements
 
 ### Requirement: Selected replacement
-Продукт SHALL заменять выбранное совпадение через WorkspaceEdit без автосохранения.
+The product SHALL replace the selected match through WorkspaceEdit without autosaving.
 
 #### Scenario: Replace selected match
-- **WHEN** пользователь нажимает Replace на актуальном совпадении
-- **THEN** изменяется только выбранный диапазон и выдача обновляется
-- **AND** изменение можно отменить через Undo в VS Code
+- **WHEN** the user clicks Replace on a current match
+- **THEN** only the selected range changes and the results update
+- **AND** the change can be reverted through Undo in VS Code
 
 ### Requirement: Replace all
-Продукт SHALL применять весь полный актуальный набор совпадений одной операцией.
+The product SHALL apply the entire complete, current set of matches in one operation.
 
 #### Scenario: Complete result set
-- **WHEN** пользователь запускает Replace All после полного поиска
-- **THEN** все актуальные совпадения изменяются через один WorkspaceEdit
-- **AND** файлы не сохраняются автоматически
+- **WHEN** the user runs Replace All after a complete search
+- **THEN** all current matches change through one WorkspaceEdit
+- **AND** files are not saved automatically
 
 #### Scenario: Stale or incomplete results
-- **WHEN** выдача ограничена лимитом либо документ изменился после поиска
-- **THEN** массовая замена не применяется и UI предлагает обновить поиск
+- **WHEN** results are limited by a cap or a document has changed since the search
+- **THEN** bulk replacement is not applied and the UI offers to refresh the search
 
 ### Requirement: Replacement syntax
-Продукт SHALL поддерживать capture substitution в Regex и preserve case.
+The product SHALL support capture substitution in Regex and preserve case.
 
 #### Scenario: Capture groups
-- **WHEN** regex имеет группу и replacement содержит $1 либо $<name>
-- **THEN** замена использует captured value соответствующего совпадения
+- **WHEN** regex has a group and the replacement contains $1 or $<name>
+- **THEN** replacement uses the corresponding match's captured value
 
 #### Scenario: Literal replacement
-- **WHEN** Regex выключен и replacement содержит $1
-- **THEN** в документ вставляется буквальный текст $1
+- **WHEN** Regex is off and the replacement contains $1
+- **THEN** the literal text $1 is inserted into the document

@@ -2,64 +2,65 @@
 
 ## Purpose
 
-Обеспечить проверяемую публикацию новых версий расширения из исходников
-стабильной ветки с ограниченным доступом к VS Code Marketplace.
+Provide verifiable publication of new extension versions from stable-branch
+source with restricted access to VS Code Marketplace.
 
 ## ADDED Requirements
 
-### Requirement: Публикация из стабильной ветки
+### Requirement: Publication from the stable branch
 
-Процесс выпуска SHALL использовать только коммит `master` репозитория
-`idfedorov09/jbsearch` и не запускать публикацию из других веток или pull request.
+The release process SHALL use only a `master` commit from the
+`idfedorov09/jbsearch` repository and shall not publish from other branches or
+pull requests.
 
-#### Scenario: Push в master
-- **WHEN** в `master` отправлен новый коммит в разрешённом репозитории
-- **THEN** процесс проверяет исходники этого коммита и при успешных проверках
-  пытается опубликовать содержащуюся в нём версию
+#### Scenario: Push to master
+- **WHEN** a new commit is pushed to `master` in the allowed repository
+- **THEN** the process validates that commit's source and, if validation succeeds,
+  attempts to publish the version it contains
 
-#### Scenario: Изменения в другой ветке
-- **WHEN** изменения отправлены в другую ветку или открывается pull request
-- **THEN** процесс публикации не запускается
+#### Scenario: Changes in another branch
+- **WHEN** changes are pushed to another branch or a pull request is opened
+- **THEN** the publication process does not run
 
-### Requirement: Проверки до публикации
+### Requirement: Validation before publication
 
-Процесс SHALL выполнять проверки и упаковку до обращения к Marketplace.
+The process SHALL run validation and packaging before contacting Marketplace.
 
-#### Scenario: Одна из проверок завершается ошибкой
-- **WHEN** установка зависимостей, проверка кода, тесты, проверка спецификаций
-  или упаковка завершились неуспешно
-- **THEN** выпуск завершается ошибкой и публикация не выполняется
+#### Scenario: A check fails
+- **WHEN** dependency installation, code checks, tests, specification validation,
+  or packaging fails
+- **THEN** the release fails and publication does not occur
 
-### Requirement: Явная версия
+### Requirement: Explicit version
 
-Процесс SHALL публиковать версию из проверяемого `package.json` и не изменять
-файлы репозитория, коммиты или Git-теги.
+The process SHALL publish the version from the validated `package.json` and
+shall not modify repository files, commits, or Git tags.
 
-#### Scenario: Новая версия
-- **WHEN** указана ещё не опубликованная версия и все проверки успешны
-- **THEN** процесс пытается опубликовать эту версию
+#### Scenario: New version
+- **WHEN** a version that has not yet been published is specified and all checks pass
+- **THEN** the process attempts to publish that version
 
-#### Scenario: Повтор уже опубликованной версии
-- **WHEN** указанная версия уже присутствует в Marketplace
-- **THEN** повторная публикация пропускается без перезаписи этой версии
+#### Scenario: Repeat of an already published version
+- **WHEN** the specified version already exists in Marketplace
+- **THEN** repeat publication is skipped without overwriting that version
 
-### Requirement: Доверенная авторизация
+### Requirement: Trusted authorization
 
-Процесс SHALL использовать временные OIDC-учётные данные с доверенным
-workflow и GitHub Environment, ограниченным веткой `master`, без хранения PAT.
+The process SHALL use temporary OIDC credentials with a trusted workflow and a
+GitHub Environment restricted to the `master` branch, without storing a PAT.
 
-#### Scenario: Настроенное доверие
-- **WHEN** ограниченное окружение и политика издателя настроены для workflow
-- **THEN** job публикации получает временные учётные данные для Marketplace
+#### Scenario: Trust configured
+- **WHEN** the restricted environment and publisher policy are configured for the workflow
+- **THEN** the publication job receives temporary credentials for Marketplace
 
-#### Scenario: Доверие не настроено
-- **WHEN** выдача или обмен временных учётных данных завершаются ошибкой
-- **THEN** процесс не публикует расширение и сообщает об ошибке
+#### Scenario: Trust not configured
+- **WHEN** issuing or exchanging temporary credentials fails
+- **THEN** the process does not publish the extension and reports an error
 
-### Requirement: Неуспешная публикация
+### Requirement: Failed publication
 
-Процесс SHALL сообщать об ошибках публикации, кроме уже существующей версии.
+The process SHALL report publication errors other than an already existing version.
 
-#### Scenario: Marketplace недоступен или отклонил выпуск
-- **WHEN** публикация не выполнена по причине, отличной от существующей версии
-- **THEN** job завершается с ошибкой и её можно увидеть в GitHub Actions
+#### Scenario: Marketplace unavailable or release rejected
+- **WHEN** publication fails for a reason other than an existing version
+- **THEN** the job fails and the error is visible in GitHub Actions

@@ -2,38 +2,40 @@
 
 ## Why
 
-Сейчас поиск внутри конкретной папки требует отдельно открыть JB Search и выбрать
-Directory. Нужен привычный запуск из контекстного меню папки Explorer, сразу
-ограничивающий поиск этой директорией.
+Searching a specific folder currently requires opening JB Search and selecting
+Directory separately. A familiar Explorer folder context-menu entry should
+launch the search already scoped to that directory.
 
 ## What Changes
 
-- Пункт **Find in Files…** категории JB Search в меню одной файловой папки Explorer.
-- Открытие существующего Find-диалога с выбранной областью Directory, включая
-  корни multi-root workspace; запрос, маски и флаги сохраняются.
-- Независимость от сохранённых Find-поисков и их черновиков: контекстный запуск
-  не изменяет снимок и не становится его редактированием.
-- Проверка аргумента команды до изменения поиска; ошибка вместо поиска во всём
-  проекте, если папка недоступна или не принадлежит workspace.
-- Версия основного расширения 0.2.0; коммит и push в dev по запросу пользователя.
+- A **Find in Files…** item in the JB Search category in the context menu for a
+  single filesystem folder in Explorer.
+- Open the existing Find dialog with Directory selected, including multi-root
+  workspace roots; preserve the query, masks, and flags.
+- Remain independent of saved Find searches and their drafts: a context-menu
+  launch neither changes a snapshot nor becomes an edit of that snapshot.
+- Validate the command argument before changing the search; report an error
+  instead of searching the entire project if the folder is unavailable or
+  outside the workspace.
+- Main extension version 0.2.0; commit and push to dev as requested by the user.
 
-Подтверждённый scope: реализация и доставка в dev прямо запрошены пользователем.
-Множественный выбор, поиск вне workspace, Replace из меню и публикация в
-Marketplace не входят в изменение. Linux GUI проверяется отдельно; macOS,
-Windows и физический Remote требуют собственной приёмки.
+Confirmed scope: the user explicitly requested implementation and delivery to dev.
+Multiple selection, searching outside the workspace, Replace from the menu, and
+Marketplace publication are outside this change. Linux GUI validation is separate;
+macOS, Windows, and physical Remote require their own acceptance checks.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `search-entry-points`: запуск JB Search из Explorer с контекстом выбранной папки.
+- `search-entry-points`: launch JB Search from Explorer with the selected folder context.
 
 ### Modified Capabilities
 
-Нет: существующая семантика поиска и Find Panel сохраняется.
+None: existing search and Find Panel semantics remain unchanged.
 
 ## Impact
 
-Manifest, регистрация команды и управление modal-сессиями; модульные и GUI
-проверки, README, changelog и OpenSpec. Поисковый worker, клиентский протокол
-и зависимости не меняются.
+Manifest, command registration, and modal session management; unit and GUI checks,
+README, changelog, and OpenSpec. The search worker, client protocol, and
+dependencies remain unchanged.

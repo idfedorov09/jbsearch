@@ -2,43 +2,44 @@
 
 ## Why
 
-Пользователь сообщил о пропадающем пункте Find in Files, путанице со штатным
-Find in Folder и неработающем двойном клике по результату modal. Нужно исправить
-доступность контекстного поиска и восстановить предусмотренную навигацию.
+The user reported a disappearing Find in Files item, confusion with the built-in
+Find in Folder, and broken double click on modal results. Fix context-menu search
+availability and restore the intended navigation.
 
 ## What Changes
 
-- Явное название **JB Search: Find in Files…**, различимое рядом со штатным пунктом.
-- Видимость для файловой папки не зависит от оставшегося множественного
-  выделения Explorer: команда использует ресурс, на котором открыли меню.
-- Двойной клик и Enter открывают исходник в центральной editor group на нужном
-  диапазоне, закрывая modal после проверки актуальности результата.
-- Стабильные строки результатов выдерживают selection и host state echoes
-  между кликами; устаревшая выдача не активируется.
-- Patch-версия 0.2.1, проверки, коммит и push в dev запрошены пользователем.
+- An explicit **JB Search: Find in Files…** title, distinguishable next to the built-in item.
+- Filesystem-folder visibility is independent of retained multiple selections in
+  Explorer: the command uses the resource on which the menu was opened.
+- Double click and Enter open the source in the central editor group at the
+  required range, closing the modal after validating the result.
+- Stable result rows survive selection and host state echoes between clicks;
+  stale results cannot be activated.
+- Patch version 0.2.1, validation, commit, and push to dev were requested by the user.
 
-Подтверждённый scope: исправить три замечания и отправить в dev. Штатный Find in
-Folder сохраняется; пользователь разрешил различимое название как один из вариантов.
-Массовый поиск по выделенным папкам, скрытие встроенных команд, изменения
-клиентского компонента и публикация не входят в scope.
+Confirmed scope: fix the three reported issues and deliver to dev. The built-in
+Find in Folder remains; the user allowed a distinguishable title as one option.
+Searching a union of selected folders, hiding built-in commands, client component
+changes, and publication are outside the scope.
 
 ## Capabilities
 
 ### New Capabilities
 
-Нет.
+None.
 
 ### Modified Capabilities
 
-- `search-entry-points`: различимый пункт папки и использование context target
-  независимо от количества выделенных ресурсов. Основная спецификация 0.2.0
-  синхронизирована из проверенного `add-explorer-find-in-files` перед этой дельтой.
+- `search-entry-points`: a distinguishable folder item and use of the context
+  target regardless of the number of selected resources. The 0.2.0 main
+  specification was synchronized from the verified `add-explorer-find-in-files`
+  before this delta.
 
-Навигация Enter/double click уже предусмотрена Requirement «Result preview and
-navigation» в `design-floating-search/specs/search-window`; исправляется дефект
-реализации существующего контракта, новый дублирующий capability не создаётся.
+Enter/double-click navigation is already covered by Requirement “Result preview
+and navigation” in `design-floating-search/specs/search-window`; this fixes an
+implementation defect in the existing contract without adding a duplicate capability.
 
 ## Impact
 
-Manifest, modal renderer, controller открытия результата, тесты и документация.
-Поисковый worker, клиентский протокол и зависимости сохраняются.
+Manifest, modal renderer, result-opening controller, tests, and documentation.
+The search worker, client protocol, and dependencies remain unchanged.

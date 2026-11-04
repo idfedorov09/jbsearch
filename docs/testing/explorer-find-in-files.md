@@ -1,101 +1,100 @@
-# Find in Files из Explorer — 0.2.0
+# Find in Files from Explorer — 0.2.0
 
-Дата проверки: **4 ноября 2026**. Основное расширение — **0.2.0**,
-вложенный UI client — **0.1.0** без изменений кода и протокола.
+Validation date: **November 4, 2026**. Main extension **0.2.0**,
+nested UI client **0.1.0**, with unchanged client code and protocol.
 
-## Поведение
+## Behavior
 
-ПКМ по одной папке Explorer → **Find in Files…** открывает существующий
-Find-диалог. Выбрана область Directory и точный путь папки; поиск включает
-подпапки, сохраняет запрос, маски и опции. Поддерживаются корни workspace
-и выбор папки второго root. Пункт скрыт у файлов и при multiselect.
+Right-clicking one Explorer folder → **Find in Files…** opens the existing Find
+dialog. Directory is selected with the exact folder path; search includes
+subfolders and retains query, masks, and options. Workspace roots and a folder
+in the second root are supported. The item is hidden on files and with multiselect.
 
-Сохранённые Find-поиски и их gear drafts не перезаписываются: контекстный запуск
-создаёт независимый поиск. Ошибка URI/stat или выполняющаяся замена не меняют
-область текущего поиска. Поздние результаты и завершившаяся позже проверка
-предыдущей папки не перекрывают последний запрос.
+Saved Find searches and their gear drafts are not overwritten: context invocation
+creates an independent search. URI/stat errors or an ongoing replacement do not
+change the current search scope. Late results and a later-completing check for
+the previous folder cannot override the latest request.
 
-![Меню папки Explorer](assets/explorer-folder-menu.png)
+![Explorer folder menu](assets/explorer-folder-menu.png)
 
-![Диалог с выбранной Directory](assets/explorer-directory-modal.png)
+![Dialog with Directory selected](assets/explorer-directory-modal.png)
 
-## Автоматические проверки
+## Automated checks
 
-Изолированный снимок собственных staged изменений задачи:
-`9a6d76aa30e844efb57822ddb9736861257a8d42`. Отдельный временный каталог,
-Node.js **22.23.2**, npm **12.0.2**, Linux x64. Параллельное незакоммиченное
-оформление README не вошло в снимок и VSIX.
+Isolated snapshot of this task's staged changes:
+`9a6d76aa30e844efb57822ddb9736861257a8d42`. Separate temporary directory,
+Node.js **22.23.2**, npm **12.0.2**, Linux x64. Concurrent uncommitted README
+presentation changes were excluded from the snapshot and VSIX.
 
-- `npm ci` — успешно, вложенный клиент подготовлен из исходников.
-- `npm run check` — успешно.
-- `npm test` — **180/180**, включая **17** вложенных subtests;
-  без failures, skips или cancellations.
-- `npm run spec:check` — **10/10** объектов снимка.
-- `npm run package` — успешно. Основной VSIX содержит **73** файла,
-  вложенный клиент — **31**; identity, версии, client build, runtime-зависимости,
-  PNG и ripgrep для всех поставляемых платформ проверены verifier.
+- `npm ci` passed; the nested client was prepared from source.
+- `npm run check` passed.
+- `npm test`: **180/180**, including **17** nested subtests;
+  no failures, skips, or cancellations.
+- `npm run spec:check`: **10/10** snapshot items.
+- `npm run package` passed. The main VSIX contains **73** files and the nested
+  client **31**; the verifier checked identity, versions, client build, runtime
+  dependencies, PNG, and ripgrep for all distributed platforms.
 
-Пакет: **24 345 772 байта**, SHA-256
+Package: **24,345,772 bytes**, SHA-256
 `8e8243367abdc6dcfd10cb451ae05739b25f6adf8565eed3c374ffb40d9a3ffd`.
-Полный отчёт: [explorer-find-package-results.json](explorer-find-package-results.json).
-VSIX генерируется локально и не включается в Git.
+Full report: [explorer-find-package-results.json](explorer-find-package-results.json).
+The VSIX is generated locally and excluded from Git.
 
-## Реальный VS Code: исходники
+## Actual VS Code: sources
 
-**VS Code 1.143.1, Linux x64 / X11 / Xvfb**, отдельный профиль и
-Extension Development Host. Автоматизированный GUI-прогон — **8/8**:
+**VS Code 1.143.1, Linux x64 / X11 / Xvfb**, separate profile and
+Extension Development Host. Automated GUI run: **8/8**.
 
-- Обычный Find открывает прежний modal с Project; базовый поиск даёт шесть
-  совпадений в двух roots с Match Case, Whole Words, regex и `*.js`.
-- Настоящий клик по action в меню вложенной `scope dir` открывает Directory
-  с двумя совпадениями; `scope dir-extra` и второй root исключены.
-- Запрос и опции сохранены; исходный Find-снимок не меняется после открытия
-  нового поиска и Esc.
-- Action на корне workspace даёт четыре совпадения только этого root.
-- Перенос Directory-поиска в Find Panel создаёт независимую сохранённую сессию.
-- Action отсутствует в меню файла и двух выбранных папок.
-- Обычный Ctrl+Shift+F сохраняет прежнюю область, даже если Explorer сфокусирован
-  на другой папке; отменённый gear draft не изменяет исходный снимок.
+- Normal Find opens the existing modal with Project; baseline search gives six
+  matches across two roots with Match Case, Whole Words, regex, and `*.js`.
+- An actual action click in nested `scope dir` opens Directory with two matches;
+  `scope dir-extra` and the second root are excluded.
+- Query and options are retained; the original Find snapshot is unchanged after
+  opening a new search and pressing Esc.
+- The workspace root action gives four matches from that root only.
+- Transferring a Directory search to Find Panel creates an independent saved session.
+- The action is absent from a file's menu and when two folders are selected.
+- Normal Ctrl+Shift+F preserves the previous scope even if Explorer is focused
+  on another folder; cancelling a gear draft leaves the original snapshot unchanged.
 
-Детали и фактические состояния:
+Details and actual states:
 [explorer-find-source-results.json](explorer-find-source-results.json).
-Скриншоты просмотрены отдельно; в них только тестовые fixtures.
+Screenshots were reviewed separately and contain only test fixtures.
 
-## Реальный VS Code: установленный VSIX
+## Actual VS Code: installed VSIX
 
-Тот же проверенный VSIX установлен в отдельный профиль **VS Code 1.144.1**
-на Linux x64/X11/Xvfb. Все **8/8** сценариев повторно прошли. Main загружался из
-`extensions/idfedorov09.jbsearch-0.2.0` тестового профиля; исходная папка проекта
-не подключалась в качестве development extension. Development helper использован
-только для управления тестом и чтения состояния установленного controller.
+The same verified VSIX was installed in a separate **VS Code 1.144.1** profile
+on Linux x64/X11/Xvfb. All **8/8** scenarios passed again. Main loaded from the
+test profile's `extensions/idfedorov09.jbsearch-0.2.0`; the project source folder
+was not connected as a development extension. A development helper only controlled
+the test and read the installed controller's state.
 
-Проверены настоящий Explorer menu, Directory и выдача 2/4/6, перенос query/options,
-независимость снимков, file/multiselect guards и обычный Find shortcut.
-Отчёт: [explorer-find-installed-results.json](explorer-find-installed-results.json).
-Собственные тестовые VS Code/Xvfb процессы обоих прогонов завершены.
+Checks covered the actual Explorer menu, Directory, result counts 2/4/6, retained
+query/options, independent snapshots, file/multiselect guards, and normal Find
+shortcut. Report: [explorer-find-installed-results.json](explorer-find-installed-results.json).
+The test's own VS Code/Xvfb processes from both runs were stopped.
 
-## Границы и ручная приёмка
+## Boundaries and manual acceptance
 
-Это проверка настоящего VS Code с управлением через Playwright, а не ручная
-приёмка всех платформ. macOS, Windows и физический Remote между разными
-машинами этим прогоном не проверены. Видимость `vscode-remote` в menu guard
-и проверка файлового URI workspace host покрыты кодом и unit-тестами;
-это не подтверждение физического Remote SSH.
+This is actual VS Code controlled with Playwright, not manual acceptance of all
+platforms. macOS, Windows, and physical Remote between separate machines were not
+covered. The `vscode-remote` menu guard and workspace host filesystem URI checks
+are covered by code and unit tests; they do not confirm physical Remote SSH.
 
-- [ ] На macOS и Windows: ПКМ по папке/корню → Find in Files… → правильные
-  Directory, focus и результаты; проверка Esc и обычных Find/Replace shortcuts.
-- [ ] В физическом Remote: тот же путь из Explorer; поиск идёт на workspace host,
-  а не по одноимённому локальному пути. Проверить client theme/preview.
+- [ ] On macOS and Windows: right-click a folder/root → Find in Files… → correct
+  Directory, focus, and results; check Esc and normal Find/Replace shortcuts.
+- [ ] In physical Remote: invoke from Explorer; search must run on the workspace
+  host rather than a same-named local path. Check client theme/preview.
 
-Публичная публикация и перенос в master не входят в эту поставку.
+Public publication and transfer to master are outside this delivery.
 
-## Git и CI
+## Git and CI
 
-Реализация: `ec9a84b258214324b499eea38ade8934aa881d51`
-(`feat: add folder-scoped Find in Files from Explorer`), отправлена в
-`origin/dev` обычным push. Удалённый SHA совпал с локальным.
+Implementation: `ec9a84b258214324b499eea38ade8934aa881d51`
+(`feat: add folder-scoped Find in Files from Explorer`), sent to `origin/dev`
+with a normal push. Remote and local SHAs matched.
 
 [GitHub Check #41820252916](https://github.com/idfedorov09/jbsearch/actions/runs/41820252916)
-для этого коммита прошёл **4 ноября 2026, 11:22:10 UTC**: чистый install,
-check, test, spec:check и package. Установленный GUI-прогон и эта отметка
-добавлены последующим коммитом документации без изменения runtime и VSIX.
+passed for this commit on **November 4, 2026, 11:22:10 UTC**: clean install,
+check, test, spec:check, and package. Installed GUI validation and this note were
+added in a subsequent documentation commit without changing runtime or VSIX.

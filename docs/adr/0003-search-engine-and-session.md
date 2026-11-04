@@ -1,40 +1,44 @@
-# ADR 0003: Поисковый движок, замена и подсветка preview
+# ADR 0003: Search engine, replacement, and preview highlighting
 
-- Статус: Accepted
-- Дата: 2026-11-03
+- Status: Accepted
+- Date: 2026-11-03
 
-## Контекст
+## Context
 
-Find/Replace должны одинаково сопоставлять файлы на диске и unsaved documents,
-не блокировать extension host и предоставлять captures/UTF-16 ranges для замены.
-Пользователь требует syntax highlighting текущей темы и match decorations в preview.
+Find/Replace must match files on disk and unsaved documents consistently, avoid
+blocking the extension host, and provide captures/UTF-16 ranges for replacement.
+The user requires syntax highlighting from the current theme and match decorations
+in the preview.
 
-## Решение
+## Decision
 
-@vscode/ripgrep-universal поставляется с расширением для перечисления файлов/ignore. Сам
-matcher ECMAScript работает в одноразовом worker thread, одинаково для snapshots
-и файлов; termination даёт отмену и deadline даже для pathological regex. Прежнее
-предложение PCRE2 пересмотрено: оно усложняло согласованную capture replacement.
+@vscode/ripgrep-universal ships with the extension for file enumeration/ignore
+handling. The ECMAScript matcher itself runs in a disposable worker thread,
+identically for snapshots and files; termination provides cancellation and a
+deadline even for pathological regex. The earlier PCRE2 proposal was revised
+because it complicated consistent capture replacement.
 
-SessionController принадлежит extension host; UI передаёт намерения, получает
-snapshots/batches. Generation и preview revision отбрасывают устаревшие ответы.
-Replace использует captures, проверяет полное содержимое/версию до WorkspaceEdit;
-неполные результаты не допускают Replace All. Изменения не сохраняются автоматически.
+SessionController belongs to the extension host; the UI sends intents and receives
+snapshots/batches. Generation and preview revision discard stale responses.
+Replace uses captures and checks the full content/version before WorkspaceEdit;
+incomplete results do not allow Replace All. Changes are not saved automatically.
 
-Preview tokenizes через vscode-textmate/vscode-oniguruma, беря grammar/theme из
-публичных contributions установленных extensions, включая theme includes и user
-customizations. Это не DOM injection. TextMate-токены поддерживаются; LSP semantic
-highlighting не воспроизводится. Без grammar — plaintext с объяснением.
+The preview tokenizes with vscode-textmate/vscode-oniguruma, taking grammar/theme
+resources from the public contributions of installed extensions, including theme
+includes and user customizations. This is not DOM injection. TextMate tokens are
+supported; LSP semantic highlighting is not reproduced. Without a grammar, the
+preview uses plaintext with an explanation.
 
-## Последствия
+## Consequences
 
-В VSIX нужны native ripgrep для desktop платформ, onig.wasm и JS runtime пакетов;
-упаковка проверяется отдельно. Windows/macOS runtime verification ещё требуется.
-Regex dialect документируется как ECMAScript, не Java/PCRE2. Кодировка — UTF-8;
-binary/unsupported inputs отражаются в partial status. Remote/web не обещаются
-на основании Linux desktop опыта. Содержимое/запросы не отправляются внешним сервисам.
+The VSIX needs native ripgrep for desktop platforms, onig.wasm, and the packages'
+JS runtime; packaging is verified separately. Windows/macOS runtime verification
+is still required. The regex dialect is documented as ECMAScript, not Java/PCRE2.
+Encoding is UTF-8; binary/unsupported inputs appear in partial status. Remote/web
+support is not promised on the basis of Linux desktop testing. Content/queries
+are not sent to external services.
 
-## Источники
+## Sources
 
 - [TextMate tokenizer](https://github.com/microsoft/vscode-textmate)
 - [Oniguruma](https://github.com/microsoft/vscode-oniguruma)

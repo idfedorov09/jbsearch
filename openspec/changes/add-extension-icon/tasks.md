@@ -1,16 +1,16 @@
 # Tasks
 
-## 1. Иконка и документация
+## 1. Icon and documentation
 
-- [x] 1.1 Сохранить SVG, экспортировать PNG 256×256, подключить manifest icon и обновить README/changelog/release checklist; визуально сверить PNG и сравнить SVG с вложением.
-- [x] 1.2 Добавить проверку icon в package verifier; подтвердить, что PNG включён в VSIX и соответствует исходнику, SVG из docs не включён, сохранить отдельный отчёт новой упаковки.
+- [x] 1.1 Preserve the SVG, export a 256×256 PNG, reference the manifest icon, and update README/changelog/release checklist; visually inspect the PNG and compare the SVG with the attachment.
+- [x] 1.2 Add icon checks to the package verifier; confirm that the VSIX includes the PNG matching the source asset, excludes the SVG from docs, and save a separate report for the new package.
 
-## 2. Проверки
+## 2. Validation
 
-- [x] 2.1 Выполнить check/test/spec:check/package и проверку diff; записать результаты и отдельно обозначить, что карточка в настоящем VS Code вручную не проверялась.
+- [x] 2.1 Run check/test/spec:check/package and review the diff; record the results and explicitly state that the card in real VS Code was not checked manually.
 
 ## Workflow follow-up
 
-- Передать выполненное изменение коммитом и push только в `dev`, проверить CI для отправленного HEAD.
-- Ручная проверка: после Reload Window открыть карточку JB Search в Extensions и сверить иконку. Не выдавать просмотр PNG и проверку архива за эту GUI-проверку.
-- Архивирование после review; публичный выпуск и `master` — отдельным действием.
+- Deliver the completed change through a commit and push only to `dev`; check CI for the pushed HEAD.
+- Manual check: after Reload Window, open the JB Search card in Extensions and inspect its icon. Do not present PNG inspection or archive verification as this GUI check.
+- Archive after review; public release and `master` require separate actions.

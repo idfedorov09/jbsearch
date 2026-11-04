@@ -1,142 +1,150 @@
-# ADR 0006: Граница подсветки preview при Remote SSH
+# ADR 0006: Preview highlighting boundary over Remote SSH
 
-Статус: **Accepted**
+Status: **Accepted**
 
-Дата: 2026-11-04
+Date: 2026-11-04
 
-## Контекст
+## Context
 
-До введения клиентского канала JB Search получал ресурсы подсветки только из
-workspace extension host на удалённой машине. Через `vscode.extensions.all` были
-доступны contributions этого host, но не обязательно клиентская тема и
-клиентские grammar. Webview получал цвета элементов и шрифты VS Code, однако
-не правила TextMate активной темы. Отдельная токенизация серверной grammar
-не могла восстановить цвета темы, доступной лишь на клиенте: preview явно
-сообщал об ограничении и продолжал выделять совпадения. Локальный preview при
-доступных теме и grammar уже работал через TextMate. Это исходное ограничение
-зафиксировано в OpenSpec; ниже принято и проверено решение с клиентским каналом.
+Before the client channel was introduced, JB Search obtained highlighting resources
+only from the workspace extension host on the remote machine. `vscode.extensions.all`
+exposed that host's contributions, but not necessarily the client theme and client
+grammars. The webview received VS Code control colors and fonts, but not the active
+theme's TextMate rules. Tokenizing the server grammar separately could not restore
+the colors of a theme available only on the client: the preview explicitly reported
+the limitation and continued highlighting matches. Local preview with an available
+theme and grammar already worked through TextMate. OpenSpec records this original
+limitation; the client channel solution adopted and verified below addresses it.
 
-В проверенной версии VS Code 1.143.1 существует proposed API
-`vscode.languages.computeFullSyntaxHighlighting`: его результат содержит токены
-и карту цветов редактора. Однако вызывающее расширение проверяется на разрешение
-proposed API, поэтому считать этот метод обычным стабильным API нельзя. Команда
-**Developer: Generate Color Theme From Current Settings** создаёт видимый документ
-с цветами; она не является прозрачным API для фонового получения темы.
+The tested VS Code 1.143.1 has the proposed API
+`vscode.languages.computeFullSyntaxHighlighting`: its result contains tokens and
+the editor color map. However, the calling extension is checked for proposed API
+permission, so this method cannot be treated as an ordinary stable API. The
+**Developer: Generate Color Theme From Current Settings** command creates a visible
+document with colors; it is not a transparent API for obtaining the theme in the
+background.
 
-## Рассматриваемые варианты
+## Options considered
 
-1. **Публичный API VS Code**, если появится доступный обычным расширениям способ
-   получить готовые токены и актуальную карту цветов. Минимум собственных компонентов,
-   но доступность и сроки не гарантированы и требуют проверки конкретной версии.
-2. **Настоящий TextEditor рядом с поиском в том же modal editor.** Получает тему
-   от самого редактора. Изолированный прототип подтвердил BL/TextMate-подсветку,
-   live theme и match decorations без серверной копии GitHub Theme. Однако найденный
-   адаптер `focusBelowGroup → _workbench.open(-4) → focusAboveGroup` теряет ввод:
-   `return` превратилось в `retrn`, один символ попал в тестовый исходник.
-   Read-only snapshot защищает исходник, но отдельно подтверждена потеря `n`
-   из запроса. Штатный перенос modal в main объединяет её группы в отдельные
-   вкладки и не сохраняет единую search/preview-компоновку. Этот адаптер не принимаем
-   для интерактивного поиска; невозможность другого native подхода не доказана.
-   См. [протокол](../research/native-preview-feasibility.md). В рамках этого
-   эксперимента production не менялся.
-3. **Клиентская часть расширения и удалённый search backend.** Доступ к клиентским
-   grammar/theme и выполнение поиска на сервере потребуется организовать между
-   extension hosts. Официально поддерживаемый канал — асинхронные команды VS Code
-   с сериализуемыми данными; свои сокеты или SSH для этого не требуются.
-   UI и workspace части имеют два технических extension ID: `extensionKind`
-   выбирает один host, а не запускает одну регистрацию сразу в двух hosts.
-   Необходимо отдельно доказать установку и обновление из исходников на клиенте
-   и сервере, связь и поведение без второго компонента. Includes темы, customizations
-   и её смена требуют обработки. Передача правил темы сама по себе не даёт
-   клиентские grammars или полноту semantic highlighting. Этот вариант принят
-   пользователем для автономной реализации 2026-11-04 после отчёта о native probe.
-4. **UI-host с поиском через публичные workspace API.** Может уменьшить потребность
-   в серверном расширении, но потребует пересмотра перечисления и чтения файлов,
-   производительности, ignore-правил и регистрации расширения на клиенте.
-5. **Явный экспорт темы пользователем.** Позволяет передать снимок token colors,
-   однако требует ручных действий и обновления при смене темы; не равнозначен
-   автоматическому наследованию темы. Этот обход не включён автоматически.
+1. **Public VS Code API**, if a way to obtain ready-made tokens and the current
+   color map becomes available to ordinary extensions. This needs the fewest
+   custom components, but availability and timing are not guaranteed and must be
+   checked for a specific version.
+2. **A native TextEditor beside search in the same modal editor.** It obtains the
+   theme from the editor itself. An isolated prototype confirmed BL/TextMate
+   highlighting, live theme updates, and match decorations without a server copy
+   of GitHub Theme. However, the discovered adapter
+   `focusBelowGroup → _workbench.open(-4) → focusAboveGroup` loses input: `return`
+   became `retrn`, and one character entered the test source. A read-only snapshot
+   protects the source, but the loss of `n` from the query was confirmed separately.
+   Moving the modal to main through the native action merges its groups into
+   separate tabs and does not preserve a single search/preview layout. This
+   adapter is not accepted for interactive search; it has not been proven that
+   other native approaches are impossible. See the
+   [report](../research/native-preview-feasibility.md). Production was unchanged
+   during this experiment.
+3. **Client extension component and remote search backend.** Access to client
+   grammar/theme resources and server-side search must be coordinated between
+   extension hosts. The officially supported channel is asynchronous VS Code
+   commands with serializable data; custom sockets or SSH are unnecessary.
+   The UI and workspace components have two technical extension IDs:
+   `extensionKind` selects one host, rather than running one registration in both
+   hosts at once. Source installation and updates on client and server,
+   communication, and behavior without the second component must be demonstrated
+   separately. Theme includes, customizations, and theme changes need handling.
+   Transferring theme rules alone does not provide client grammars or complete
+   semantic highlighting. The user accepted this option for autonomous
+   implementation on 2026-11-04 after the native probe report.
+4. **UI host with search through public workspace APIs.** This may reduce the need
+   for a server extension, but requires revisiting file enumeration and reading,
+   performance, ignore rules, and client-side extension registration.
+5. **Explicit theme export by the user.** This can transfer a token color snapshot,
+   but requires manual steps and updates when the theme changes; it is not
+   equivalent to automatic theme inheritance. This workaround is not enabled
+   automatically.
 
-Произвольную палитру, тайное переключение темы, DOM/CDP-инъекцию и выдачу fallback
-за настоящую подсветку не принимаем как решение.
+An arbitrary palette, silent theme switching, DOM/CDP injection, and presenting a
+fallback as real highlighting are not accepted solutions.
 
-## Решение
+## Decision
 
-Сохранить единый webview в modal и вкладке и добавить обычный UI extension
-`idfedorov09.jbsearch-client`, получающий активную тему и grammar contributions
-на клиенте. Серверный `idfedorov09.jbsearch` получает сериализованный снимок по
-`jbsearch.client.previewResources`. Файлы поиска и запросы клиентскому компоненту
-не передаются. Серверные grammars сохраняют приоритет для совпадающего scope;
-клиентские дополняют отсутствующие, включая встроенный JavaScript.
+Keep the unified webview in the modal and tab, and add an ordinary UI extension,
+`idfedorov09.jbsearch-client`, that obtains the active theme and grammar contributions
+on the client. The server-side `idfedorov09.jbsearch` receives a serialized snapshot
+through `jbsearch.client.previewResources`. Search files and queries are not sent
+to the client component. Server grammars keep priority for matching scopes; client
+grammars supply missing ones, including built-in JavaScript.
 
-UI-компонент сообщает о смене темы, token customizations и расширений через
-`jbsearch.previewResourcesChanged`. Preview заново строит registry и отбрасывает
-запоздавшие ответы. Никакого обращения к клиентскому пути через серверный `fs`.
+The UI component reports theme, token customization, and extension changes through
+`jbsearch.previewResourcesChanged`. The preview rebuilds its registry and discards
+late responses. Server `fs` never accesses client paths.
 
-Клиентский VSIX включается в поставку основного расширения и устанавливается
-штатной командой VS Code при первом remote preview. Отсутствие или ошибка
-установки остаётся явным fallback с командой **JB Search: Set Up Client Preview**;
-повторное построение preview не должно запускать установку циклически.
-Для исходников bundled-компонент готовится через `npm ci`/`prepare:client`,
-обычные серверные изменения по-прежнему загружаются после Reload Window.
-Установка/обновление и реальный GUI проверяются отдельно от unit-тестов.
+The client VSIX is bundled with the main extension and installed by a native
+VS Code command on the first remote preview. A missing component or installation
+failure remains an explicit fallback with the **JB Search: Set Up Client Preview**
+command; rebuilding the preview must not trigger an installation loop.
+For source registration, the bundled component is prepared through
+`npm ci`/`prepare:client`; ordinary server changes still load after Reload Window.
+Installation/updates and real GUI behavior are verified separately from unit tests.
 
-Полное semantic highlighting всех языковых серверов не обещается: выбран
-TextMate-контракт. Native modal opening остаётся ранее принятым внутренним
-адаптером; канал между расширениями использует публичные команды VS Code.
+Complete semantic highlighting from every language server is not promised: the
+chosen contract is TextMate. Native modal opening retains the previously accepted
+internal adapter; the channel between extensions uses public VS Code commands.
 
-## Результат реализации, 2026-11-04
+## Implementation result, 2026-11-04
 
-Канал реализован и проверен в обычном VS Code 1.143.1 на Linux/X11 через
-Remote SSH loopback, с регистрацией серверных исходников штатной командой VS Code.
-GitHub Theme 6.3.5 находилась только на клиенте, BL grammar — на сервере;
-JavaScript grammar серверному host была недоступна. При первом поиске bundled
-UI-расширение автоматически установилось и активировалось локально без ручного
-Reload Window. Preview BL и JavaScript получил клиентские TextMate-цвета,
-обновлял их при смене темы и token customizations и сохранял выделение совпадений.
+The channel was implemented and tested in ordinary VS Code 1.143.1 on Linux/X11
+over Remote SSH loopback, with server sources registered through the native
+VS Code command. GitHub Theme 6.3.5 was present only on the client, and the BL
+grammar was on the server; the JavaScript grammar was unavailable to the server
+host. On the first search, the bundled UI extension installed and activated
+locally without a manual Reload Window. BL and JavaScript previews received
+client TextMate colors, updated them on theme and token customization changes,
+and kept match highlighting.
 
-Прошли 75/75 unit-тестов, `check`, `spec:check` и 14/14 GUI-сценариев, включая
-быстрый ввод без потери фокуса, read-only preview, unsaved source, Open Editors,
-Replace/Undo и перенос единого UI во вкладку. Reload серверных исходников
-повторно использовал существующий клиентский build без переустановки.
-См. [отчёт и матрицу](../testing/find-replace.md) и
-[машиночитаемый протокол](../testing/client-bridge-results.json).
-Фактическое включение клиентского VSIX в основной пакет подтверждено отдельной
-[проверкой состава обоих архивов](../testing/client-bridge-package-results.json),
-включая отклонение пакетов с отсутствующим helper или несовпадающим build.
-Дополнительный [GUI-прогон](../testing/client-bridge-upgrade-results.json)
-подтвердил восемь переключений темы и автоматическое обновление намеренно старого
-клиентского VSIX с тем же номером версии: явное Reload Window-сообщение сохранялось,
-цикла установок не было, после reload актуальный build успешно загрузился.
-Полные 14 GUI-сценариев относятся к основному расширению из исходников.
-Отдельный [smoke установленного основного VSIX](../testing/client-bridge-installed-results.json)
-подтвердил автоматическую установку вложенного helper, BL/JS preview, Replace
-и единую вкладку в том же изолированном Remote SSH окружении.
+75/75 unit tests, `check`, `spec:check`, and 14/14 GUI scenarios passed, including
+rapid typing without focus loss, read-only preview, unsaved source, Open Editors,
+Replace/Undo, and moving the unified UI to a tab. Reloading server sources reused
+the existing client build without reinstallation. See the
+[report and matrix](../testing/find-replace.md) and
+[machine-readable report](../testing/client-bridge-results.json).
+The client VSIX's actual inclusion in the main package was confirmed by a separate
+[check of both archives' contents](../testing/client-bridge-package-results.json),
+including rejection of packages with a missing helper or a mismatched build.
+An additional [GUI run](../testing/client-bridge-upgrade-results.json) confirmed
+eight theme switches and automatic upgrading of an intentionally old client VSIX
+with the same version number: the explicit Reload Window message remained,
+there was no installation loop, and the current build loaded successfully after
+reload. All 14 GUI scenarios apply to the main extension running from source.
+A separate [smoke test of the installed main VSIX](../testing/client-bridge-installed-results.json)
+confirmed automatic installation of the nested helper, BL/JS preview, Replace,
+and the unified tab in the same isolated Remote SSH environment.
 
-Этот результат подтверждает выбранный канал в проверенной конфигурации.
-macOS, Windows и Remote SSH между разными машинами ещё не проверены;
-semantic tokens не реализованы.
+This result verifies the chosen channel in the tested configuration.
+macOS, Windows, and Remote SSH between different machines have not yet been
+tested; semantic tokens are not implemented.
 
-## Границы эксперимента с native preview
+## Boundaries of the native preview experiment
 
-Проверен обычный workspace extension в изолированном VS Code 1.143.1,
-Linux/X11, через настоящий Remote SSH loopback. GitHub Theme 6.3.5 находится
-только на клиенте; BL grammar доступна на сервере. Основной профиль пользователя
-и соседний проект BL не менялись. Source-mode сбой затронул только тестовый файл,
-его изменения отменены без сохранения. Отдельный snapshot-прогон подтвердил
-read-only, актуальный несохранённый текст, автоматическую тему и оба ограничения.
+The test used an ordinary workspace extension in isolated VS Code 1.143.1,
+Linux/X11, over real Remote SSH loopback. GitHub Theme 6.3.5 was present only on
+the client; the BL grammar was available on the server. The user's main profile
+and neighboring BL project were unchanged. The source-mode failure affected only
+a test file, and its changes were discarded without saving. A separate snapshot
+run confirmed read-only behavior, current unsaved text, automatic theme use, and
+both limitations.
 
-macOS, Windows, реальная сетевая задержка и semantic highlighting других языков
-не проверены. Snapshot использует другую URI-схему и может не подходить под
-selectors semantic providers. Обнаруженные проблемы не следует переносить на
-все возможные реализации native preview. Принятие этого ADR означает выбор
-клиентского канала, а не успешное завершение всех платформенных проверок.
+macOS, Windows, real network latency, and semantic highlighting for other languages
+were not tested. The snapshot uses a different URI scheme and may not match
+semantic provider selectors. The observed problems should not be generalized to
+all possible native preview implementations. Acceptance of this ADR selects the
+client channel; it does not mean all platform checks have been completed.
 
-## Источники
+## Sources
 
-- [Контракт предложенного API, VS Code 1.143.1](https://github.com/microsoft/vscode/blob/e646868227c3e3a9e3f24277c8c7220be42c0be7/src/vscode-dts/vscode.proposed.documentSyntaxHighlighting.d.ts)
-- [Проверка proposed API при вызове](https://github.com/microsoft/vscode/blob/e646868227c3e3a9e3f24277c8c7220be42c0be7/src/vs/workbench/api/common/extHost.api.impl.ts)
-- [Данные темы, экспортируемые в webview](https://github.com/microsoft/vscode/blob/e646868227c3e3a9e3f24277c8c7220be42c0be7/src/vs/workbench/contrib/webview/browser/themeing.ts)
-- [Протокол и исходники native-preview эксперимента](../research/native-preview-feasibility.md)
-- [Документация команд между extension hosts](https://code.visualstudio.com/api/advanced-topics/remote-extensions#communicating-between-extensions-using-commands)
-- [Расположение UI/workspace extension hosts](https://code.visualstudio.com/api/advanced-topics/extension-host)
+- [Proposed API contract, VS Code 1.143.1](https://github.com/microsoft/vscode/blob/e646868227c3e3a9e3f24277c8c7220be42c0be7/src/vscode-dts/vscode.proposed.documentSyntaxHighlighting.d.ts)
+- [Proposed API check at invocation](https://github.com/microsoft/vscode/blob/e646868227c3e3a9e3f24277c8c7220be42c0be7/src/vs/workbench/api/common/extHost.api.impl.ts)
+- [Theme data exported to webviews](https://github.com/microsoft/vscode/blob/e646868227c3e3a9e3f24277c8c7220be42c0be7/src/vs/workbench/contrib/webview/browser/themeing.ts)
+- [Report and source of the native preview experiment](../research/native-preview-feasibility.md)
+- [Documentation for commands between extension hosts](https://code.visualstudio.com/api/advanced-topics/remote-extensions#communicating-between-extensions-using-commands)
+- [UI/workspace extension host locations](https://code.visualstudio.com/api/advanced-topics/extension-host)

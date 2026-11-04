@@ -2,44 +2,45 @@
 
 ## Why
 
-Собственное HTML-дерево Find Window рисует фиксированные иконки и расходится с
-Explorer клиента. Пользователь 2026-11-04 явно согласовал штатное дерево в нижней
-панели и открытие выбранного результата в центральном редакторе.
+Find Window's custom HTML tree draws fixed icons that differ from the client's
+Explorer. On 2026-11-04, the user explicitly approved a native tree in the bottom
+panel and opening the selected result in the central editor.
 
 ## What Changes
 
-- **BREAKING UI**: Find Window заменяется Find-панелью с native TreeView; отдельная
-  центральная вкладка дерева и создаваемая справа editor group больше не нужны.
-- Данные и порядок дерева остаются нашими; иконки файлов/папок, раскрытие,
-  выделение строк, контекстные меню и действия рисует workbench VS Code.
-- Выбор результата открывает настоящий файл в активной центральной editor group,
-  без разделения окна; открытие/обновление панели само не переключает документ.
-- Сохраняются snapshot/INVALID, проверка замен и isolated Edit Search draft.
-  INVALID становится заметнее: префикс перед сниппетом и штатный значок ошибки
-  цвета активной темы по дополнительному запросу пользователя.
-  Независимые поиски выбираются штатным QuickPick в одной панели; New Search
-  создаёт отдельную сессию, Close Search освобождает её.
-- Подписи modal обновляются на Open in Find Panel / Keep as a new search.
+- **BREAKING UI**: replace Find Window with a Find panel using a native TreeView;
+  the separate central tree tab and dedicated right editor group are no longer needed.
+- Tree data and ordering remain under our control; the VS Code workbench renders
+  file/folder icons, expansion, row selection, context menus, and actions.
+- Selecting a result opens the real file in the active central editor group,
+  without a split; opening/refreshing the panel does not switch documents by itself.
+- Retain snapshot/INVALID behavior, replacement validation, and the isolated Edit
+  Search draft. INVALID becomes more visible: a prefix before the snippet and a
+  native error icon in the active theme's color, following the user's additional
+  request. Independent searches are selected through a native QuickPick in one
+  panel; New Search creates a separate session, and Close Search releases it.
+- Update modal labels to Open in Find Panel / Keep as a new search.
 
-Scope авторизован прямым запросом. Платформенные проверки фиксируются отдельно;
-публичный API не является доказательством физического Remote/macOS/Windows прогона.
-Новая отрисовка не должна копировать клиентскую тему иконок или внедряться в DOM.
+The scope was authorized by a direct request. Platform checks are recorded
+separately; the public API is not proof of a physical Remote/macOS/Windows run.
+The new renderer must not copy the client's icon theme or inject into the DOM.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `find-results-panel`: штатное дерево поиска в Panel, центральный editor,
-  действия и переключение сохранённых поисков.
+- `find-results-panel`: a native search tree in Panel, a central editor,
+  actions, and saved-search switching.
 
 ### Modified Capabilities
 
-Нет: baseline содержит только installation-check. Новый change заменяет размещение
-из неархивированного implement-find-window, сохраняя его логику снимка результатов.
+None: the baseline contains only installation-check. The new change replaces
+placement from the unarchived implement-find-window change while retaining its
+results snapshot logic.
 
 ## Impact
 
-SearchController, новый FindTree/TreeDataProvider, FindPreview, contributions
-views/commands/menus и подписи modal. Удаление устаревшего HTML-дерева. ADR 0008
-заменит решение о размещении ADR 0007. Новые зависимости и изменение клиентского
-UI helper не требуются. Unit, GUI в изолированном VS Code и проверка VSIX.
+SearchController, a new FindTree/TreeDataProvider, FindPreview, contributions for
+views/commands/menus, and modal labels. Remove the obsolete HTML tree. ADR 0008
+will supersede ADR 0007's placement decision. No new dependencies or changes to
+the client UI helper are needed. Unit tests, GUI in isolated VS Code, and VSIX checks.

@@ -1,22 +1,22 @@
 # Tasks
 
-## 1. Workflow и договорённости
+## 1. Workflow and agreements
 
-- [x] 1.1 Добавить workflow OIDC-публикации после проверок и автоматический тест
-  его ограничений; проверить тестом только `master`, порядок проверок,
-  повторную версию и минимальные полномочия.
-- [x] 1.2 Описать решение и настройку GitHub Environment / Marketplace в ADR и
-  документации; проверить, что локальная подготовка не объявлена публикацией.
+- [x] 1.1 Add an OIDC publication workflow after validation and an automated test
+  for its restrictions; test the `master`-only rule, validation order,
+  duplicate versions, and minimum permissions.
+- [x] 1.2 Document the decision and GitHub Environment / Marketplace setup in an
+  ADR and documentation; verify that local preparation is not called publication.
 
-## 2. Проверки интеграции
+## 2. Integration validation
 
-- [x] 2.1 Выполнить `npm run check`, `npm test`, `npm run spec:check` и
-  `npm run package`; отдельно проверить корректность workflow и сообщить выводы.
-- [ ] 2.2 После отдельно разрешённых настройки внешних сервисов и публикации
-  проверить GitHub Actions, карточку Marketplace и установку в реальном VS Code;
-  зафиксировать результат отдельно от локальных автоматических проверок.
+- [x] 2.1 Run `npm run check`, `npm test`, `npm run spec:check`, and
+  `npm run package`; separately check workflow correctness and report findings.
+- [ ] 2.2 After separately authorized external service setup and publication,
+  check GitHub Actions, the Marketplace listing, and installation in real VS Code;
+  record the result separately from local automated checks.
 
 ## Workflow follow-up
 
-- Не переносить в `master`, не публиковать и не архивировать изменение без
-  отдельного запроса пользователя.
+- Do not transfer to `master`, publish, or archive the change without a separate
+  user request.

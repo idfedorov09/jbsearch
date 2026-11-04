@@ -2,46 +2,50 @@
 
 ## Why
 
-Сейчас Open in Find Window переносит тот же поисковый диалог во вкладку: в ней
-остаются поля запроса, нижний preview и повторная кнопка переноса. Для массовых
-ручных правок нужен отдельный режим с устойчивым деревом результатов и настоящим
-редактором справа, как на присланных пользователем примерах IntelliJ IDEA.
+Currently, Open in Find Window moves the same search dialog into a tab: the query
+fields, bottom preview, and repeated transfer button remain there. Bulk manual
+editing needs a separate mode with a stable results tree and a real editor on
+the right, as in the IntelliJ IDEA examples supplied by the user.
 
 ## What Changes
 
-- Отдельная вкладка Find с кратким описанием запроса, деревом корень/каталог/файл/
-  совпадение и панелью действий; без повторной Open in Find Window.
-- Детерминированная сортировка и сохранение места результата при изменении файла;
-  исчезнувшее совпадение остаётся как INVALID, повторный запуск обновляет снимок.
-- Шестерёнка возвращает параметры этого поиска в modal; подтверждение обновляет
-  исходную вкладку, Esc оставляет прежний снимок. New Tab создаёт независимый поиск.
-- Настоящий редактируемый TextEditor справа с decorations совпадений, обычными
-  командами, Undo и несохранённым текстом. Modal сохраняет компактный read-only preview.
-- Replace в Find Window проверяет актуальность диапазонов и не применяет INVALID.
+- A dedicated Find tab with a query summary, a root/directory/file/occurrence tree,
+  and an action toolbar; no repeated Open in Find Window button.
+- Deterministic sorting and retained result positions when files change;
+  a missing match remains as INVALID, and rerunning refreshes the snapshot.
+- The gear button returns this search's parameters to the modal; confirmation
+  updates the original tab, while Esc retains the previous snapshot. New Tab
+  creates an independent search.
+- A real editable TextEditor on the right with match decorations, ordinary
+  commands, Undo, and unsaved text. The modal retains its compact read-only preview.
+- Replace in Find Window validates current ranges and does not replace INVALID results.
 
-Scope авторизован прямым запросом пользователя 2026-11-04; дополнительных вопросов
-не требуется. Точный Secondary Side Bar изучается отдельно: штатный API позволяет
-View/TreeView/WebviewView, но не native TextEditor внутри sidebar. Выбранная
-поддерживаемая адаптация — обычная правая editor group с полноценным редактором;
-это явное отличие от буквального требования, не новая возможность sidebar.
+The scope was authorized by the user's direct request on 2026-11-04; no further
+questions are required. Exact Secondary Side Bar placement is investigated
+separately: the public API supports View/TreeView/WebviewView, but no native
+TextEditor inside a sidebar. The selected supported adaptation is a regular
+right editor group with a full editor; this is an explicit departure from the
+literal requirement, not a new sidebar capability.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `find-results-window`: отдельное дерево снимка поиска, возврат к параметрам,
-  editable native preview и отслеживание валидности диапазонов.
+- `find-results-window`: a dedicated search snapshot tree, return to search
+  parameters, editable native preview, and range validity tracking.
 
 ### Modified Capabilities
 
-Базовый каталог пока содержит только installation-check; контракт modal остаётся
-в текущем change design-floating-search. Его сценарий переноса будет согласован
-с новым отдельным представлением, baseline без проверки не синхронизируется.
+The baseline directory currently contains only installation-check; the modal
+contract remains in the current design-floating-search change. Its transfer
+scenario will be aligned with the new dedicated view; the baseline will not be
+synced without validation.
 
 ## Impact
 
-SearchController, новые UI-ресурсы Find Window, модель отслеживания диапазонов,
-адаптер редакторских групп и decorations. Новых runtime-зависимостей не требуется.
-Проверки: unit, browser layout, настоящий изолированный desktop VS Code и состав
-VSIX. Рабочий профиль пользователя и соседний BL-проект не меняются. Проверка
-macOS/Windows и отдельного физического Remote клиента не выводится из Linux.
+SearchController, new Find Window UI resources, the range tracking model, and
+the editor group adapter and decorations. No new runtime dependencies are needed.
+Validation: unit tests, browser layout, real isolated desktop VS Code, and VSIX
+contents. The user's working profile and the neighboring BL project remain
+unchanged. macOS/Windows and a separate physical Remote client are not considered
+tested on the basis of Linux runs.

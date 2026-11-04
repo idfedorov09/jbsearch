@@ -2,40 +2,40 @@
 
 ## Why
 
-Пользователь 2026-11-04 разрешил подготовку релиза, коммиты и push в `dev`.
-Реализованный продукт пока отсутствует в Git-истории; перед отправкой нужно
-согласовать документацию с кодом и проверить воспроизводимость поставки.
+On 2026-11-04, the user authorized release preparation, commits, and push to `dev`.
+The implemented product is not yet in Git history; before delivery, align the
+documentation with the code and check that the distribution is reproducible.
 
 ## What Changes
 
-- Сохранить текущую версию первого выпуска `0.1.0` в main/client manifests и lockfiles.
-- Добавить changelog и checklist кандидата, разделив выполненные проверки и
-  оставшуюся приёмку macOS/Windows/физического Remote.
-- Исправить подготовленный publish job: собрать и проверить nested client на его
-  runner, затем передавать `vsce publish` именно созданный VSIX.
-- Привести описание ограничений к native Find Panel; обновить обзор OpenSpec и
-  синхронизировать только проверенные требования команды установки и новой панели.
-- Проверить чистую установку зависимостей, код, тесты, specs и содержимое пакета;
-  оформить связанные коммиты и отправить их только в `origin/dev`, проверить CI.
+- Keep the current first-release version `0.1.0` in main/client manifests and lockfiles.
+- Add a changelog and candidate checklist, separating completed checks from
+  remaining macOS/Windows/physical Remote acceptance.
+- Fix the prepared publish job: build and verify the nested client on its own
+  runner, then pass the resulting VSIX to `vsce publish`.
+- Align the limitations with native Find Panel; update the OpenSpec overview and
+  synchronize only verified installation-command and new-panel requirements.
+- Check a clean dependency installation, code, tests, specs, and package contents;
+  create related commits, push only to `origin/dev`, and check CI.
 
-Подтверждённый scope — подготовка и `dev`. Публикация, Environment/доверие
-Marketplace, перенос в `master`, Git-теги, artwork и новый номер версии не входят.
-Открытые платформенные пункты не закрываются по Linux-проверкам.
+Confirmed scope is preparation and `dev`. Publication, Marketplace
+Environment/trust, transfer to `master`, Git tags, artwork, and a new version
+number are outside the scope. Linux checks do not close open platform items.
 
 ## Capabilities
 
 ### New Capabilities
 
-Нет новых пользовательских возможностей.
+No new user-facing capabilities.
 
 ### Modified Capabilities
 
-Требования продукта не меняются: исправляется сборка существующего процесса
-публикации и документация уже проверенного поведения. `skip_specs: true`;
-синхронизация существующих дельт не вводит нового контракта.
+Product requirements remain unchanged: this fixes the build of the existing
+publication process and documents behavior already verified. `skip_specs: true`;
+synchronizing existing deltas introduces no new contract.
 
 ## Impact
 
-Workflow публикации и его regression test, changelog, README/ограничения,
-release checklist, OpenSpec overview и проверенные baseline specs. Runtime-код,
-клиентский protocol и зависимости не меняются. Push `dev` запускает обычный CI.
+Publication workflow and its regression test, changelog, README/limitations,
+release checklist, OpenSpec overview, and verified baseline specs. Runtime code,
+client protocol, and dependencies remain unchanged. Pushing `dev` runs ordinary CI.
