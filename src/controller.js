@@ -200,10 +200,39 @@ class SearchController {
       throw error;
     }
   }
-  async show(mode = 'find') {
+  async showInDirectory(uri) {
+    if (this.disposed) return;
+    const invocation = this.directoryInvocation = (this.directoryInvocation || 0) + 1;
+    try {
+      if (uri?.scheme !== 'file' || typeof uri.fsPath !== 'string' || !uri.fsPath)
+        throw new Error('Choose a filesystem folder in Explorer to use Find in Files.');
+      if (!this.v.workspace.getWorkspaceFolder(uri))
+        throw new Error('The search directory must be inside an open workspace folder.');
+      const stat = await this.v.workspace.fs.stat(uri);
+      if (this.disposed || invocation !== this.directoryInvocation) return;
+      if (!(stat.type & this.v.FileType.Directory))
+        throw new Error('The selected search resource is not a directory.');
+      await this.show('find', {
+        kind: 'directory',
+        directory: uri.fsPath,
+        path: uri.fsPath,
+        label: this.v.workspace.asRelativePath(uri, true)
+      });
+    } catch (error) {
+      if (!this.disposed && invocation === this.directoryInvocation)
+        void this.v.window.showErrorMessage(`JB Search: ${error.message}`);
+    }
+  }
+  async show(mode = 'find', initialScope) {
     if (this.disposed) return;
     let session = this.sessions.get(this.currentId) || this.create(mode);
-    if (session.layout === 'findWindow') {
+    if (initialScope && (session.replacing || this.sessions.get(session.targetWindowId)?.replacing))
+      throw new Error('Wait for the current replacement to finish before changing the search directory.');
+    if (initialScope && (session.layout === 'findWindow' || session.targetWindowId)) {
+      // Explorer starts a separate search; it must never edit the saved snapshot
+      // or its gear draft when that draft happens to be the current modal.
+      session = this.create(mode, session);
+    } else if (session.layout === 'findWindow') {
       const target = session;
       const draft = this.sessions.get(target.draftId);
       session = draft?.panels.size ? draft : this.create(mode, target);
@@ -216,6 +245,10 @@ class SearchController {
     if (!session.query && active && !active.selection.isEmpty) {
       const selected = active.document.getText(active.selection);
       if (selected.length <= 2000) session.query = selected;
+    }
+    if (initialScope) {
+      session.scope = { ...initialScope };
+      this.resetSearch(session);
     }
     try {
       if (session.opening) {
@@ -427,7 +460,7 @@ class SearchController {
       void panel.webview.postMessage(message);
     }
   }
-  schedule(session, delay = this.configuration().get('search.debounceMs', 150)) {
+  resetSearch(session) {
     this.cancelValidations(session);
     clearTimeout(session.timer);
     session.abort?.abort();
@@ -443,6 +476,9 @@ class SearchController {
     session.previewRevision++;
     this.updateNativePreview(session);
     this.notify(session);
+  }
+  schedule(session, delay = this.configuration().get('search.debounceMs', 150)) {
+    this.resetSearch(session);
     session.timer = setTimeout(() => {
       void this.search(session);
     }, delay);

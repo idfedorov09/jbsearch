@@ -11,6 +11,7 @@ function activate(context) {
       )
     ),
     vscode.commands.registerCommand('jbsearch.findInFiles', () => controller.show('find')),
+    vscode.commands.registerCommand('jbsearch.findInDirectory', (uri) => controller.showInDirectory(uri)),
     vscode.commands.registerCommand('jbsearch.replaceInFiles', () => controller.show('replace')),
     vscode.commands.registerCommand('jbsearch.setupClientPreview', () => controller.setupClientPreview())
   );

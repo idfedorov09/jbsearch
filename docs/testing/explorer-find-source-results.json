@@ -1,0 +1,850 @@
+{
+  "date": "2026-11-04",
+  "platform": "Linux x64 / X11 / Xvfb",
+  "mode": "source Extension Development Host",
+  "checks": [
+    {
+      "name": "ordinary Find command opens the existing modal with workspace scope and empty query",
+      "passed": true,
+      "detail": {
+        "scope": {
+          "kind": "workspace"
+        },
+        "heading": "Find in Files"
+      }
+    },
+    {
+      "name": "query and options produce the six-match workspace baseline",
+      "passed": true,
+      "detail": {
+        "matches": 6,
+        "options": {
+          "caseSensitive": true,
+          "wholeWord": true,
+          "regex": true,
+          "preserveCase": false,
+          "maskEnabled": true,
+          "mask": "*.js",
+          "include": "",
+          "exclude": "",
+          "respectExcludes": true
+        },
+        "sessionId": "3f615982-fb14-4f32-8322-ef56ba58c899"
+      }
+    },
+    {
+      "name": "nested Explorer folder menu opens Directory with retained query/options and exactly two descendants",
+      "passed": true,
+      "detail": {
+        "scope": {
+          "kind": "directory",
+          "directory": "/tmp/jbsearch-explorer-directory-check/workspace/first root/scope dir",
+          "path": "/tmp/jbsearch-explorer-directory-check/workspace/first root/scope dir",
+          "label": "First Root/scope dir"
+        },
+        "matches": 2,
+        "retainedOptions": true,
+        "independentSession": "bb73751a-2385-4a30-b8fb-f751eddab9f9"
+      }
+    },
+    {
+      "name": "saved Find snapshot remains unchanged after opening and dismissing a folder search",
+      "passed": true,
+      "detail": {
+        "sessionId": "3f615982-fb14-4f32-8322-ef56ba58c899",
+        "matches": 6,
+        "unchanged": true
+      }
+    },
+    {
+      "name": "workspace-root Explorer menu opens Directory limited to that root",
+      "passed": true,
+      "detail": {
+        "scope": {
+          "kind": "directory",
+          "directory": "/tmp/jbsearch-explorer-directory-check/workspace/first root",
+          "path": "/tmp/jbsearch-explorer-directory-check/workspace/first root",
+          "label": "/tmp/jbsearch-explorer-directory-check/workspace/first root"
+        },
+        "matches": 4,
+        "savedSearches": 2
+      }
+    },
+    {
+      "name": "file Explorer menu does not contribute Find in Files",
+      "passed": true,
+      "detail": {
+        "absent": true
+      }
+    },
+    {
+      "name": "multi-folder Explorer selection does not contribute Find in Files",
+      "passed": true,
+      "detail": {
+        "selectedFolders": 2,
+        "absent": true
+      }
+    },
+    {
+      "name": "ordinary Find shortcut does not adopt a merely focused Explorer folder",
+      "passed": true,
+      "detail": {
+        "scope": {
+          "kind": "workspace"
+        },
+        "shortcut": "Ctrl+Shift+F",
+        "matches": 6
+      }
+    }
+  ],
+  "manualLimits": [
+    "macOS not run",
+    "Windows not run",
+    "physical Remote SSH not run"
+  ],
+  "vscode": "1.143.1",
+  "roots": [
+    {
+      "name": "First Root",
+      "uri": "file:///tmp/jbsearch-explorer-directory-check/workspace/first%20root",
+      "fsPath": "/tmp/jbsearch-explorer-directory-check/workspace/first root"
+    },
+    {
+      "name": "Second Root",
+      "uri": "file:///tmp/jbsearch-explorer-directory-check/workspace/second%20root",
+      "fsPath": "/tmp/jbsearch-explorer-directory-check/workspace/second root"
+    }
+  ],
+  "main": "/home/codex/projects/vscode-extensions/jbsearch",
+  "nestedMenu": [
+    {
+      "label": "New File...",
+      "command": null
+    },
+    {
+      "label": "New Folder...",
+      "command": null
+    },
+    {
+      "label": "Open Containing Folder\nCtrl+Alt+R",
+      "command": null
+    },
+    {
+      "label": "Open in Images Preview",
+      "command": null
+    },
+    {
+      "label": "Open in Integrated Terminal",
+      "command": null
+    },
+    {
+      "label": "Find in Files…",
+      "command": null
+    },
+    {
+      "label": "Find in Folder...\nShift+Alt+F",
+      "command": null
+    },
+    {
+      "label": "Open Timeline",
+      "command": null
+    },
+    {
+      "label": "Add Folder to Chat",
+      "command": null
+    },
+    {
+      "label": "Cut\nCtrl+X",
+      "command": null
+    },
+    {
+      "label": "Copy\nCtrl+C",
+      "command": null
+    },
+    {
+      "label": "Paste\nCtrl+V",
+      "command": null
+    },
+    {
+      "label": "Copy Path\nCtrl+Alt+C",
+      "command": null
+    },
+    {
+      "label": "Copy Relative Path\nCtrl+Shift+Alt+C",
+      "command": null
+    },
+    {
+      "label": "Rename...\nF2",
+      "command": null
+    },
+    {
+      "label": "Delete\nDel",
+      "command": null
+    }
+  ],
+  "nestedState": {
+    "id": "bb73751a-2385-4a30-b8fb-f751eddab9f9",
+    "mode": "find",
+    "layout": "modal",
+    "query": "ScopedNeedle",
+    "replacement": "",
+    "options": {
+      "caseSensitive": true,
+      "wholeWord": true,
+      "regex": true,
+      "preserveCase": false,
+      "maskEnabled": true,
+      "mask": "*.js",
+      "include": "",
+      "exclude": "",
+      "respectExcludes": true
+    },
+    "scope": {
+      "kind": "directory",
+      "directory": "/tmp/jbsearch-explorer-directory-check/workspace/first root/scope dir",
+      "path": "/tmp/jbsearch-explorer-directory-check/workspace/first root/scope dir",
+      "label": "First Root/scope dir"
+    },
+    "generation": 2,
+    "results": [
+      {
+        "id": "file:///tmp/jbsearch-explorer-directory-check/workspace/first%20root/scope%20dir/deeper/nested.js:23:12",
+        "uri": "file:///tmp/jbsearch-explorer-directory-check/workspace/first%20root/scope%20dir/deeper/nested.js",
+        "relativePath": "scope dir/deeper/nested.js",
+        "label": "nested.js",
+        "range": {
+          "start": {
+            "line": 0,
+            "character": 23
+          },
+          "end": {
+            "line": 0,
+            "character": 35
+          }
+        },
+        "lineText": "export const nested = \"ScopedNeedle\";",
+        "previewMatchStart": 23,
+        "previewMatchEnd": 35,
+        "rootName": "First Root"
+      },
+      {
+        "id": "file:///tmp/jbsearch-explorer-directory-check/workspace/first%20root/scope%20dir/inside.js:13:12",
+        "uri": "file:///tmp/jbsearch-explorer-directory-check/workspace/first%20root/scope%20dir/inside.js",
+        "relativePath": "scope dir/inside.js",
+        "label": "inside.js",
+        "range": {
+          "start": {
+            "line": 0,
+            "character": 13
+          },
+          "end": {
+            "line": 0,
+            "character": 25
+          }
+        },
+        "lineText": "const one = \"ScopedNeedle\";",
+        "previewMatchStart": 13,
+        "previewMatchEnd": 25,
+        "rootName": "First Root"
+      }
+    ],
+    "selectedId": "file:///tmp/jbsearch-explorer-directory-check/workspace/first%20root/scope%20dir/deeper/nested.js:23:12",
+    "searching": false,
+    "partial": false,
+    "error": "",
+    "notice": "",
+    "replacing": false,
+    "patchAcks": {},
+    "customScopes": [],
+    "panels": [
+      {
+        "active": true,
+        "visible": true,
+        "column": 2,
+        "title": "JB Search"
+      }
+    ]
+  },
+  "rootMenu": [
+    {
+      "label": "New File...",
+      "command": null
+    },
+    {
+      "label": "New Folder...",
+      "command": null
+    },
+    {
+      "label": "Open Containing Folder\nCtrl+Alt+R",
+      "command": null
+    },
+    {
+      "label": "Open in Images Preview",
+      "command": null
+    },
+    {
+      "label": "Open in Integrated Terminal",
+      "command": null
+    },
+    {
+      "label": "Add Folder to Workspace...",
+      "command": null
+    },
+    {
+      "label": "Open Folder Settings",
+      "command": null
+    },
+    {
+      "label": "Remove Folder from Workspace",
+      "command": null
+    },
+    {
+      "label": "Find in Files…",
+      "command": null
+    },
+    {
+      "label": "Find in Folder...\nShift+Alt+F",
+      "command": null
+    },
+    {
+      "label": "Open Timeline",
+      "command": null
+    },
+    {
+      "label": "Add Folder to Chat",
+      "command": null
+    },
+    {
+      "label": "Paste\nCtrl+V",
+      "command": null
+    },
+    {
+      "label": "Copy Path\nCtrl+Alt+C",
+      "command": null
+    },
+    {
+      "label": "Copy Relative Path\nCtrl+Shift+Alt+C",
+      "command": null
+    }
+  ],
+  "rootState": {
+    "id": "bb73751a-2385-4a30-b8fb-f751eddab9f9",
+    "mode": "find",
+    "layout": "modal",
+    "query": "ScopedNeedle",
+    "replacement": "",
+    "options": {
+      "caseSensitive": true,
+      "wholeWord": true,
+      "regex": true,
+      "preserveCase": false,
+      "maskEnabled": true,
+      "mask": "*.js",
+      "include": "",
+      "exclude": "",
+      "respectExcludes": true
+    },
+    "scope": {
+      "kind": "directory",
+      "directory": "/tmp/jbsearch-explorer-directory-check/workspace/first root",
+      "path": "/tmp/jbsearch-explorer-directory-check/workspace/first root",
+      "label": "/tmp/jbsearch-explorer-directory-check/workspace/first root"
+    },
+    "generation": 4,
+    "results": [
+      {
+        "id": "file:///tmp/jbsearch-explorer-directory-check/workspace/first%20root/outside.js:24:12",
+        "uri": "file:///tmp/jbsearch-explorer-directory-check/workspace/first%20root/outside.js",
+        "relativePath": "outside.js",
+        "label": "outside.js",
+        "range": {
+          "start": {
+            "line": 0,
+            "character": 24
+          },
+          "end": {
+            "line": 0,
+            "character": 36
+          }
+        },
+        "lineText": "export const outside = \"ScopedNeedle\";",
+        "previewMatchStart": 24,
+        "previewMatchEnd": 36,
+        "rootName": "First Root"
+      },
+      {
+        "id": "file:///tmp/jbsearch-explorer-directory-check/workspace/first%20root/scope%20dir/deeper/nested.js:23:12",
+        "uri": "file:///tmp/jbsearch-explorer-directory-check/workspace/first%20root/scope%20dir/deeper/nested.js",
+        "relativePath": "scope dir/deeper/nested.js",
+        "label": "nested.js",
+        "range": {
+          "start": {
+            "line": 0,
+            "character": 23
+          },
+          "end": {
+            "line": 0,
+            "character": 35
+          }
+        },
+        "lineText": "export const nested = \"ScopedNeedle\";",
+        "previewMatchStart": 23,
+        "previewMatchEnd": 35,
+        "rootName": "First Root"
+      },
+      {
+        "id": "file:///tmp/jbsearch-explorer-directory-check/workspace/first%20root/scope%20dir/inside.js:13:12",
+        "uri": "file:///tmp/jbsearch-explorer-directory-check/workspace/first%20root/scope%20dir/inside.js",
+        "relativePath": "scope dir/inside.js",
+        "label": "inside.js",
+        "range": {
+          "start": {
+            "line": 0,
+            "character": 13
+          },
+          "end": {
+            "line": 0,
+            "character": 25
+          }
+        },
+        "lineText": "const one = \"ScopedNeedle\";",
+        "previewMatchStart": 13,
+        "previewMatchEnd": 25,
+        "rootName": "First Root"
+      },
+      {
+        "id": "file:///tmp/jbsearch-explorer-directory-check/workspace/first%20root/scope%20dir-extra/prefix.js:30:12",
+        "uri": "file:///tmp/jbsearch-explorer-directory-check/workspace/first%20root/scope%20dir-extra/prefix.js",
+        "relativePath": "scope dir-extra/prefix.js",
+        "label": "prefix.js",
+        "range": {
+          "start": {
+            "line": 0,
+            "character": 30
+          },
+          "end": {
+            "line": 0,
+            "character": 42
+          }
+        },
+        "lineText": "export const siblingPrefix = \"ScopedNeedle\";",
+        "previewMatchStart": 30,
+        "previewMatchEnd": 42,
+        "rootName": "First Root"
+      }
+    ],
+    "selectedId": "file:///tmp/jbsearch-explorer-directory-check/workspace/first%20root/outside.js:24:12",
+    "searching": false,
+    "partial": false,
+    "error": "",
+    "notice": "",
+    "replacing": false,
+    "patchAcks": {},
+    "customScopes": [],
+    "panels": [
+      {
+        "active": true,
+        "visible": true,
+        "column": 2,
+        "title": "JB Search"
+      }
+    ]
+  },
+  "fileMenu": [
+    {
+      "label": "Open to the Side\nCtrl+Enter",
+      "command": null
+    },
+    {
+      "label": "Open Containing Folder\nCtrl+Alt+R",
+      "command": null
+    },
+    {
+      "label": "Open With...",
+      "command": null
+    },
+    {
+      "label": "Open in Integrated Terminal",
+      "command": null
+    },
+    {
+      "label": "Select for Compare",
+      "command": null
+    },
+    {
+      "label": "Find File References",
+      "command": null
+    },
+    {
+      "label": "Open Timeline",
+      "command": null
+    },
+    {
+      "label": "Add File to Chat",
+      "command": null
+    },
+    {
+      "label": "Cut\nCtrl+X",
+      "command": null
+    },
+    {
+      "label": "Copy\nCtrl+C",
+      "command": null
+    },
+    {
+      "label": "Copy Path\nCtrl+Alt+C",
+      "command": null
+    },
+    {
+      "label": "Copy Relative Path\nCtrl+Shift+Alt+C",
+      "command": null
+    },
+    {
+      "label": "Rename...\nF2",
+      "command": null
+    },
+    {
+      "label": "Delete\nDel",
+      "command": null
+    }
+  ],
+  "multiSelectionMenu": [
+    "New File...",
+    "New Folder...",
+    "Open Containing Folder\nCtrl+Alt+R",
+    "Open in Images Preview",
+    "Open in Integrated Terminal",
+    "Find in Folder...\nShift+Alt+F",
+    "Open Timeline",
+    "Add Folder to Chat",
+    "Cut\nCtrl+X",
+    "Copy\nCtrl+C",
+    "Paste\nCtrl+V",
+    "Copy Path\nCtrl+Alt+C",
+    "Copy Relative Path\nCtrl+Shift+Alt+C",
+    "Rename...\nF2",
+    "Delete\nDel"
+  ],
+  "finalState": {
+    "version": "1.143.1",
+    "main": "/home/codex/projects/vscode-extensions/jbsearch",
+    "roots": [
+      {
+        "name": "First Root",
+        "uri": "file:///tmp/jbsearch-explorer-directory-check/workspace/first%20root",
+        "fsPath": "/tmp/jbsearch-explorer-directory-check/workspace/first root"
+      },
+      {
+        "name": "Second Root",
+        "uri": "file:///tmp/jbsearch-explorer-directory-check/workspace/second%20root",
+        "fsPath": "/tmp/jbsearch-explorer-directory-check/workspace/second root"
+      }
+    ],
+    "sessions": [
+      {
+        "id": "3f615982-fb14-4f32-8322-ef56ba58c899",
+        "mode": "find",
+        "layout": "findWindow",
+        "query": "ScopedNeedle",
+        "replacement": "",
+        "options": {
+          "caseSensitive": true,
+          "wholeWord": true,
+          "regex": true,
+          "preserveCase": false,
+          "maskEnabled": true,
+          "mask": "*.js",
+          "include": "",
+          "exclude": "",
+          "respectExcludes": true
+        },
+        "scope": {
+          "kind": "workspace"
+        },
+        "generation": 6,
+        "results": [
+          {
+            "id": "file:///tmp/jbsearch-explorer-directory-check/workspace/first%20root/outside.js:24:12",
+            "uri": "file:///tmp/jbsearch-explorer-directory-check/workspace/first%20root/outside.js",
+            "relativePath": "outside.js",
+            "label": "outside.js",
+            "range": {
+              "start": {
+                "line": 0,
+                "character": 24
+              },
+              "end": {
+                "line": 0,
+                "character": 36
+              }
+            },
+            "lineText": "export const outside = \"ScopedNeedle\";",
+            "previewMatchStart": 24,
+            "previewMatchEnd": 36,
+            "rootName": "First Root",
+            "initialOrder": 0
+          },
+          {
+            "id": "file:///tmp/jbsearch-explorer-directory-check/workspace/first%20root/scope%20dir/inside.js:13:12",
+            "uri": "file:///tmp/jbsearch-explorer-directory-check/workspace/first%20root/scope%20dir/inside.js",
+            "relativePath": "scope dir/inside.js",
+            "label": "inside.js",
+            "range": {
+              "start": {
+                "line": 0,
+                "character": 13
+              },
+              "end": {
+                "line": 0,
+                "character": 25
+              }
+            },
+            "lineText": "const one = \"ScopedNeedle\";",
+            "previewMatchStart": 13,
+            "previewMatchEnd": 25,
+            "rootName": "First Root",
+            "initialOrder": 1
+          },
+          {
+            "id": "file:///tmp/jbsearch-explorer-directory-check/workspace/first%20root/scope%20dir-extra/prefix.js:30:12",
+            "uri": "file:///tmp/jbsearch-explorer-directory-check/workspace/first%20root/scope%20dir-extra/prefix.js",
+            "relativePath": "scope dir-extra/prefix.js",
+            "label": "prefix.js",
+            "range": {
+              "start": {
+                "line": 0,
+                "character": 30
+              },
+              "end": {
+                "line": 0,
+                "character": 42
+              }
+            },
+            "lineText": "export const siblingPrefix = \"ScopedNeedle\";",
+            "previewMatchStart": 30,
+            "previewMatchEnd": 42,
+            "rootName": "First Root",
+            "initialOrder": 2
+          },
+          {
+            "id": "file:///tmp/jbsearch-explorer-directory-check/workspace/first%20root/scope%20dir/deeper/nested.js:23:12",
+            "uri": "file:///tmp/jbsearch-explorer-directory-check/workspace/first%20root/scope%20dir/deeper/nested.js",
+            "relativePath": "scope dir/deeper/nested.js",
+            "label": "nested.js",
+            "range": {
+              "start": {
+                "line": 0,
+                "character": 23
+              },
+              "end": {
+                "line": 0,
+                "character": 35
+              }
+            },
+            "lineText": "export const nested = \"ScopedNeedle\";",
+            "previewMatchStart": 23,
+            "previewMatchEnd": 35,
+            "rootName": "First Root",
+            "initialOrder": 3
+          },
+          {
+            "id": "file:///tmp/jbsearch-explorer-directory-check/workspace/second%20root/other.js:26:12",
+            "uri": "file:///tmp/jbsearch-explorer-directory-check/workspace/second%20root/other.js",
+            "relativePath": "other.js",
+            "label": "other.js",
+            "range": {
+              "start": {
+                "line": 0,
+                "character": 26
+              },
+              "end": {
+                "line": 0,
+                "character": 38
+              }
+            },
+            "lineText": "export const otherRoot = \"ScopedNeedle\";",
+            "previewMatchStart": 26,
+            "previewMatchEnd": 38,
+            "rootName": "Second Root",
+            "initialOrder": 4
+          },
+          {
+            "id": "file:///tmp/jbsearch-explorer-directory-check/workspace/second%20root/scope%20dir/another.js:28:12",
+            "uri": "file:///tmp/jbsearch-explorer-directory-check/workspace/second%20root/scope%20dir/another.js",
+            "relativePath": "scope dir/another.js",
+            "label": "another.js",
+            "range": {
+              "start": {
+                "line": 0,
+                "character": 28
+              },
+              "end": {
+                "line": 0,
+                "character": 40
+              }
+            },
+            "lineText": "export const otherFolder = \"ScopedNeedle\";",
+            "previewMatchStart": 28,
+            "previewMatchEnd": 40,
+            "rootName": "Second Root",
+            "initialOrder": 5
+          }
+        ],
+        "selectedId": "file:///tmp/jbsearch-explorer-directory-check/workspace/first%20root/outside.js:24:12",
+        "searching": false,
+        "partial": false,
+        "error": "",
+        "notice": "",
+        "replacing": false,
+        "patchAcks": {
+          "d6056456-7ec0-485c-90e1-d35ee90e7ea1": 6
+        },
+        "customScopes": [],
+        "panels": []
+      },
+      {
+        "id": "bb73751a-2385-4a30-b8fb-f751eddab9f9",
+        "mode": "find",
+        "layout": "findWindow",
+        "query": "ScopedNeedle",
+        "replacement": "",
+        "options": {
+          "caseSensitive": true,
+          "wholeWord": true,
+          "regex": true,
+          "preserveCase": false,
+          "maskEnabled": true,
+          "mask": "*.js",
+          "include": "",
+          "exclude": "",
+          "respectExcludes": true
+        },
+        "scope": {
+          "kind": "directory",
+          "directory": "/tmp/jbsearch-explorer-directory-check/workspace/first root",
+          "path": "/tmp/jbsearch-explorer-directory-check/workspace/first root",
+          "label": "/tmp/jbsearch-explorer-directory-check/workspace/first root"
+        },
+        "generation": 4,
+        "results": [
+          {
+            "id": "file:///tmp/jbsearch-explorer-directory-check/workspace/first%20root/outside.js:24:12",
+            "uri": "file:///tmp/jbsearch-explorer-directory-check/workspace/first%20root/outside.js",
+            "relativePath": "outside.js",
+            "label": "outside.js",
+            "range": {
+              "start": {
+                "line": 0,
+                "character": 24
+              },
+              "end": {
+                "line": 0,
+                "character": 36
+              }
+            },
+            "lineText": "export const outside = \"ScopedNeedle\";",
+            "previewMatchStart": 24,
+            "previewMatchEnd": 36,
+            "rootName": "First Root",
+            "initialOrder": 0
+          },
+          {
+            "id": "file:///tmp/jbsearch-explorer-directory-check/workspace/first%20root/scope%20dir/inside.js:13:12",
+            "uri": "file:///tmp/jbsearch-explorer-directory-check/workspace/first%20root/scope%20dir/inside.js",
+            "relativePath": "scope dir/inside.js",
+            "label": "inside.js",
+            "range": {
+              "start": {
+                "line": 0,
+                "character": 13
+              },
+              "end": {
+                "line": 0,
+                "character": 25
+              }
+            },
+            "lineText": "const one = \"ScopedNeedle\";",
+            "previewMatchStart": 13,
+            "previewMatchEnd": 25,
+            "rootName": "First Root",
+            "initialOrder": 1
+          },
+          {
+            "id": "file:///tmp/jbsearch-explorer-directory-check/workspace/first%20root/scope%20dir-extra/prefix.js:30:12",
+            "uri": "file:///tmp/jbsearch-explorer-directory-check/workspace/first%20root/scope%20dir-extra/prefix.js",
+            "relativePath": "scope dir-extra/prefix.js",
+            "label": "prefix.js",
+            "range": {
+              "start": {
+                "line": 0,
+                "character": 30
+              },
+              "end": {
+                "line": 0,
+                "character": 42
+              }
+            },
+            "lineText": "export const siblingPrefix = \"ScopedNeedle\";",
+            "previewMatchStart": 30,
+            "previewMatchEnd": 42,
+            "rootName": "First Root",
+            "initialOrder": 2
+          },
+          {
+            "id": "file:///tmp/jbsearch-explorer-directory-check/workspace/first%20root/scope%20dir/deeper/nested.js:23:12",
+            "uri": "file:///tmp/jbsearch-explorer-directory-check/workspace/first%20root/scope%20dir/deeper/nested.js",
+            "relativePath": "scope dir/deeper/nested.js",
+            "label": "nested.js",
+            "range": {
+              "start": {
+                "line": 0,
+                "character": 23
+              },
+              "end": {
+                "line": 0,
+                "character": 35
+              }
+            },
+            "lineText": "export const nested = \"ScopedNeedle\";",
+            "previewMatchStart": 23,
+            "previewMatchEnd": 35,
+            "rootName": "First Root",
+            "initialOrder": 3
+          }
+        ],
+        "selectedId": "file:///tmp/jbsearch-explorer-directory-check/workspace/first%20root/outside.js:24:12",
+        "searching": false,
+        "partial": false,
+        "error": "",
+        "notice": "",
+        "replacing": false,
+        "patchAcks": {},
+        "customScopes": [],
+        "panels": []
+      }
+    ],
+    "currentId": "3f615982-fb14-4f32-8322-ef56ba58c899",
+    "find": {
+      "activeId": "3f615982-fb14-4f32-8322-ef56ba58c899",
+      "visible": true
+    },
+    "groups": [
+      {
+        "column": 1,
+        "active": true,
+        "tabs": []
+      }
+    ],
+    "editors": []
+  },
+  "passed": true,
+  "extensionVersion": "0.2.0",
+  "screenshots": [
+    "explorer-folder-menu.png",
+    "explorer-directory-modal.png",
+    "explorer-root-modal.png",
+    "explorer-directory-find-panel.png",
+    "explorer-file-menu.png",
+    "explorer-multiselection-menu.png"
+  ]
+}

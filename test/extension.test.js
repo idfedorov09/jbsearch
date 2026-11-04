@@ -49,9 +49,27 @@ test('Find contributes a native Panel tree with discoverable actions and scoped 
   for (const item of manifest.contributes.keybindings.filter(key => key.command.startsWith('jbsearch.results.')))
     assert.match(item.when, /focusedView == jbsearch\.results/);
 });
+test('Explorer Find in Files is a folder-only entry point for desktop and Remote resources', () => {
+  const command = manifest.contributes.commands.find(item => item.command === 'jbsearch.findInDirectory');
+  assert.ok(command);
+  assert.equal(command.title, 'Find in Files…');
+  assert.equal(command.category, 'JB Search');
+  const menu = manifest.contributes.menus['explorer/context'].find(item => item.command === command.command);
+  assert.ok(menu);
+  assert.equal(menu.group, '4_search');
+  assert.match(menu.when, /\bexplorerResourceIsFolder\b/);
+  assert.match(menu.when, /!listMultiSelection\b/);
+  assert.match(menu.when, /resourceScheme\s*=~\s*\/\^\(file\|vscode-remote\)\$\//);
+  assert.ok(manifest.contributes.menus.commandPalette.some(item =>
+    item.command === command.command && item.when === 'false'
+  ));
+  assert.ok(!manifest.contributes.keybindings.some(item => item.command === command.command),
+    'the folder entry point must leave the existing Find/Replace shortcuts in control');
+});
 test('activation routes search commands to the real controller surface', async () => {
   const commands = new Map(),
     modes = [],
+    directories = [],
     messages = [];
   let created = 0;
   const vscode = {
@@ -82,6 +100,9 @@ test('activation routes search commands to the real controller surface', async (
           show(mode) {
             modes.push(mode);
           }
+          showInDirectory(uri) {
+            directories.push(uri);
+          }
         }
       };
     }
@@ -94,10 +115,14 @@ test('activation routes search commands to the real controller surface', async (
   assert.equal(created, 1);
   await commands.get('jbsearch.findInFiles')();
   await commands.get('jbsearch.replaceInFiles')();
+  const folderUri = { scheme: 'file', fsPath: '/workspace/chosen folder' };
+  await commands.get('jbsearch.findInDirectory')(folderUri, [{ scheme: 'file', fsPath: '/workspace/other folder' }]);
   commands.get('jbsearch.checkInstallation')();
   assert.deepEqual(modes, ['find', 'replace']);
+  assert.deepEqual(directories, [folderUri]);
+  assert.equal(directories[0], folderUri, 'Explorer URI must reach the workspace controller without reconstruction');
   assert.match(messages[0], /JB Search 9\.8\.7 is ready/);
   assert.match(messages[0], /Loaded from \/source\/jbsearch/);
   assert.match(messages[0], /Find in Files/);
-  assert.equal(commands.size, 4);
+  assert.equal(commands.size, 5);
 });

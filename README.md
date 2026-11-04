@@ -7,7 +7,7 @@ for Visual Studio Code.
 
 [Install](#installation) · [GitHub](https://github.com/idfedorov09/jbsearch) · [Report a bug](https://github.com/idfedorov09/jbsearch/issues/new)
 
-Currently a **0.1.0 release candidate**. See the [changelog](CHANGELOG.md) and
+Currently a **0.2.0 release candidate**. See the [changelog](CHANGELOG.md) and
 [release checklist](docs/release-readiness.md) for the current status.
 
 ## Why JB Search?
@@ -50,6 +50,8 @@ Preview a replacement, apply it, and use the editor's Undo to restore your chang
   multiline queries, file masks, and include/exclude filters.
 - **Named search scopes** — Project, Folder, Directory, Open Editors, and custom
   scopes. Open Editors includes unsaved and untitled text buffers.
+- **Find from Explorer** — right-click a workspace folder and choose
+  **Find in Files…** to open the dialog with that directory selected.
 - **Safe Replace & Undo** — replacements use VS Code edits and stay unsaved until
   you save them. Stale, unchecked, or incomplete results block unsafe replacements.
 - **Remote SSH support** — searches run on the workspace host; a bundled client
@@ -77,6 +79,13 @@ Configure limits and scopes in **Settings → JB Search**. For example:
 ```
 
 File masks accept patterns such as `*.js;*.ts`, `src/**`, and `**/*.{js,ts}`.
+
+To search inside a specific folder, right-click it in **Explorer** and choose
+**Find in Files…** (JB Search). The dialog selects **Directory** and shows the
+folder path. The search includes its subfolders and keeps your query, file masks,
+and options. This also works on a workspace root or a folder in another workspace
+root. Saved searches in the Find panel remain independent. The menu action is
+available for one folder at a time.
 
 ## Keyboard shortcuts
 
@@ -117,7 +126,7 @@ npm run package
 ```
 
 In VS Code, open **Extensions → … → Install from VSIX…** and select the generated
-`jbsearch-0.1.0.vsix` from the repository root. Run **Developer: Reload Window**,
+`jbsearch-0.2.0.vsix` from the repository root. Run **Developer: Reload Window**,
 then **JB Search: Find in Files**.
 
 For Remote SSH, install JB Search in the remote window. The main package includes
