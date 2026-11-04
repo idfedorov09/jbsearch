@@ -42,23 +42,17 @@ Search, filter files, and switch scopes in a movable, resizable dialog.
 
 ![JB Search floating search dialog with matching results and a code preview](images/screenshots/floating-search.png)
 
-<!-- TODO: Add a GIF showing the floating Find/Replace dialog. -->
-
 ## Native VS Code Results
 
 Inspect highlighted matches, then open the native Find panel to work through results.
 
 ![Native VS Code Find panel with a results tree, an invalid match, and the source editor](images/screenshots/native-results.png)
 
-<!-- TODO: Add a GIF showing code preview and result navigation. -->
-
 ## Replace Workflow
 
 Preview a replacement, apply it, and use the editor's Undo to restore your changes.
 
 ![JB Search replace dialog with a replacement query, matching results, and a code preview](images/screenshots/replace-workflow.png)
-
-<!-- TODO: Add a GIF showing Replace, INVALID results, and Undo. -->
 
 ## Features
 

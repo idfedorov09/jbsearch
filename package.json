@@ -21,6 +21,19 @@
   "categories": [
     "Other"
   ],
+  "keywords": [
+    "find",
+    "replace",
+    "find in files",
+    "jetbrains",
+    "intellij idea",
+    "goland",
+    "search",
+    "regex",
+    "ripgrep",
+    "navigation",
+    "productivity"
+  ],
   "main": "./src/extension.js",
   "activationEvents": [
     "onCommand:jbsearch.checkInstallation",
