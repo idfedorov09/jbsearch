@@ -10,7 +10,7 @@
 
 - [x] 2.1 Выполнить check, test, spec:check и package; проверить содержимое main и bundled VSIX, сохранить результаты.
 - [x] 2.2 Проверить реальный VS Code Linux: меню папки/файла, Directory и выдачу для nested/multi-root, сохранность Find-снимка и обычный Find; сохранить GUI отчёт с границами платформ.
-- [ ] 2.3 Проверить diff, сделать коммит и push в dev, сверить remote SHA и результат CI.
+- [x] 2.3 Проверить diff, сделать коммит и push в dev, сверить remote SHA и результат CI.
 
 ## Workflow follow-up
 

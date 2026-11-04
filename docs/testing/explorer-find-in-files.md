@@ -61,6 +61,19 @@ Extension Development Host. Автоматизированный GUI-прого�
 [explorer-find-source-results.json](explorer-find-source-results.json).
 Скриншоты просмотрены отдельно; в них только тестовые fixtures.
 
+## Реальный VS Code: установленный VSIX
+
+Тот же проверенный VSIX установлен в отдельный профиль **VS Code 1.144.1**
+на Linux x64/X11/Xvfb. Все **8/8** сценариев повторно прошли. Main загружался из
+`extensions/idfedorov09.jbsearch-0.2.0` тестового профиля; исходная папка проекта
+не подключалась в качестве development extension. Development helper использован
+только для управления тестом и чтения состояния установленного controller.
+
+Проверены настоящий Explorer menu, Directory и выдача 2/4/6, перенос query/options,
+независимость снимков, file/multiselect guards и обычный Find shortcut.
+Отчёт: [explorer-find-installed-results.json](explorer-find-installed-results.json).
+Собственные тестовые VS Code/Xvfb процессы обоих прогонов завершены.
+
 ## Границы и ручная приёмка
 
 Это проверка настоящего VS Code с управлением через Playwright, а не ручная
@@ -75,3 +88,14 @@ Extension Development Host. Автоматизированный GUI-прого�
   а не по одноимённому локальному пути. Проверить client theme/preview.
 
 Публичная публикация и перенос в master не входят в эту поставку.
+
+## Git и CI
+
+Реализация: `ec9a84b258214324b499eea38ade8934aa881d51`
+(`feat: add folder-scoped Find in Files from Explorer`), отправлена в
+`origin/dev` обычным push. Удалённый SHA совпал с локальным.
+
+[GitHub Check #41820252916](https://github.com/idfedorov09/jbsearch/actions/runs/41820252916)
+для этого коммита прошёл **4 ноября 2026, 11:22:10 UTC**: чистый install,
+check, test, spec:check и package. Установленный GUI-прогон и эта отметка
+добавлены последующим коммитом документации без изменения runtime и VSIX.
