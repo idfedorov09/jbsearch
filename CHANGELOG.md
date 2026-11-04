@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.1 — Unreleased
+## 0.2.1 — 2026-11-04 (GitHub preview)
 
 ### Fixed
 
@@ -12,7 +12,7 @@
   the source at the matching range in the central editor; the dialog closes
   after the result's validity has been checked.
 
-## 0.2.0 — Unreleased
+## 0.2.0 — Development milestone
 
 ### Added
 
@@ -25,10 +25,10 @@
 The client UI component remains at 0.1.0: its code and protocol are unchanged.
 Checks and platform boundaries: [Explorer Find in Files](docs/testing/explorer-find-in-files.md).
 
-## 0.1.0 — Unreleased
+## 0.1.0 — Development milestone
 
-The first functional JB Search release. A candidate is prepared on `dev`;
-it has not been published to Marketplace.
+The first functional JB Search development milestone. The first GitHub preview
+release is 0.2.1.
 
 ### Added
 

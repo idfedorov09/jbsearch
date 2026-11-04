@@ -1,8 +1,9 @@
-# JB Search 0.2.1 candidate
+# JB Search 0.2.1 GitHub preview
 
-The current main extension version is **0.2.1**: Explorer item visibility/title
-and modal result activation are fixed. The nested UI client remains **0.1.0**,
-with unchanged code and protocol. Validation is recorded in
+The current main extension version is **0.2.1**, selected for the first GitHub
+preview release: Explorer item visibility/title and modal result activation are
+fixed. The nested UI client remains **0.1.0**, with unchanged code and protocol.
+Validation is recorded in
 [Explorer and result navigation](testing/explorer-navigation-fixes.md).
 Checks for the 0.2.0 Directory addition: [Explorer Find in Files](testing/explorer-find-in-files.md).
 
@@ -10,9 +11,10 @@ Checks for the 0.2.0 Directory addition: [Explorer Find in Files](testing/explor
 
 Preparation date: **November 4, 2026**. Branch: **dev**.
 
-This prepares sources and an installation package. Public release and transfer
-to `master` have not happened. Version `0.1.0` is consistent across main/client
-manifests and lockfiles; the initial Git scaffold used `0.0.1`.
+This historical preparation covered sources and an installation package. At
+that time, public release and transfer to `master` had not happened. Version
+`0.1.0` was consistent across main/client manifests and lockfiles; the initial
+Git scaffold used `0.0.1`.
 
 ## Contents
 
@@ -58,18 +60,17 @@ platforms. Exact package versions and conditions: [native Find Panel](testing/na
 [modal/Remote preview](testing/find-replace.md). Release preparation does not
 change search runtime or UI; new packaging checks are recorded separately.
 
-## Before public release
+## Open release checks
 
 - [ ] Complete manual macOS and Windows acceptance: shortcuts, focus/IME, Esc,
   move/resize, Find/Replace, central editor, INVALID, and Undo.
 - [ ] Check physical Remote between separate machines: client theme/grammars,
   file icons in Panel, theme changes, Replace/Undo, and client bundle installation.
-- [ ] Review the candidate and confirm release of the specifically selected version.
-- [ ] Configure/verify GitHub Environment and Marketplace Trusted Publishing
-  following the [guide](marketplace-publishing.md); these settings are unconfirmed.
-- [ ] Separately authorize transfer to `master` and publication; update the changelog date.
-- [ ] After release, check GitHub Actions, the Marketplace listing, and installation
-  in clean VS Code.
+- [ ] Confirm installation and basic use of the GitHub preview in clean VS Code.
+- [ ] Verify the Marketplace publishing job and Trusted Publishing configuration
+  using the [guide](marketplace-publishing.md) when the normal workflow runs.
+- [ ] After any Marketplace publication, check GitHub Actions, the listing, and
+  installation in clean VS Code.
 
 The main extension icon was added at the user's separate request:
 [256×256 PNG](../media/icon.png) from the [source SVG](artwork/icon.svg).
