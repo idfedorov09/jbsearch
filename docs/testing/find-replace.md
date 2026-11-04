@@ -1,5 +1,9 @@
 # Find and Replace validation
 
+Current cross-platform evidence: [platform acceptance](platform-acceptance.md).
+The dated runs below remain historical scenario evidence; the user subsequently
+confirmed successful macOS and Linux use on November 4, 2026.
+
 Latest check: **2026-11-04**, extension **0.1.0**, working branch `dev`.
 After implementing the separate Find Window, **141 of 141 unit tests** and
 **16 of 16 GUI scenarios** passed in normal desktop VS Code 1.144.1 on Linux/X11,

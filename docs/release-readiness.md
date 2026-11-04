@@ -1,6 +1,30 @@
-# JB Search 0.2.1 GitHub preview
+# JB Search release readiness
 
-The current main extension version is **0.2.1**, selected for the first GitHub
+## 0.2.2 stable release preparation — November 4, 2026
+
+The main extension is **0.2.2**, displayed as **JB Search — JetBrains-style Find
+& Replace**, with the Marketplace Preview flag removed. Its extension ID remains
+`idfedorov09.jbsearch`; the unchanged bundled UI client remains **0.1.0**.
+README installation now starts with Marketplace and Extensions, and contributor
+installation instructions live in [CONTRIBUTING](../CONTRIBUTING.md).
+
+The user confirmed successful macOS and Linux use. That report is recorded
+separately from automated Linux/X11 GUI checks in
+[platform acceptance](testing/platform-acceptance.md). Windows execution has not
+been reported; a universal package with Windows binaries is not an acceptance run.
+Physical Remote between separate machines, WSL, and Dev Containers remain open.
+
+Release notes: [v0.2.2](releases/v0.2.2.md). Local validation and package evidence:
+[release-stable-022](../openspec/changes/release-stable-022/README.md).
+
+The delivery sequence is a normal `dev` push and successful Check, then a
+fast-forward to `master` and both normal push workflows, including Marketplace
+publication. No workflow is skipped or reconfigured. Actual remote publication
+must be verified separately from local preparation.
+
+## 0.2.1 GitHub preview history
+
+The main extension version was **0.2.1**, selected for the first GitHub
 preview release: Explorer item visibility/title and modal result activation are
 fixed. The nested UI client remains **0.1.0**, with unchanged code and protocol.
 Validation is recorded in
@@ -60,7 +84,10 @@ platforms. Exact package versions and conditions: [native Find Panel](testing/na
 [modal/Remote preview](testing/find-replace.md). Release preparation does not
 change search runtime or UI; new packaging checks are recorded separately.
 
-## Open release checks
+## Open release checks recorded during 0.1.0 preparation
+
+These boxes preserve the original preparation status. The current platform
+evidence is recorded above rather than inferred from these historical checks.
 
 - [ ] Complete manual macOS and Windows acceptance: shortcuts, focus/IME, Esc,
   move/resize, Find/Replace, central editor, INVALID, and Undo.

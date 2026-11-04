@@ -32,10 +32,15 @@ Current baseline: `installation-check` describes the actual version/path
 notification and source registration; `find-results-panel` describes the verified
 native panel, central editor, and saved-search lifecycle.
 
-Implemented Find/Replace is described in `design-floating-search`, which remains
-open for macOS/Windows manual acceptance and physical Remote checks.
+Implemented Find/Replace is described in `design-floating-search`. The user
+confirmed macOS/Linux use on November 4, 2026; Windows and physical Remote
+acceptance remain open. Exact coverage is recorded in
+[platform acceptance](../docs/testing/platform-acceptance.md).
 `implement-find-window` preserves the old HTML tree's history; its placement was
 superseded by completed `use-native-find-panel`. The old placement is not moved
-into the baseline. `setup-marketplace-publication` contains a prepared workflow;
-external publication is unverified. `prepare-initial-release` tracks `0.1.0`
+into the baseline. `setup-marketplace-publication` contains the OIDC workflow;
+the normal `master` publishing job succeeded for 0.2.1. Its original end-to-end
+acceptance task still requires verified installation in real VS Code.
+`release-stable-022` tracks the stable metadata/documentation update and release
+verification. `prepare-initial-release` tracks `0.1.0`
 preparation, commits, and CI on `dev`. Archive these changes separately after review.

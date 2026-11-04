@@ -71,10 +71,24 @@ project in VS Code, press F5, then invoke **JB Search: Find in Files** or
 After editing and saving, run **Developer: Reload Window** in that host or
 restart F5. Neither VSIX installation nor a version bump is needed.
 
-To use sources in a normal window, register the folder with
-**Developer: Install Extension from Location…**, as described in README.
-After editing, **Developer: Reload Window** is sufficient: the extension reads
-the same folder. F5 instead starts a separate Extension Development Host.
+To use sources in a normal window, first clone the repository and prepare its
+dependencies:
+
+```sh
+git clone --branch dev https://github.com/idfedorov09/jbsearch.git
+cd jbsearch
+npm ci
+```
+
+1. Run **Developer: Install Extension from Location…** in the target VS Code window.
+2. Select the repository root. In Remote SSH, select the folder on the remote host.
+3. Run **Developer: Reload Window**.
+
+Register the folder once per profile and host. After editing and saving,
+**Developer: Reload Window** loads the changed code from the same folder; no
+version bump or VSIX rebuild is needed. **JB Search: Check Installation** shows
+the loaded version and actual location. F5 instead starts a separate Extension
+Development Host.
 
 With Remote SSH, the main extension runs on the server and
 `idfedorov09.jbsearch-client` runs in the local UI host. The first Remote preview
@@ -92,10 +106,12 @@ server does not register `client/` locally; each registration belongs to its
 selected profile and host. Test the appropriate host without changing neighboring
 projects or the user's working client profile unless requested.
 
-To test an installed VSIX copy, rebuild and reinstall after each change. It is
-not linked to the source folder and does not update automatically when the
-version changes. [README.md](README.md) includes installation steps through
-Extensions.
+To test an installed VSIX copy, run `npm run package`, then open
+**Extensions → … → Install from VSIX…** and select the generated
+`jbsearch-<version>.vsix` from the repository root. Run
+**Developer: Reload Window**, then invoke a JB Search command. Rebuild and reinstall
+after each change: an installed VSIX is not linked to the source folder and does
+not update automatically when the source version changes.
 
 ## Project language
 

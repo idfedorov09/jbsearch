@@ -156,7 +156,9 @@ delay, and file-system handling uses 250 ms; these are not separately configurab
   These technical limits have no separate user settings.
 - Opening the floating window uses an internal VS Code command and requires
   `workbench.editor.useModal` to differ from `off`. Compatibility with future
-  versions and macOS/Windows behavior need separate testing.
+  versions needs separate testing. The user confirmed macOS and Linux use;
+  Windows execution has not been reported. See
+  [platform acceptance](testing/platform-acceptance.md).
 
 Queries and results live in the current extension host's memory and reset when it
 restarts; search history is not written to disk. The `view=findWindow` marker in
@@ -173,6 +175,9 @@ boundaries are in the [Find Panel report](testing/native-find-panel.md).
 [Checks of the former HTML Find Window](testing/find-window.md), including high
 contrast, a narrow window, and 5000 occurrences, are preserved as history and do
 not replace testing of the new panel. Linux checks do not establish compatibility
-with macOS, Windows, Wayland, or Remote SSH between different physical machines.
+with other platforms or Remote SSH between different physical machines. The
+later user-reported macOS/Linux acceptance is recorded separately in
+[platform acceptance](testing/platform-acceptance.md); Windows and Wayland
+execution remain unverified.
 Find Panel over physical Remote still needs separate acceptance testing; the
 earlier loopback modal test does not confirm it.

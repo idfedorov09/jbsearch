@@ -1,5 +1,8 @@
 # Native Find Panel validation
 
+Current cross-platform evidence: [platform acceptance](platform-acceptance.md).
+The dated Linux/X11 scenarios below are preserved as originally performed.
+
 Date: **November 4, 2026**, extension **0.1.0**, branch `dev`.
 Change: [use-native-find-panel](../../openspec/changes/use-native-find-panel/proposal.md),
 decision: [ADR 0008](../adr/0008-native-find-panel.md).

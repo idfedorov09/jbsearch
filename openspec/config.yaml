@@ -13,8 +13,10 @@ context: |
   Read AGENTS.md and docs/adr. Work in dev; no commits/push/publication without request.
   Proposed changes describe future behavior, not existing implementation.
   User requirements: mandatory floating window; macOS, Windows and Linux from
-  the first product iteration. Native modal + webview is implemented; macOS/Windows
-  verification remains open. User confirmed Replace and TextMate preview, then
+  the first product iteration. Native modal + webview is implemented. On
+  2026-11-04 the user confirmed successful macOS/Linux use; exact versions and
+  scenario coverage were not supplied. Windows execution remains unverified.
+  User confirmed Replace and TextMate preview, then
   authorized the client resource bridge on 2026-11-04 (ADR 0006).
   Remote preview uses two standard extensions: workspace idfedorov09.jbsearch
   and UI idfedorov09.jbsearch-client. The helper reads client theme/grammars,
@@ -27,7 +29,9 @@ context: |
   Saved searches switch through QuickPick; hiding keeps them, Close Search releases.
   Snapshot/INVALID/validation and isolated modal drafts from ADR 0007 remain.
   Source registration plus Reload Window remains supported; cross-machine Remote,
-  macOS and Windows verification must not be inferred from Linux loopback tests.
+  additional platform verification must not be inferred from Linux loopback tests.
+  Normal master push publication succeeded for 0.2.1; 0.2.2 removes Marketplace
+  Preview metadata and refreshes public installation and release presentation.
 
 rules:
   proposal:

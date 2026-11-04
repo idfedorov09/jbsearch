@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.2.2 — 2026-11-04
+
+### Changed
+
+- Renamed the Marketplace display name to **JB Search — JetBrains-style Find
+  & Replace**, preserving the extension ID and existing installations.
+- Removed the Marketplace Preview label for the stable release.
+- Made Marketplace installation and a short Usage section the README defaults;
+  moved source and VSIX development instructions to CONTRIBUTING.
+- Removed the duplicated README icon and preview copy; the public CI badge now
+  tracks `master` and the version badge tracks the published stable GitHub release.
+- Recorded user-confirmed macOS/Linux use separately from automated Linux GUI
+  coverage. Windows execution and physical Remote acceptance remain unverified.
+
+The search/replace runtime and bundled client 0.1.0 are unchanged.
+
 ## 0.2.1 — 2026-11-04 (GitHub preview)
 
 ### Fixed

@@ -1,24 +1,22 @@
 <div align="center">
 
-<img src="media/icon.png" width="112" height="112" alt="JB Search icon">
+# JB Search — JetBrains-style Find & Replace
 
-# JB Search
+A familiar floating search workflow for Visual Studio Code.
 
-**JetBrains-style Find & Replace**<br>
-for Visual Studio Code.
+**Free · Open Source · MIT License**
 
-[![CI](https://github.com/idfedorov09/jbsearch/actions/workflows/test.yml/badge.svg?branch=dev)](https://github.com/idfedorov09/jbsearch/actions/workflows/test.yml?query=branch%3Adev)
+[![CI](https://github.com/idfedorov09/jbsearch/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/idfedorov09/jbsearch/actions/workflows/test.yml?query=branch%3Amaster)
+[![Latest release](https://img.shields.io/github/v/release/idfedorov09/jbsearch?style=flat-square)](https://github.com/idfedorov09/jbsearch/releases/latest)
 [![VS Code 1.143.1+](https://img.shields.io/badge/VS_Code-1.143.1%2B-007ACC?style=flat-square)](#requirements--limitations)
 [![License: MIT](https://img.shields.io/badge/license-MIT-2EA043?style=flat-square)](LICENSE)
-[![Preview version](https://img.shields.io/github/package-json/v/idfedorov09/jbsearch/dev?style=flat-square&label=preview&color=F2C14E)](CHANGELOG.md)
 
-[![Install](https://img.shields.io/badge/Install-007ACC?style=for-the-badge)](#installation)
+[![Install](https://img.shields.io/badge/Install-007ACC?style=for-the-badge)](https://marketplace.visualstudio.com/items?itemName=idfedorov09.jbsearch)
 [![GitHub](https://img.shields.io/badge/GitHub-24292F?style=for-the-badge&logo=github&logoColor=white)](https://github.com/idfedorov09/jbsearch)
 [![Report a bug](https://img.shields.io/badge/Report_a_bug-6E40C9?style=for-the-badge)](https://github.com/idfedorov09/jbsearch/issues/new/choose)
 [![Donate via Tribute](https://img.shields.io/badge/Donate_via_Tribute-26A5E4?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/tribute/app?startapp=dTvL)
 
-**Preview build** — follow development in `dev`.<br>
-[Changelog](CHANGELOG.md) · [Release checklist](docs/release-readiness.md)
+[Changelog](CHANGELOG.md)
 
 </div>
 
@@ -34,21 +32,19 @@ in the regular editor for editing, language support, and Undo.
 
 ## Demo
 
-See the search dialog, native results panel, and replace workflow in action.
-
-## Floating Search Dialog
+### Floating Search Dialog
 
 Search, filter files, and switch scopes in a movable, resizable dialog.
 
 ![JB Search floating search dialog with matching results and a code preview](images/screenshots/floating-search.png)
 
-## Native VS Code Results
+### Native VS Code Results
 
 Inspect highlighted matches, then open the native Find panel to work through results.
 
 ![Native VS Code Find panel with a results tree, an invalid match, and the source editor](images/screenshots/native-results.png)
 
-## Replace Workflow
+### Replace Workflow
 
 Preview a replacement, apply it, and use the editor's Undo to restore your changes.
 
@@ -62,19 +58,57 @@ Preview a replacement, apply it, and use the editor's Undo to restore your chang
   TextMate syntax highlighting and highlighted occurrences.
 - **Native VS Code results panel** — a folder/file/result tree with your client's
   file icons. Selecting a result opens the source in the active central editor group.
-- **Regex and multiline search** — Match Case, Whole Words, regular expressions,
+- **Regex and multiline search** — case and whole-word matching, regular expressions,
   multiline queries, file masks, and include/exclude filters.
 - **Named search scopes** — Project, Folder, Directory, Open Editors, and custom
   scopes. Open Editors includes unsaved and untitled text buffers.
-- **Find from Explorer** — right-click a workspace folder and choose
-  **JB Search: Find in Files…** to open the dialog with that directory selected.
+- **Find from Explorer** — start a search in a folder from its context menu.
 - **Safe Replace & Undo** — replacements use VS Code edits and stay unsaved until
   you save them. Stale, unchecked, or incomplete results block unsafe replacements.
-- **Remote SSH support** — searches run on the workspace host; a bundled client
-  component supplies local theme rules and TextMate grammars for the dialog preview.
+- **Remote SSH support** — searches run on the workspace host; an automatically
+  installed client component supplies your local theme rules and TextMate grammars
+  for the dialog preview.
 
-Double-click a result, or press `Enter` while the results list has focus, to open
-the source at the matching range and close the dialog.
+## Installation
+
+Install [JB Search from the Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=idfedorov09.jbsearch).
+
+Or search for **JB Search** in the VS Code Extensions view
+(`Cmd+Shift+X` / `Ctrl+Shift+X`).
+
+For development, source registration, or a locally built VSIX, see
+[CONTRIBUTING.md](CONTRIBUTING.md#setup-and-checks).
+
+## Usage
+
+Use `Cmd` on macOS and `Ctrl` on Windows/Linux:
+
+| Action | Shortcut | Where |
+| --- | --- | --- |
+| Find in Files | `Cmd/Ctrl+Shift+F` | VS Code window |
+| Replace in Files | `Cmd/Ctrl+Shift+R` | VS Code window |
+| Open in Find Panel | `Cmd/Ctrl+Enter` | Search dialog |
+| Insert a newline | `Shift+Enter` | Query or replacement field |
+| Close the dialog | `Esc` | Search dialog |
+| Open and focus the editor | `Cmd/Ctrl+Enter` | Find panel |
+| Next / previous occurrence | `F4` / `Shift+F4` | Find panel |
+
+The Command Palette also provides **JB Search: Find in Files** and
+**JB Search: Replace in Files**. Use `Tab` / `Shift+Tab` to move between dialog
+controls and `Space` to toggle an option. Double-click a result, or press `Enter`
+while the results list has focus, to open the source at the matching range and
+close the dialog.
+
+To search inside a specific folder, right-click it in **Explorer** and choose
+**JB Search: Find in Files…**. The dialog selects **Directory** and shows the
+folder path, keeping your query, file masks, and options. The search includes
+subfolders. This works on workspace roots and nested folders, including when
+several resources are selected: it searches the folder where you opened the
+context menu. Saved searches in the Find panel remain independent.
+
+**Remote SSH** is supported. Install JB Search in the remote window; the required
+client component is installed automatically when needed. Your theme does not
+need to be installed on the server.
 
 Use **Open in Find Panel** to keep a search. Results have a stable order and form
 a snapshot: edits trigger revalidation, and occurrences that no longer match are
@@ -82,7 +116,9 @@ marked **INVALID**. Undo can restore them. **Rerun Search** rebuilds the snapsho
 and discovers new matches. The **Edit Search** gear reopens that search's parameters;
 **Keep as a new search** creates an independent session.
 
-Configure limits and scopes in **Settings → JB Search**. For example:
+## Configuration
+
+Configure limits and named scopes in **Settings → JB Search**. For example:
 
 ```json
 {
@@ -99,77 +135,11 @@ Configure limits and scopes in **Settings → JB Search**. For example:
 
 File masks accept patterns such as `*.js;*.ts`, `src/**`, and `**/*.{js,ts}`.
 
-To search inside a specific folder, right-click it in **Explorer** and choose
-**JB Search: Find in Files…**. The dialog selects **Directory** and shows the
-folder path. The search includes its subfolders and keeps your query, file masks,
-and options. This also works on a workspace root or a folder in another workspace
-root. Saved searches in the Find panel remain independent. The menu action is
-available on folders even when several resources are selected; it searches the
-folder where you opened the context menu.
-
-## Keyboard shortcuts
-
-| Action | macOS | Windows / Linux | Context |
-| --- | --- | --- | --- |
-| Find in Files | `Cmd+Shift+F` | `Ctrl+Shift+F` | VS Code window |
-| Replace in Files | `Cmd+Shift+R` | `Ctrl+Shift+R` | VS Code window |
-| Open in Find Panel | `Cmd+Enter` | `Ctrl+Enter` | Search dialog |
-| Insert a newline | `Shift+Enter` | `Shift+Enter` | Query or replacement field |
-| Close the dialog | `Esc` | `Esc` | Search dialog |
-| Open and focus the editor | `Cmd+Enter` | `Ctrl+Enter` | Find panel |
-| Next / previous occurrence | `F4` / `Shift+F4` | `F4` / `Shift+F4` | Find panel |
-
-The Command Palette also provides **JB Search: Find in Files** and
-**JB Search: Replace in Files**. Use `Tab` / `Shift+Tab` to move between dialog
-controls and `Space` to toggle an option.
-
 Find/Replace shortcuts are enabled by default. Set
 `jbsearch.keybindings.overrideFindInFiles` to `false` to disable both defaults,
 or customize them in **Keyboard Shortcuts**. The JB Search setting includes
 links to each command. A remapped default keeps its `when` condition unless you
 remove it, so the setting continues to control that binding.
-
-## Installation
-
-Install a locally built VSIX or register the source folder. Marketplace
-installation instructions will be added after publication.
-
-### Install from VSIX
-
-Building the package requires **Node.js 22.12+** and npm:
-
-```sh
-git clone --branch dev https://github.com/idfedorov09/jbsearch.git
-cd jbsearch
-npm ci
-npm run package
-```
-
-In VS Code, open **Extensions → … → Install from VSIX…** and select the generated
-`jbsearch-0.2.1.vsix` from the repository root. Run **Developer: Reload Window**,
-then **JB Search: Find in Files**.
-
-For Remote SSH, install JB Search in the remote window. The main package includes
-**JB Search — Client Support** (`idfedorov09.jbsearch-client`), which is installed
-locally when remote preview first needs it. No separate desktop application or
-server-side installation of your client theme is required. If setup fails, run
-**JB Search: Set Up Client Preview** and follow its message.
-
-### Run from source
-
-After cloning the repository and running `npm ci`:
-
-1. Run **Developer: Install Extension from Location…** in the target VS Code window.
-2. Select the repository root. In Remote SSH, select the folder on the remote host.
-3. Run **Developer: Reload Window**.
-
-Register the folder once per profile and host. After source changes, save your
-files and reload the window; rebuilding or reinstalling a VSIX is unnecessary.
-**JB Search: Check Installation** shows the loaded version and its actual location.
-A separately installed VSIX is a copy and must be rebuilt and reinstalled to update.
-
-For an isolated development window, open the repository and press `F5`.
-See [Contributing](CONTRIBUTING.md) for client-component development and validation.
 
 ## Requirements & limitations
 
@@ -181,17 +151,18 @@ See [Contributing](CONTRIBUTING.md) for client-component development and validat
   embed semantic tokens or full editor features. Files opened from the Find panel
   use the regular editable VS Code editor and its language extensions.
 - Regex uses **ECMAScript** semantics. Expressions written for Java or PCRE2
-  may need changes. Regex replacement supports capture groups, named groups, and newline/tab escapes;
-  with Regex disabled, replacement text is literal.
+  may need changes. Regex replacement supports capture groups, named groups, and
+  newline/tab escapes; with Regex disabled, replacement text is literal.
 - File search supports **UTF-8**. Binary, UTF-16, oversized, and inaccessible files
   are reported as skipped; symlinks are not followed. Replace All requires a complete
   result set. Narrow the scope or adjust limits when a search is incomplete.
 - Saved searches live in memory and are cleared when the extension host restarts.
   Changes to closed files outside the editor may require **Rerun Search** to rebuild
   result positions.
-- GUI validation has been performed on **Linux/X11**. macOS, Windows, and Remote SSH
-  between separate physical machines still need acceptance testing. Linux Remote
-  loopback checks do not replace that testing. WSL and Dev Containers are unverified.
+- **macOS and Linux have been tested.** Windows is expected to work but has not yet
+  been verified. Automated GUI checks cover Linux/X11.
+- Recorded Remote SSH checks use Linux loopback. Connections between separate
+  physical machines, WSL, Dev Containers, and Wayland remain unverified.
 
 See the [implementation limits](docs/implementation-limits.md),
 [Find/Replace test matrix](docs/testing/find-replace.md), and
@@ -250,7 +221,7 @@ with a donation via Tribute.
 
 You can also star the repository, share JB Search with other developers, report
 reproducible bugs, or help test it on your platform. Feedback about the search and
-replacement workflow is especially useful while the first release is being prepared.
+replacement workflow is always welcome.
 
 ## License
 

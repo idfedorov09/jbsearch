@@ -1,9 +1,8 @@
 {
   "name": "jbsearch",
-  "displayName": "JB Search",
+  "displayName": "JB Search — JetBrains-style Find & Replace",
   "description": "JetBrains-style Find & Replace for VS Code, with a floating dialog, live preview, and native results.",
-  "version": "0.2.1",
-  "preview": true,
+  "version": "0.2.2",
   "publisher": "idfedorov09",
   "icon": "media/icon.png",
   "license": "MIT",
