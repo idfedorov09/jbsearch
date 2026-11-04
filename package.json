@@ -14,6 +14,9 @@
     "url": "https://github.com/idfedorov09/jbsearch/issues"
   },
   "homepage": "https://github.com/idfedorov09/jbsearch#readme",
+  "sponsor": {
+    "url": "https://t.me/tribute/app?startapp=dTvL"
+  },
   "engines": {
     "vscode": "^1.143.1",
     "node": ">=22.12.0"
