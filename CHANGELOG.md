@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.3 — 2026-11-04
+
+### Changed
+
+- Expanded Marketplace keywords with JetBrains, IntelliJ, GoLand, Find/Replace,
+  regex, code search, floating search, and live preview phrases.
+- Shortened the Marketplace description while keeping the existing display name.
+
+The extension ID, search/replace functionality, and bundled client 0.1.0 are unchanged.
+
 ## 0.2.2 — 2026-11-04
 
 ### Changed

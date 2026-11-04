@@ -1,8 +1,17 @@
 # JB Search release readiness
 
+## 0.2.3 release preparation — November 4, 2026
+
+Main version **0.2.3** updates Marketplace keywords and the short description;
+the extension ID, runtime, and bundled client 0.1.0 are unchanged. See
+[release notes](releases/v0.2.3.md) and the
+[OpenSpec validation record](../openspec/changes/optimize-marketplace-keywords/README.md).
+The existing `master` push workflow handles publication. Local verification does
+not establish its outcome or add new GUI or platform acceptance evidence.
+
 ## 0.2.2 stable release preparation — November 4, 2026
 
-The main extension is **0.2.2**, displayed as **JB Search — JetBrains-style Find
+The main extension was **0.2.2**, displayed as **JB Search — JetBrains-style Find
 & Replace**, with the Marketplace Preview flag removed. Its extension ID remains
 `idfedorov09.jbsearch`; the unchanged bundled UI client remains **0.1.0**.
 README installation now starts with Marketplace and Extensions, and contributor
