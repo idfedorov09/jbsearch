@@ -28,7 +28,8 @@
   changelog включены; dev dependencies, тесты и исследовательские документы исключены.
 - [x] Git staging проверен: generated bundles/VSIX исключены; сканирование
   текста и OCR **22** тестовых PNG не обнаружили credentials или личных данных.
-- [ ] Коммиты отправлены в `origin/dev`; GitHub Check прошёл для отправленных исходников.
+- [x] Исходники отправлены в `origin/dev`; GitHub Check прошёл для коммита
+  `e4d78278d146d96358b9816320b5764a748a3d26`.
 
 Результаты новой упаковки и SHA-256:
 [release-candidate-package-results.json](testing/release-candidate-package-results.json).
@@ -68,6 +69,18 @@
 
 ## Git и CI
 
-Результат push и ссылка на GitHub Check будут добавлены после завершения CI.
+Первый функциональный коммит: `e4d78278d146d96358b9816320b5764a748a3d26`
+(`feat: implement floating Find/Replace and native Find panel`). Он отправлен
+обычным push в `origin/dev`; удалённый HEAD совпал с локальным. Первый запрос
+push получил GitHub Internal Server Error, повторная отправка прошла без force.
+
+[GitHub Check #41810967859](https://github.com/idfedorov09/jbsearch/actions/runs/41810967859)
+завершился успешно **4 ноября 2026, 09:57:50 UTC** для указанного коммита:
+чистый `npm ci --ignore-scripts`, check, **146/146** тестов, **7/7** проверок
+OpenSpec, сборка и verifier основного/вложенного VSIX. Этот протокол и финальная
+отметка OpenSpec фиксируются отдельным последующим коммитом документации;
+runtime и состав поставки в нём не меняются.
+
+`master` остался на `b88978d771a59fbacd2492128ff3d865dc6e8ff4`.
 `dev` запускает обычные проверки. Workflow публикации ограничен `master`;
 после настройки доверия push в эту ветку может публично выпустить версию.
