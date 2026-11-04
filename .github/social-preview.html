@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1280, initial-scale=1">
+  <title>JB Search — GitHub Social Preview</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { width: 1280px; height: 640px; margin: 0; overflow: hidden; }
+    body {
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+      background: #10131b;
+      color: #f5f6fa;
+    }
+    .cover {
+      position: relative;
+      width: 1280px;
+      height: 640px;
+      overflow: hidden;
+      background: radial-gradient(ellipse at 75% 48%, #1a1e2a, #10131b 60%);
+    }
+    .brand {
+      position: absolute;
+      top: 101px;
+      left: 78px;
+      width: 515px;
+    }
+    .logo {
+      display: block;
+      width: 100px;
+      height: 100px;
+    }
+    h1 {
+      margin: 31px 0 0;
+      color: #f7f8fb;
+      font-size: 72px;
+      font-weight: 700;
+      letter-spacing: -2.8px;
+      line-height: 1.05;
+    }
+    .tagline {
+      margin: 23px 0 0;
+      color: #b7bfcd;
+      font-size: 28px;
+      font-weight: 450;
+      letter-spacing: -0.35px;
+      line-height: 1.4;
+    }
+    .tagline span { color: #e4e8ef; }
+    .dialog {
+      position: absolute;
+      top: 60px;
+      left: 610px;
+      width: 624px;
+      height: 486px;
+      overflow: hidden;
+      border: 1px solid #343946;
+      border-radius: 12px;
+      background: #11151c;
+      box-shadow: 0 28px 65px rgba(0, 0, 0, 0.38);
+    }
+    .dialog img {
+      position: absolute;
+      top: -143px;
+      left: -317px;
+      width: 1204px;
+      height: auto;
+      max-width: none;
+    }
+  </style>
+</head>
+<body>
+  <main class="cover">
+    <section class="brand">
+      <img class="logo" src="../media/icon.png" alt="JB Search logo">
+      <h1>JB Search</h1>
+      <p class="tagline"><span>JetBrains-style Find &amp; Replace</span><br>for Visual Studio Code.</p>
+    </section>
+    <div class="dialog">
+      <img src="../images/screenshots/floating-search.png" alt="JB Search Find in Files dialog">
+    </div>
+  </main>
+</body>
+</html>
