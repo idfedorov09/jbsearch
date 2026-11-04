@@ -91,3 +91,16 @@ macOS, Windows или физического Remote SSH. Эти среды ос�
 не подменяет проверку Remote между разными машинами.
 
 Публикация, перенос в master, теги и релизы в эту поставку не входят.
+
+## Git и CI
+
+Исправления отправлены обычным push в `origin/dev` коммитом
+`d657bfdb6f30e60d059afe5ec9783d576518579e`
+(`fix: stabilize Explorer search menu and result navigation`). Удалённый SHA
+совпал с локальным; рабочее дерево после коммита чистое.
+
+[GitHub Check #41825516841](https://github.com/idfedorov09/jbsearch/actions/runs/41825516841)
+завершился успешно **2026-11-04T12:00:36Z**: чистая установка, check,
+**195/195** тестов, **13/13** проверок OpenSpec, package и verifier. Собственные
+VS Code/Xvfb-процессы завершены. Этот протокол и отметка завершения OpenSpec
+фиксируются последующим коммитом документации; runtime и VSIX не меняются.

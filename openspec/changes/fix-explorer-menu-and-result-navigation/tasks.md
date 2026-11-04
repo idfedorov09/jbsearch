@@ -13,7 +13,7 @@
 
 - [x] 3.1 Поднять main до 0.2.1, обновить changelog; на изолированном снимке выполнить check, test, spec:check, package и сохранить отчёт main/client VSIX.
 - [x] 3.2 Выполнить реальный VS Code GUI: меню при multiselect/compact folders, различимое название, double click выбранного и другого результата, Enter, точные URI/range и закрытие modal; записать проверенные платформы.
-- [ ] 3.3 Проверить diff, сделать коммит/push в dev и сверить remote SHA и CI.
+- [x] 3.3 Проверить diff, сделать коммит/push в dev и сверить remote SHA и CI.
 
 ## Workflow follow-up
 
