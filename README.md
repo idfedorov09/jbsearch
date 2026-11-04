@@ -15,7 +15,7 @@ for Visual Studio Code.
 [![Install](https://img.shields.io/badge/Install-007ACC?style=for-the-badge)](#installation)
 [![GitHub](https://img.shields.io/badge/GitHub-24292F?style=for-the-badge&logo=github&logoColor=white)](https://github.com/idfedorov09/jbsearch)
 [![Report a bug](https://img.shields.io/badge/Report_a_bug-6E40C9?style=for-the-badge)](https://github.com/idfedorov09/jbsearch/issues/new)
-[![Donate via Tribute](https://img.shields.io/badge/Donate_via_Tribute-26A5E4?style=for-the-badge&logo=telegram&logoColor=white)](https://web.tribute.tg/d/TvL)
+[![Donate via Tribute](https://img.shields.io/badge/Donate_via_Tribute-26A5E4?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/tribute/app?startapp=dTvL)
 
 **Preview build** — follow development in `dev`.<br>
 [Changelog](CHANGELOG.md) · [Release checklist](docs/release-readiness.md)
@@ -232,7 +232,7 @@ Extension artwork: [PNG icon](media/icon.png) and [SVG source](docs/artwork/icon
 If JB Search makes your daily work easier, you can support its development
 with a donation via Tribute.
 
-[![Donate via Tribute](https://img.shields.io/badge/Donate_via_Tribute-26A5E4?style=for-the-badge&logo=telegram&logoColor=white)](https://web.tribute.tg/d/TvL)
+[![Donate via Tribute](https://img.shields.io/badge/Donate_via_Tribute-26A5E4?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/tribute/app?startapp=dTvL)
 
 You can also star the repository, share JB Search with other developers, report
 reproducible bugs, or help test it on your platform. Feedback about the search and
