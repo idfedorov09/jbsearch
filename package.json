@@ -4,6 +4,7 @@
   "description": "Find and replace in a floating JetBrains-style dialog, with VS Code themes and syntax-highlighted previews.",
   "version": "0.1.0",
   "publisher": "idfedorov09",
+  "icon": "media/icon.png",
   "license": "MIT",
   "repository": {
     "type": "git",

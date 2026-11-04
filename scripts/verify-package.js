@@ -20,7 +20,7 @@ async function readArchive(buffer) {
       if (files.has(entry.fileName)) return fail(new Error(`Duplicate VSIX entry: ${entry.fileName}`));
       const file = { size: entry.uncompressedSize, mode: entry.externalFileAttributes >>> 16 };
       files.set(entry.fileName, file);
-      if (!entry.fileName.endsWith('.json') && !entry.fileName.endsWith('.vsix')) {
+      if (!entry.fileName.endsWith('.json') && !entry.fileName.endsWith('.vsix') && !entry.fileName.endsWith('.png')) {
         archive.readEntry();
         return;
       }
@@ -73,6 +73,17 @@ async function verifyPackage(filename) {
   if (`${manifest.publisher}.${manifest.name}` !== expectedId || manifest.version !== source.version)
     throw new Error('Packaged main extension identity/version differs from package.json');
   if (!manifest.extensionKind.includes('workspace')) throw new Error('Main extension must run on the workspace host');
+  if (typeof manifest.icon !== 'string' || manifest.icon !== source.icon || !manifest.icon.endsWith('.png'))
+    throw new Error('Packaged extension icon differs from package.json');
+  const iconBytes = requireFile(files, 'extension/' + manifest.icon).content;
+  if (iconBytes.length < 33 || !iconBytes.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex')) ||
+      iconBytes.toString('ascii', 12, 16) !== 'IHDR')
+    throw new Error('Packaged extension icon must be a PNG');
+  const iconWidth = iconBytes.readUInt32BE(16), iconHeight = iconBytes.readUInt32BE(20);
+  if (iconWidth < 128 || iconWidth !== iconHeight)
+    throw new Error('Packaged extension icon must be square and at least 128x128');
+  if (!iconBytes.equals(await fs.readFile(path.join(root, source.icon))))
+    throw new Error('Packaged extension icon differs from the source asset');
   requireFile(files, 'extension/' + path.posix.normalize(manifest.main));
   for (const resource of [
     'src/controller.js', 'src/search/worker.js', 'src/preview.js', 'src/client-preview.js',
@@ -114,7 +125,11 @@ async function verifyPackage(filename) {
     package: path.basename(packagePath),
     size: bytes.length,
     sha256: crypto.createHash('sha256').update(bytes).digest('hex'),
-    main: { id: expectedId, version: manifest.version, files: files.size, dependencies, ripgrepPlatforms: rgPlatforms },
+    main: {
+      id: expectedId, version: manifest.version, files: files.size,
+      icon: { path: manifest.icon, width: iconWidth, height: iconHeight, sha256: crypto.createHash('sha256').update(iconBytes).digest('hex') },
+      dependencies, ripgrepPlatforms: rgPlatforms
+    },
     client: { id: clientId, version: client.version, build: metadata.build, size: nestedBytes.length, files: clientFiles.size, dependencies: clientDependencies },
     passed: true
   };
