@@ -1,14 +1,28 @@
+<div align="center">
+
+<img src="media/icon.png" width="112" height="112" alt="JB Search icon">
+
 # JB Search
 
-<!-- TODO: Add the hero GIF here. -->
-
-JetBrains-style Find & Replace<br>
+**JetBrains-style Find & Replace**<br>
 for Visual Studio Code.
 
-[Install](#installation) · [GitHub](https://github.com/idfedorov09/jbsearch) · [Report a bug](https://github.com/idfedorov09/jbsearch/issues/new)
+[![CI](https://github.com/idfedorov09/jbsearch/actions/workflows/test.yml/badge.svg?branch=dev)](https://github.com/idfedorov09/jbsearch/actions/workflows/test.yml?query=branch%3Adev)
+[![VS Code 1.143.1+](https://img.shields.io/badge/VS_Code-1.143.1%2B-007ACC?style=flat-square)](#requirements--limitations)
+[![License: MIT](https://img.shields.io/badge/license-MIT-2EA043?style=flat-square)](LICENSE)
+[![Preview version](https://img.shields.io/github/package-json/v/idfedorov09/jbsearch/dev?style=flat-square&label=preview&color=F2C14E)](CHANGELOG.md)
 
-Currently a **0.2.0 release candidate**. See the [changelog](CHANGELOG.md) and
-[release checklist](docs/release-readiness.md) for the current status.
+[![Install](https://img.shields.io/badge/Install-007ACC?style=for-the-badge)](#installation)
+[![GitHub](https://img.shields.io/badge/GitHub-24292F?style=for-the-badge&logo=github&logoColor=white)](https://github.com/idfedorov09/jbsearch)
+[![Report a bug](https://img.shields.io/badge/Report_a_bug-6E40C9?style=for-the-badge)](https://github.com/idfedorov09/jbsearch/issues/new)
+[![Donate via Tribute](https://img.shields.io/badge/Donate_via_Tribute-26A5E4?style=for-the-badge&logo=telegram&logoColor=white)](https://web.tribute.tg/d/TvL)
+
+**Preview build** — follow development in `dev`.<br>
+[Changelog](CHANGELOG.md) · [Release checklist](docs/release-readiness.md)
+
+</div>
+
+<!-- TODO: Add the hero GIF here. -->
 
 ## Why JB Search?
 
@@ -215,9 +229,14 @@ Extension artwork: [PNG icon](media/icon.png) and [SVG source](docs/artwork/icon
 
 ## Support development
 
-Star the repository, share JB Search with other developers, report reproducible
-bugs, or help test it on your platform. Feedback about the search and replacement
-workflow is especially useful while the first release is being prepared.
+If JB Search makes your daily work easier, you can support its development
+with a donation via Tribute.
+
+[![Donate via Tribute](https://img.shields.io/badge/Donate_via_Tribute-26A5E4?style=for-the-badge&logo=telegram&logoColor=white)](https://web.tribute.tg/d/TvL)
+
+You can also star the repository, share JB Search with other developers, report
+reproducible bugs, or help test it on your platform. Feedback about the search and
+replacement workflow is especially useful while the first release is being prepared.
 
 ## License
 
