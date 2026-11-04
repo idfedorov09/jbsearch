@@ -65,11 +65,14 @@ Preview a replacement, apply it, and use the editor's Undo to restore your chang
 - **Named search scopes** — Project, Folder, Directory, Open Editors, and custom
   scopes. Open Editors includes unsaved and untitled text buffers.
 - **Find from Explorer** — right-click a workspace folder and choose
-  **Find in Files…** to open the dialog with that directory selected.
+  **JB Search: Find in Files…** to open the dialog with that directory selected.
 - **Safe Replace & Undo** — replacements use VS Code edits and stay unsaved until
   you save them. Stale, unchecked, or incomplete results block unsafe replacements.
 - **Remote SSH support** — searches run on the workspace host; a bundled client
   component supplies local theme rules and TextMate grammars for the dialog preview.
+
+Double-click a result, or press `Enter` while the results list has focus, to open
+the source at the matching range and close the dialog.
 
 Use **Open in Find Panel** to keep a search. Results have a stable order and form
 a snapshot: edits trigger revalidation, and occurrences that no longer match are
@@ -95,11 +98,12 @@ Configure limits and scopes in **Settings → JB Search**. For example:
 File masks accept patterns such as `*.js;*.ts`, `src/**`, and `**/*.{js,ts}`.
 
 To search inside a specific folder, right-click it in **Explorer** and choose
-**Find in Files…** (JB Search). The dialog selects **Directory** and shows the
+**JB Search: Find in Files…**. The dialog selects **Directory** and shows the
 folder path. The search includes its subfolders and keeps your query, file masks,
 and options. This also works on a workspace root or a folder in another workspace
 root. Saved searches in the Find panel remain independent. The menu action is
-available for one folder at a time.
+available on folders even when several resources are selected; it searches the
+folder where you opened the context menu.
 
 ## Keyboard shortcuts
 
@@ -140,7 +144,7 @@ npm run package
 ```
 
 In VS Code, open **Extensions → … → Install from VSIX…** and select the generated
-`jbsearch-0.2.0.vsix` from the repository root. Run **Developer: Reload Window**,
+`jbsearch-0.2.1.vsix` from the repository root. Run **Developer: Reload Window**,
 then **JB Search: Find in Files**.
 
 For Remote SSH, install JB Search in the remote window. The main package includes

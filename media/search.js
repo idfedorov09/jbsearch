@@ -109,6 +109,11 @@
   function selectedIndex() {
     return state.results.findIndex((result) => result.id === state.selectedId);
   }
+  function openResult(id, generation = state.generation) {
+    if (pending.size || state.replacing || generation !== state.generation ||
+        !state.results.some((result) => result.id === id)) return;
+    send('openResult', { id, generation });
+  }
   function select(index, focus = false) {
     const match = state.results[Math.max(0, Math.min(index, state.results.length - 1))];
     if (!match) return;
@@ -167,9 +172,9 @@
     if (next !== undefined) {
       event.preventDefault();
       select(next);
-    } else if (event.key === 'Enter') {
+    } else if (event.key === 'Enter' && !event.ctrlKey && !event.metaKey && !event.altKey) {
       event.preventDefault();
-      send('openResult', { id: state.selectedId });
+      openResult(state.selectedId);
     }
   });
   $('results').addEventListener('scroll', renderRows);
@@ -182,16 +187,41 @@
     fragment.append(mark, document.createTextNode(text.slice(end)));
     return fragment;
   }
+  const renderedRows = new Map();
+  let renderedGeneration;
   function renderRows() {
     const results = state.results,
       container = $('resultRows');
     container.style.height = `${results.length * rowHeight}px`;
-    container.replaceChildren();
-    const start = Math.max(0, Math.floor($('results').scrollTop / rowHeight) - 5),
-      end = Math.min(results.length, start + Math.ceil($('results').clientHeight / rowHeight) + 12);
-    for (let i = start; i < end; i++) {
-      const result = results[i],
-        row = document.createElement('div');
+    if (renderedGeneration !== state.generation) {
+      container.replaceChildren();
+      renderedRows.clear();
+      renderedGeneration = state.generation;
+    }
+    const visibleStart = Math.max(0, Math.floor($('results').scrollTop / rowHeight) - 5),
+      visibleEnd = Math.min(results.length, visibleStart + Math.ceil($('results').clientHeight / rowHeight) + 12);
+    const visible = new Set(results.slice(visibleStart, visibleEnd).map((result) => result.id));
+    for (const [id, entry] of renderedRows) {
+      if (visible.has(id)) continue;
+      entry.row.remove();
+      renderedRows.delete(id);
+    }
+    for (let i = visibleStart; i < visibleEnd; i++) {
+      const result = results[i];
+      let entry = renderedRows.get(result.id);
+      if (!entry) {
+        const row = document.createElement('div'), generation = state.generation;
+        entry = { row };
+        renderedRows.set(result.id, entry);
+        row.onclick = () => {
+          const index = state.results.findIndex((match) => match.id === result.id);
+          if (generation === state.generation && index >= 0) select(index);
+        };
+        row.ondblclick = () => openResult(result.id, generation);
+      }
+      const row = entry.row;
+      if (container.children[i - visibleStart] !== row)
+        container.insertBefore(row, container.children[i - visibleStart] || null);
       row.className = 'result' + (result.id === state.selectedId ? ' selected' : '');
       row.id = `result-${i}`;
       row.setAttribute('role', 'option');
@@ -200,6 +230,14 @@
       row.style.top = `${i * rowHeight}px`;
       row.style.left = '0';
       row.style.right = '0';
+      const signature = JSON.stringify([
+        result.lineText, result.preview, result.previewMatchStart, result.previewMatchEnd,
+        result.range, result.label, result.relativePath, result.uri
+      ]);
+      // Selection/state echoes must retain the same click targets between the
+      // two clicks of a native double click, including the snippet's children.
+      if (signature === entry.signature) continue;
+      entry.signature = signature;
       const snippet = document.createElement('span');
       snippet.className = 'snippet';
       const rawText = result.lineText || result.preview || '';
@@ -215,10 +253,7 @@
       location.className = 'location';
       location.textContent = `${result.label || result.relativePath?.split('/').pop() || 'Untitled'} ${result.range.start.line + 1}`;
       location.title = result.relativePath || result.uri;
-      row.append(snippet, location);
-      row.onclick = () => select(i);
-      row.ondblclick = () => send('openResult', { id: result.id });
-      container.append(row);
+      row.replaceChildren(snippet, location);
     }
     if (state.selectedId)
       $('results').setAttribute('aria-activedescendant', `result-${selectedIndex()}`);

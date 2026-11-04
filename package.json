@@ -2,7 +2,7 @@
   "name": "jbsearch",
   "displayName": "JB Search",
   "description": "Find and replace in a floating JetBrains-style dialog, with VS Code themes and syntax-highlighted previews.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "publisher": "idfedorov09",
   "icon": "media/icon.png",
   "license": "MIT",
@@ -38,8 +38,7 @@
       },
       {
         "command": "jbsearch.findInDirectory",
-        "title": "Find in Files…",
-        "category": "JB Search"
+        "title": "JB Search: Find in Files…"
       },
       {
         "command": "jbsearch.replaceInFiles",
@@ -274,7 +273,7 @@
       "explorer/context": [
         {
           "command": "jbsearch.findInDirectory",
-          "when": "explorerResourceIsFolder && !listMultiSelection && resourceScheme =~ /^(file|vscode-remote)$/",
+          "when": "explorerResourceIsFolder && resourceScheme =~ /^(file|vscode-remote)$/",
           "group": "4_search"
         }
       ],

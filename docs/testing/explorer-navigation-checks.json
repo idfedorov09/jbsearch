@@ -1,0 +1,53 @@
+{
+  "checkedAt": "2026-11-04T11:53:24.802477+00:00",
+  "sourceTree": "02068093d6184dc80bc6c1dc69d054daff24c3cb",
+  "platform": "Linux x64",
+  "node": "v22.23.2",
+  "npm": "12.0.2",
+  "install": {
+    "name": "install",
+    "command": "npm ci",
+    "exitCode": 0,
+    "durationSeconds": 3.904
+  },
+  "checks": [
+    {
+      "name": "check",
+      "command": "npm run check",
+      "exitCode": 0,
+      "durationSeconds": 0.741
+    },
+    {
+      "name": "test",
+      "command": "npm test",
+      "exitCode": 0,
+      "durationSeconds": 1.724
+    },
+    {
+      "name": "spec",
+      "command": "npm run spec:check",
+      "exitCode": 0,
+      "durationSeconds": 0.679
+    },
+    {
+      "name": "package",
+      "command": "npm run package",
+      "exitCode": 0,
+      "durationSeconds": 3.441
+    }
+  ],
+  "tests": {
+    "total": 195,
+    "passed": 195,
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0
+  },
+  "specifications": {
+    "passed": 13,
+    "failed": 0
+  },
+  "package": "jbsearch-0.2.1.vsix",
+  "packageSha256": "c8cbfe678c7372e58fab1764891e000cdbddd8babe6f6a9fdc21a06cbf0b2489",
+  "passed": true
+}

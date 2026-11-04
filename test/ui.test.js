@@ -32,15 +32,34 @@ class Element {
   dispatchEvent(event) {
     event.target ||= this;
     for (const callback of this.listeners[event.type] || []) callback(event);
+    this[`on${event.type}`]?.(event);
   }
   setAttribute(name, value) {
     this.attributes[name] = String(value);
   }
   append(...children) {
-    this.children.push(...children);
+    for (const child of children) {
+      child.remove?.();
+      child.parentElement = this;
+      this.children.push(child);
+    }
   }
   replaceChildren(...children) {
-    this.children = children;
+    for (const child of this.children) child.parentElement = undefined;
+    this.children = [];
+    this.append(...children);
+  }
+  insertBefore(child, before) {
+    child.remove?.();
+    child.parentElement = this;
+    if (!before) this.children.push(child);
+    else this.children.splice(this.children.indexOf(before), 0, child);
+  }
+  remove() {
+    if (!this.parentElement) return;
+    const siblings = this.parentElement.children;
+    siblings.splice(siblings.indexOf(this), 1);
+    this.parentElement = undefined;
   }
   querySelector() {
     return null;
@@ -443,4 +462,59 @@ test('result snippets retain whitespace that is part of the match', () => {
   const snippet = ui.elements.get('resultRows').children[0].children[0].children[0];
   assert.equal(snippet.children[1].textContent, '  ');
   assert.equal(snippet.children[2].textContent, ' original');
+});
+
+for (const mode of ['find', 'replace']) {
+  test(`${mode} result double click survives selection and host-state echoes`, () => {
+    const ui = harness(), rows = ui.elements.get('resultRows');
+    ui.deliver({ ...ui.snapshot, mode, selectedId: null });
+    const row = rows.children[0], snippet = row.children[0], highlight = snippet.children[0].children[1];
+    row.dispatchEvent({ type: 'click', detail: 1, target: highlight });
+    assert.equal(ui.messages.at(-1).type, 'select');
+    assert.equal(rows.children[0], row, 'selection must preserve the first click target');
+    ui.deliver({ ...ui.snapshot, mode });
+    assert.equal(rows.children[0], row, 'a host echo must preserve the first click target');
+    assert.equal(row.children[0], snippet);
+    assert.equal(snippet.children[0].children[1], highlight);
+    row.dispatchEvent({ type: 'click', detail: 2, target: highlight });
+    row.dispatchEvent({ type: 'dblclick', detail: 2, target: highlight });
+    assert.deepEqual(ui.messages.filter(message => message.type === 'openResult'), [
+      { type: 'openResult', id: 'match', generation: 1 }
+    ]);
+  });
+}
+
+test('Enter activates the selected result with its search generation', () => {
+  const ui = harness();
+  ui.elements.get('results').dispatchEvent({ type: 'keydown', key: 'Enter', preventDefault() {} });
+  assert.deepEqual(ui.messages.at(-1), { type: 'openResult', id: 'match', generation: 1 });
+  const opened = ui.messages.length;
+  ui.elements.get('results').dispatchEvent({ type: 'keydown', key: 'Enter', ctrlKey: true, preventDefault() {} });
+  assert.equal(ui.messages.length, opened, 'Ctrl+Enter belongs to Open in Find Panel');
+});
+
+test('an old result node cannot activate a newer search or a pending query', () => {
+  const ui = harness(), row = ui.elements.get('resultRows').children[0];
+  ui.deliver({ ...ui.snapshot, generation: 2 });
+  assert.notEqual(ui.elements.get('resultRows').children[0], row);
+  row.dispatchEvent({ type: 'dblclick', detail: 2 });
+  assert.equal(ui.messages.some(message => message.type === 'openResult'), false);
+  const currentRow = ui.elements.get('resultRows').children[0];
+  ui.input('query', 'pending');
+  currentRow.dispatchEvent({ type: 'dblclick', detail: 2 });
+  assert.equal(ui.messages.some(message => message.type === 'openResult'), false);
+});
+
+test('virtualized rows keep document order when scrolling back into the list', () => {
+  const ui = harness(), list = ui.elements.get('results'), rows = ui.elements.get('resultRows');
+  const results = Array.from({ length: 80 }, (_, index) => ({
+    ...ui.snapshot.results[0], id: `match-${index}`
+  }));
+  ui.deliver({ ...ui.snapshot, results, selectedId: 'match-0' });
+  list.scrollTop = 600;
+  list.dispatchEvent({ type: 'scroll' });
+  list.scrollTop = 500;
+  list.dispatchEvent({ type: 'scroll' });
+  const indices = rows.children.map(row => Number(row.id.replace('result-', '')));
+  assert.deepEqual(indices, [...indices].sort((a, b) => a - b));
 });

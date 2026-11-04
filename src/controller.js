@@ -789,21 +789,54 @@ class SearchController {
           await this.select(session, result.id, { preserveFocus: false });
           return;
         }
-        const document = await this.v.workspace.openTextDocument(this.v.Uri.parse(result.uri));
-        if (
-          document.getText().slice(result.offset, result.offset + result.length) !==
-          result.matchText
-        ) {
-          this.schedule(session, 0);
-          throw new Error('This result changed. The search has been refreshed.');
+        if (session.replacing || session.openingResult ||
+            (message.generation !== undefined && message.generation !== session.generation)) return;
+        const generation = session.generation;
+        const current = () => !this.disposed && generation === session.generation &&
+          session.results.some((match) => match.id === result.id);
+        session.openingResult = true;
+        try {
+          const document = await this.v.workspace.openTextDocument(this.v.Uri.parse(result.uri));
+          if (!current()) return;
+          const matchesDocument = () => {
+            const text = document.getText();
+            return text.slice(result.offset, result.offset + result.length) === result.matchText &&
+              (!result.contentHash || hash(text) === result.contentHash);
+          };
+          if (!matchesDocument()) {
+            this.schedule(session, 0);
+            throw new Error('This result changed. The search has been refreshed.');
+          }
+          const range = new this.v.Range(
+            result.range.start.line,
+            result.range.start.character,
+            result.range.end.line,
+            result.range.end.character
+          );
+          // Opening while the custom editor still owns focus routes the source
+          // into/behind the modal group. Await the workbench's modal tab close
+          // before selecting its restored central editor group.
+          await this.closeModalEditors(session);
+          for (const panel of [...session.panels]) panel.dispose();
+          if (!current()) return;
+          if (!matchesDocument()) {
+            this.schedule(session, 0);
+            void this.v.window.showErrorMessage('JB Search: This result changed while closing the dialog. Open Find again to use the refreshed search.');
+            return;
+          }
+          const viewColumn = this.v.window.tabGroups.activeTabGroup?.viewColumn || this.v.ViewColumn.Active;
+          try {
+            await this.v.window.showTextDocument(document, {
+              selection: range, viewColumn, preview: false, preserveFocus: false
+            });
+          } catch (error) {
+            // The modal is already closed, so its webview cannot display the error.
+            void this.v.window.showErrorMessage(`JB Search: Could not open the search result: ${error.message}`);
+            throw error;
+          }
+        } finally {
+          session.openingResult = false;
         }
-        const range = new this.v.Range(
-          result.range.start.line,
-          result.range.start.character,
-          result.range.end.line,
-          result.range.end.character
-        );
-        await this.v.window.showTextDocument(document, { selection: range, preview: false });
         break;
       }
       case 'openTab':
@@ -894,7 +927,7 @@ class SearchController {
     // Unlike WebviewPanel.dispose(), closing tabs acknowledges the workbench's
     // focus restoration before we focus the results view.
     if (tabs.length && !await this.v.window.tabGroups.close(tabs, true))
-      throw new Error('Could not close the search dialog. Try Open in Find Panel again.');
+      throw new Error('Could not close the search dialog. Try again.');
   }
   async transferFindWindow(source, newTab) {
     const previousCurrentId = this.currentId;

@@ -52,13 +52,13 @@ test('Find contributes a native Panel tree with discoverable actions and scoped 
 test('Explorer Find in Files is a folder-only entry point for desktop and Remote resources', () => {
   const command = manifest.contributes.commands.find(item => item.command === 'jbsearch.findInDirectory');
   assert.ok(command);
-  assert.equal(command.title, 'Find in Files…');
-  assert.equal(command.category, 'JB Search');
+  assert.equal(command.title, 'JB Search: Find in Files…');
   const menu = manifest.contributes.menus['explorer/context'].find(item => item.command === command.command);
   assert.ok(menu);
   assert.equal(menu.group, '4_search');
   assert.match(menu.when, /\bexplorerResourceIsFolder\b/);
-  assert.match(menu.when, /!listMultiSelection\b/);
+  assert.doesNotMatch(menu.when, /\blistMultiSelection\b/,
+    'the clicked folder must remain searchable with other Explorer resources selected');
   assert.match(menu.when, /resourceScheme\s*=~\s*\/\^\(file\|vscode-remote\)\$\//);
   assert.ok(manifest.contributes.menus.commandPalette.some(item =>
     item.command === command.command && item.when === 'false'

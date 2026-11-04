@@ -1,9 +1,10 @@
-# Кандидат JB Search 0.2.0
+# Кандидат JB Search 0.2.1
 
-Текущая версия основного расширения — **0.2.0**: добавлен запуск Find in Files…
-из контекстного меню папки Explorer с выбранной Directory. Вложенный UI client
+Текущая версия основного расширения — **0.2.1**: исправлены видимость/название
+пункта Explorer и активация результата в modal. Вложенный UI client
 остаётся **0.1.0**, его код и протокол не менялись. Проверки этого изменения
-фиксируются в [Explorer Find in Files](testing/explorer-find-in-files.md).
+фиксируются в [Explorer и активация результатов](testing/explorer-navigation-fixes.md).
+Проверки добавления Directory в 0.2.0: [Explorer Find in Files](testing/explorer-find-in-files.md).
 
 ## История подготовки 0.1.0
 

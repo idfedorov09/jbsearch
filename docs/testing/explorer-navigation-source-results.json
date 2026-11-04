@@ -1,0 +1,568 @@
+{
+  "date": "2026-11-04",
+  "platform": "Linux x64 / X11 / Xvfb",
+  "mode": "source Extension Development Host",
+  "checks": [
+    {
+      "name": "branded folder menu is distinct from builtin Find in Folder",
+      "passed": true,
+      "detail": {
+        "selected": [
+          "scope dir"
+        ],
+        "menus": [
+          "New File...",
+          "New Folder...",
+          "Open Containing Folder",
+          "Open in Images Preview",
+          "Open in Integrated Terminal",
+          "JB Search: Find in Files…",
+          "Find in Folder...",
+          "Open Timeline",
+          "Add Folder to Chat",
+          "Cut",
+          "Copy",
+          "Paste",
+          "Copy Path",
+          "Copy Relative Path",
+          "Rename...",
+          "Delete"
+        ],
+        "scope": {
+          "kind": "directory",
+          "directory": "/tmp/jbsearch-menu-navigation-source-check/workspace/first root/scope dir",
+          "path": "/tmp/jbsearch-menu-navigation-source-check/workspace/first root/scope dir",
+          "label": "First Root/scope dir"
+        },
+        "matches": 2
+      }
+    },
+    {
+      "name": "two selected folders keep menu and search only the right-clicked one",
+      "passed": true,
+      "detail": {
+        "selected": [
+          "scope dir",
+          "scope dir-extra"
+        ],
+        "menus": [
+          "New File...",
+          "New Folder...",
+          "Open Containing Folder",
+          "Open in Images Preview",
+          "Open in Integrated Terminal",
+          "JB Search: Find in Files…",
+          "Find in Folder...",
+          "Open Timeline",
+          "Add Folder to Chat",
+          "Cut",
+          "Copy",
+          "Paste",
+          "Copy Path",
+          "Copy Relative Path",
+          "Rename...",
+          "Delete"
+        ],
+        "scope": {
+          "kind": "directory",
+          "directory": "/tmp/jbsearch-menu-navigation-source-check/workspace/first root/scope dir",
+          "path": "/tmp/jbsearch-menu-navigation-source-check/workspace/first root/scope dir",
+          "label": "First Root/scope dir"
+        },
+        "matches": 2
+      }
+    },
+    {
+      "name": "selected file plus folder keep menu and use only the folder target",
+      "passed": true,
+      "detail": {
+        "selected": [
+          "scope dir-extra",
+          "outside.js"
+        ],
+        "menus": [
+          "New File...",
+          "New Folder...",
+          "Open Containing Folder",
+          "Open in Images Preview",
+          "Open in Integrated Terminal",
+          "JB Search: Find in Files…",
+          "Find in Folder...",
+          "Open Timeline",
+          "Add Folder to Chat",
+          "Cut",
+          "Copy",
+          "Paste",
+          "Copy Path",
+          "Copy Relative Path",
+          "Rename...",
+          "Delete"
+        ],
+        "scope": {
+          "kind": "directory",
+          "directory": "/tmp/jbsearch-menu-navigation-source-check/workspace/first root/scope dir-extra",
+          "path": "/tmp/jbsearch-menu-navigation-source-check/workspace/first root/scope dir-extra",
+          "label": "First Root/scope dir-extra"
+        },
+        "matches": 1
+      }
+    },
+    {
+      "name": "compressed folder segments each pass their own directory",
+      "passed": true,
+      "detail": [
+        {
+          "segment": "compressed/",
+          "scope": {
+            "kind": "directory",
+            "directory": "/tmp/jbsearch-menu-navigation-source-check/workspace/first root/compressed",
+            "path": "/tmp/jbsearch-menu-navigation-source-check/workspace/first root/compressed",
+            "label": "First Root/compressed"
+          }
+        },
+        {
+          "segment": "top/",
+          "scope": {
+            "kind": "directory",
+            "directory": "/tmp/jbsearch-menu-navigation-source-check/workspace/first root/compressed/top",
+            "path": "/tmp/jbsearch-menu-navigation-source-check/workspace/first root/compressed/top",
+            "label": "First Root/compressed/top"
+          }
+        },
+        {
+          "segment": "leaf",
+          "scope": {
+            "kind": "directory",
+            "directory": "/tmp/jbsearch-menu-navigation-source-check/workspace/first root/compressed/top/leaf",
+            "path": "/tmp/jbsearch-menu-navigation-source-check/workspace/first root/compressed/top/leaf",
+            "label": "First Root/compressed/top/leaf"
+          }
+        }
+      ]
+    },
+    {
+      "name": "file context menu does not contribute folder search",
+      "passed": true,
+      "detail": {
+        "absent": true
+      }
+    },
+    {
+      "name": "Find double click selected snippet opens central source and closes modal",
+      "passed": true,
+      "detail": {
+        "mode": "find",
+        "initiallySelected": true,
+        "targetPart": ".snippet",
+        "hostEchoBetweenClicks": false,
+        "uri": "file:///tmp/jbsearch-menu-navigation-source-check/workspace/first%20root/scope%20dir/deeper/nested.js",
+        "selections": [
+          [
+            0,
+            23,
+            0,
+            35
+          ]
+        ],
+        "groups": 1,
+        "active": true,
+        "modalClosed": true,
+        "focus": {
+          "tag": "DIV",
+          "className": "native-edit-context"
+        }
+      }
+    },
+    {
+      "name": "Find double click unselected snippet survives host selection echo",
+      "passed": true,
+      "detail": {
+        "mode": "find",
+        "initiallySelected": false,
+        "targetPart": ".snippet",
+        "hostEchoBetweenClicks": true,
+        "clickTargetRetained": true,
+        "uri": "file:///tmp/jbsearch-menu-navigation-source-check/workspace/first%20root/scope%20dir/inside.js",
+        "selections": [
+          [
+            2,
+            13,
+            2,
+            25
+          ]
+        ],
+        "groups": 1,
+        "active": true,
+        "modalClosed": true,
+        "focus": {
+          "tag": "DIV",
+          "className": "native-edit-context"
+        }
+      }
+    },
+    {
+      "name": "Find double click selected filename opens the right source range",
+      "passed": true,
+      "detail": {
+        "mode": "find",
+        "initiallySelected": true,
+        "targetPart": ".location",
+        "hostEchoBetweenClicks": false,
+        "uri": "file:///tmp/jbsearch-menu-navigation-source-check/workspace/first%20root/scope%20dir/deeper/nested.js",
+        "selections": [
+          [
+            0,
+            23,
+            0,
+            35
+          ]
+        ],
+        "groups": 1,
+        "active": true,
+        "modalClosed": true,
+        "focus": {
+          "tag": "DIV",
+          "className": "native-edit-context"
+        }
+      }
+    },
+    {
+      "name": "Find double click unselected filename survives host selection echo",
+      "passed": true,
+      "detail": {
+        "mode": "find",
+        "initiallySelected": false,
+        "targetPart": ".location",
+        "hostEchoBetweenClicks": true,
+        "clickTargetRetained": true,
+        "uri": "file:///tmp/jbsearch-menu-navigation-source-check/workspace/first%20root/scope%20dir/inside.js",
+        "selections": [
+          [
+            2,
+            13,
+            2,
+            25
+          ]
+        ],
+        "groups": 1,
+        "active": true,
+        "modalClosed": true,
+        "focus": {
+          "tag": "DIV",
+          "className": "native-edit-context"
+        }
+      }
+    },
+    {
+      "name": "Replace double click unselected snippet opens source without applying replacement",
+      "passed": true,
+      "detail": {
+        "mode": "replace",
+        "initiallySelected": false,
+        "targetPart": ".snippet",
+        "hostEchoBetweenClicks": true,
+        "clickTargetRetained": true,
+        "uri": "file:///tmp/jbsearch-menu-navigation-source-check/workspace/first%20root/scope%20dir/inside.js",
+        "selections": [
+          [
+            2,
+            13,
+            2,
+            25
+          ]
+        ],
+        "groups": 1,
+        "active": true,
+        "modalClosed": true,
+        "focus": {
+          "tag": "DIV",
+          "className": "native-edit-context"
+        }
+      }
+    },
+    {
+      "name": "find Enter on result list opens source and focuses central editor",
+      "passed": true,
+      "detail": {
+        "mode": "find",
+        "uri": "file:///tmp/jbsearch-menu-navigation-source-check/workspace/first%20root/scope%20dir/inside.js",
+        "selections": [
+          [
+            2,
+            13,
+            2,
+            25
+          ]
+        ],
+        "groups": 1,
+        "active": true,
+        "modalClosed": true,
+        "focus": {
+          "tag": "DIV",
+          "className": "native-edit-context"
+        }
+      }
+    },
+    {
+      "name": "replace Enter on result list opens source and focuses central editor",
+      "passed": true,
+      "detail": {
+        "mode": "replace",
+        "uri": "file:///tmp/jbsearch-menu-navigation-source-check/workspace/first%20root/scope%20dir/inside.js",
+        "selections": [
+          [
+            2,
+            13,
+            2,
+            25
+          ]
+        ],
+        "groups": 1,
+        "active": true,
+        "modalClosed": true,
+        "focus": {
+          "tag": "DIV",
+          "className": "native-edit-context"
+        }
+      }
+    }
+  ],
+  "limits": [
+    "macOS not run",
+    "Windows not run",
+    "physical Remote SSH not run"
+  ],
+  "vscode": "1.143.1",
+  "main": "/home/codex/projects/vscode-extensions/jbsearch",
+  "extensionVersion": "0.2.1",
+  "finalState": {
+    "version": "1.143.1",
+    "main": "/home/codex/projects/vscode-extensions/jbsearch",
+    "roots": [
+      {
+        "name": "First Root",
+        "uri": "file:///tmp/jbsearch-menu-navigation-source-check/workspace/first%20root",
+        "fsPath": "/tmp/jbsearch-menu-navigation-source-check/workspace/first root"
+      },
+      {
+        "name": "Second Root",
+        "uri": "file:///tmp/jbsearch-menu-navigation-source-check/workspace/second%20root",
+        "fsPath": "/tmp/jbsearch-menu-navigation-source-check/workspace/second root"
+      }
+    ],
+    "sessions": [
+      {
+        "id": "1cddbb3f-1ce2-4677-bac9-687f393953c1",
+        "mode": "replace",
+        "layout": "modal",
+        "query": "ScopedNeedle",
+        "replacement": "ReplacementPreviewOnly",
+        "options": {
+          "caseSensitive": true,
+          "wholeWord": true,
+          "regex": false,
+          "preserveCase": false,
+          "maskEnabled": true,
+          "mask": "*.js",
+          "include": "",
+          "exclude": "",
+          "respectExcludes": true
+        },
+        "scope": {
+          "kind": "workspace",
+          "name": ""
+        },
+        "generation": 31,
+        "results": [
+          {
+            "id": "file:///tmp/jbsearch-menu-navigation-source-check/workspace/first%20root/scope%20dir/deeper/nested.js:23:12",
+            "uri": "file:///tmp/jbsearch-menu-navigation-source-check/workspace/first%20root/scope%20dir/deeper/nested.js",
+            "relativePath": "scope dir/deeper/nested.js",
+            "label": "nested.js",
+            "range": {
+              "start": {
+                "line": 0,
+                "character": 23
+              },
+              "end": {
+                "line": 0,
+                "character": 35
+              }
+            },
+            "lineText": "export const nested = \"ScopedNeedle\";",
+            "previewMatchStart": 23,
+            "previewMatchEnd": 35,
+            "rootName": "First Root"
+          },
+          {
+            "id": "file:///tmp/jbsearch-menu-navigation-source-check/workspace/first%20root/scope%20dir/inside.js:36:12",
+            "uri": "file:///tmp/jbsearch-menu-navigation-source-check/workspace/first%20root/scope%20dir/inside.js",
+            "relativePath": "scope dir/inside.js",
+            "label": "inside.js",
+            "range": {
+              "start": {
+                "line": 2,
+                "character": 13
+              },
+              "end": {
+                "line": 2,
+                "character": 25
+              }
+            },
+            "lineText": "const one = \"ScopedNeedle\";",
+            "previewMatchStart": 13,
+            "previewMatchEnd": 25,
+            "rootName": "First Root"
+          },
+          {
+            "id": "file:///tmp/jbsearch-menu-navigation-source-check/workspace/first%20root/scope%20dir-extra/prefix.js:30:12",
+            "uri": "file:///tmp/jbsearch-menu-navigation-source-check/workspace/first%20root/scope%20dir-extra/prefix.js",
+            "relativePath": "scope dir-extra/prefix.js",
+            "label": "prefix.js",
+            "range": {
+              "start": {
+                "line": 0,
+                "character": 30
+              },
+              "end": {
+                "line": 0,
+                "character": 42
+              }
+            },
+            "lineText": "export const siblingPrefix = \"ScopedNeedle\";",
+            "previewMatchStart": 30,
+            "previewMatchEnd": 42,
+            "rootName": "First Root"
+          },
+          {
+            "id": "file:///tmp/jbsearch-menu-navigation-source-check/workspace/first%20root/outside.js:24:12",
+            "uri": "file:///tmp/jbsearch-menu-navigation-source-check/workspace/first%20root/outside.js",
+            "relativePath": "outside.js",
+            "label": "outside.js",
+            "range": {
+              "start": {
+                "line": 0,
+                "character": 24
+              },
+              "end": {
+                "line": 0,
+                "character": 36
+              }
+            },
+            "lineText": "export const outside = \"ScopedNeedle\";",
+            "previewMatchStart": 24,
+            "previewMatchEnd": 36,
+            "rootName": "First Root"
+          },
+          {
+            "id": "file:///tmp/jbsearch-menu-navigation-source-check/workspace/second%20root/other.js:26:12",
+            "uri": "file:///tmp/jbsearch-menu-navigation-source-check/workspace/second%20root/other.js",
+            "relativePath": "other.js",
+            "label": "other.js",
+            "range": {
+              "start": {
+                "line": 0,
+                "character": 26
+              },
+              "end": {
+                "line": 0,
+                "character": 38
+              }
+            },
+            "lineText": "export const otherRoot = \"ScopedNeedle\";",
+            "previewMatchStart": 26,
+            "previewMatchEnd": 38,
+            "rootName": "Second Root"
+          },
+          {
+            "id": "file:///tmp/jbsearch-menu-navigation-source-check/workspace/second%20root/scope%20dir/another.js:28:12",
+            "uri": "file:///tmp/jbsearch-menu-navigation-source-check/workspace/second%20root/scope%20dir/another.js",
+            "relativePath": "scope dir/another.js",
+            "label": "another.js",
+            "range": {
+              "start": {
+                "line": 0,
+                "character": 28
+              },
+              "end": {
+                "line": 0,
+                "character": 40
+              }
+            },
+            "lineText": "export const otherFolder = \"ScopedNeedle\";",
+            "previewMatchStart": 28,
+            "previewMatchEnd": 40,
+            "rootName": "Second Root"
+          }
+        ],
+        "selectedId": "file:///tmp/jbsearch-menu-navigation-source-check/workspace/first%20root/scope%20dir/inside.js:36:12",
+        "searching": false,
+        "partial": false,
+        "error": "",
+        "notice": "",
+        "replacing": false,
+        "patchAcks": {
+          "c0c1c559-f083-45eb-81e7-7ca11ce55ba6": 5,
+          "e6f9f999-7b8a-4dcc-9560-f27f5dee3b06": 1,
+          "433afa3f-595c-4283-9394-0deec9730d4b": 1,
+          "b4aee687-765f-4b01-805f-a907cbef5cc5": 1,
+          "80b0b34c-563e-412a-b552-3eb69f51e180": 1,
+          "d07ed23c-5108-4a6e-bbf9-39d715683cea": 2,
+          "a50bb185-5d97-43c8-8a67-bffacd33b076": 1,
+          "bfbd8a52-f75b-4f21-840d-4d8bd39ac783": 2
+        },
+        "customScopes": [],
+        "panels": []
+      }
+    ],
+    "currentId": "1cddbb3f-1ce2-4677-bac9-687f393953c1",
+    "find": {
+      "visible": false
+    },
+    "groups": [
+      {
+        "column": 1,
+        "active": true,
+        "tabs": [
+          {
+            "label": "outside.js",
+            "uri": "file:///tmp/jbsearch-menu-navigation-source-check/workspace/first%20root/outside.js",
+            "dirty": false,
+            "preview": false,
+            "active": false
+          },
+          {
+            "label": "inside.js",
+            "uri": "file:///tmp/jbsearch-menu-navigation-source-check/workspace/first%20root/scope%20dir/inside.js",
+            "dirty": false,
+            "preview": false,
+            "active": true
+          },
+          {
+            "label": "nested.js",
+            "uri": "file:///tmp/jbsearch-menu-navigation-source-check/workspace/first%20root/scope%20dir/deeper/nested.js",
+            "dirty": false,
+            "preview": false,
+            "active": false
+          }
+        ]
+      }
+    ],
+    "editors": [
+      {
+        "column": 1,
+        "uri": "file:///tmp/jbsearch-menu-navigation-source-check/workspace/first%20root/scope%20dir/inside.js",
+        "active": true,
+        "selections": [
+          [
+            2,
+            13,
+            2,
+            25
+          ]
+        ]
+      }
+    ]
+  },
+  "passed": true
+}
