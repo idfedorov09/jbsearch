@@ -1,0 +1,66 @@
+{
+  "initial": {
+    "messages": [
+      {
+        "type": "ready"
+      }
+    ],
+    "count": "6 results in 3 files · 4 valid · 1 invalid · 1 checking",
+    "rows": 16
+  },
+  "themes": {
+    "dark": {
+      "bodyWidth": 980,
+      "viewportWidth": 980,
+      "treeHeight": 608,
+      "rowHeight": 24,
+      "toolWidth": 27,
+      "invalid": "11\nINVALID\nstatic public guid Templates = \"example\";",
+      "matchBackground": "color(srgb 0.886275 0.670588 0.25098 / 0.211373)",
+      "foreground": "rgb(230, 237, 243)"
+    },
+    "light": {
+      "bodyWidth": 980,
+      "viewportWidth": 980,
+      "treeHeight": 608,
+      "rowHeight": 24,
+      "toolWidth": 27,
+      "invalid": "11\nINVALID\nstatic public guid Templates = \"example\";",
+      "matchBackground": "color(srgb 0.890196 0.701961 0.254902 / 0.233333)",
+      "foreground": "rgb(36, 41, 47)"
+    },
+    "contrast": {
+      "bodyWidth": 980,
+      "viewportWidth": 980,
+      "treeHeight": 608,
+      "rowHeight": 24,
+      "toolWidth": 27,
+      "invalid": "11\nINVALID\nstatic public guid Templates = \"example\";",
+      "matchBackground": "color(srgb 1 1 0 / 0.186667)",
+      "foreground": "rgb(255, 255, 255)"
+    }
+  },
+  "interactions": {
+    "doubleClick": {
+      "type": "openResult",
+      "id": "a"
+    },
+    "selectionAndCollapse": true
+  },
+  "errors": [],
+  "narrow": {
+    "bodyWidth": 390,
+    "viewportWidth": 390,
+    "treeHeight": 290,
+    "controlsVisible": true
+  },
+  "virtualization": {
+    "rendered": 32,
+    "last": {
+      "type": "select",
+      "id": "long-4999"
+    },
+    "canvasHeight": "120072px",
+    "scrollTop": 119464
+  }
+}

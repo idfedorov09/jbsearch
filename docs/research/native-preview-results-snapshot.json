@@ -1,0 +1,158 @@
+{
+  "date": "2026-11-03T22:13:39.895Z",
+  "environment": "VS Code 1.143.1, Linux/X11, isolated Remote SSH loopback, normal workspace extension",
+  "outcomes": [
+    {
+      "name": "clean snapshot modal with client-only GitHub theme",
+      "status": "passed",
+      "ms": 1890,
+      "detail": {
+        "vscode": "1.143.1",
+        "remote": "ssh-remote",
+        "theme": "GitHub Dark Default",
+        "serverSeesGitHubTheme": false,
+        "serverSeesBL": true,
+        "preview": {
+          "uri": "jb-native-snapshot:/tmp/jbsearch-native-preview-probe/workspace/Example.bl",
+          "column": 3,
+          "active": false,
+          "language": "bl",
+          "selections": [
+            [
+              3,
+              8,
+              3,
+              8
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "name": "snapshot typing cannot modify preview or source",
+      "status": "passed",
+      "ms": 895,
+      "detail": {
+        "preview": "jb-native-snapshot:/tmp/jbsearch-native-preview-probe/workspace/Example.bl",
+        "length": 182,
+        "readOnlyConfirmedByTyping": true,
+        "sourceUnchanged": true
+      }
+    },
+    {
+      "name": "snapshot follows live client theme and keeps match decorations",
+      "status": "passed",
+      "ms": 2199,
+      "detail": {
+        "lightKeyword": "rgb(175, 0, 219)",
+        "darkKeyword": "rgb(255, 123, 114)",
+        "highlights": [
+          {
+            "background": "rgb(158, 106, 3)",
+            "width": 51
+          },
+          {
+            "background": "rgba(242, 204, 96, 0.5)",
+            "width": 51
+          },
+          {
+            "background": "rgba(242, 204, 96, 0.5)",
+            "width": 51
+          }
+        ]
+      }
+    },
+    {
+      "name": "unsaved source content reaches snapshot without disk write",
+      "status": "passed",
+      "ms": 962,
+      "detail": {
+        "source": {
+          "uri": "file:///tmp/jbsearch-native-preview-probe/workspace/Example.bl",
+          "dirty": true,
+          "language": "bl",
+          "version": 6,
+          "length": 208,
+          "firstLine": "// unsaved native preview"
+        },
+        "snapshot": {
+          "uri": "jb-native-snapshot:/tmp/jbsearch-native-preview-probe/workspace/Example.bl",
+          "dirty": false,
+          "language": "bl",
+          "version": 4,
+          "length": 208,
+          "firstLine": "// unsaved native preview"
+        },
+        "diskUnchanged": true
+      }
+    },
+    {
+      "name": "snapshot prevents source edit but cannot preserve key during focus transition",
+      "status": "limitation",
+      "ms": 1546,
+      "detail": {
+        "expected": "return",
+        "actual": "retur",
+        "hostQuery": "retur",
+        "msAfterBlur": 2,
+        "limitation": "Read-only protects source content, but a key delivered while preview has focus is lost from the search query."
+      }
+    },
+    {
+      "name": "clean move-to-tab merges search and preview into separate tabs",
+      "status": "limitation",
+      "ms": 2742,
+      "detail": {
+        "limitation": "The native command merges modal groups; search and preview become separate tabs, not one search tab with embedded preview.",
+        "groups": [
+          {
+            "column": 1,
+            "active": true,
+            "tabs": [
+              {
+                "label": "baseline.js",
+                "active": false,
+                "uri": "file:///tmp/jbsearch-native-preview-probe/workspace/baseline.js",
+                "type": "Sc"
+              },
+              {
+                "label": "find.native-search-probe",
+                "active": false,
+                "uri": "jb-native-probe:/find.native-search-probe",
+                "type": "xc"
+              },
+              {
+                "label": "Example.bl",
+                "active": true,
+                "uri": "jb-native-snapshot:/tmp/jbsearch-native-preview-probe/workspace/Example.bl",
+                "type": "Sc"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "test fixtures and main baseline restored cleanly",
+      "status": "passed",
+      "ms": 260,
+      "detail": {
+        "groups": [
+          {
+            "column": 1,
+            "active": true,
+            "tabs": [
+              {
+                "label": "baseline.js",
+                "active": true,
+                "uri": "file:///tmp/jbsearch-native-preview-probe/workspace/baseline.js",
+                "type": "Sc"
+              }
+            ]
+          }
+        ],
+        "dirtyDocuments": 0
+      }
+    }
+  ]
+}

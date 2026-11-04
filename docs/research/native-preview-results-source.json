@@ -1,0 +1,169 @@
+{
+  "date": "2026-11-03T22:08:27.014Z",
+  "environment": "VS Code 1.143.1, Linux/X11, isolated Remote SSH loopback, normal workspace extension",
+  "outcomes": [
+    {
+      "name": "reload prototype from source",
+      "status": "passed",
+      "ms": 5211,
+      "detail": {
+        "vscode": "1.143.1",
+        "remote": "ssh-remote",
+        "theme": "GitHub Dark Default",
+        "themeAbsentOnServer": true,
+        "BLPresentOnServer": true
+      }
+    },
+    {
+      "name": "native source editor inside same floating modal",
+      "status": "passed",
+      "ms": 2077,
+      "detail": {
+        "groups": [
+          {
+            "column": 1,
+            "active": false,
+            "tabs": [
+              {
+                "label": "baseline.js",
+                "active": true,
+                "uri": "file:///tmp/jbsearch-native-preview-probe/workspace/baseline.js",
+                "type": "Sc"
+              }
+            ]
+          },
+          {
+            "column": 2,
+            "active": true,
+            "tabs": [
+              {
+                "label": "find.native-search-probe",
+                "active": true,
+                "uri": "jb-native-probe:/find.native-search-probe",
+                "type": "xc"
+              }
+            ]
+          },
+          {
+            "column": 3,
+            "active": false,
+            "tabs": [
+              {
+                "label": "Example.bl",
+                "active": true,
+                "uri": "file:///tmp/jbsearch-native-preview-probe/workspace/Example.bl",
+                "type": "Sc"
+              }
+            ]
+          }
+        ],
+        "keywordColor": "rgb(255, 123, 114)",
+        "decorations": [
+          {
+            "cls": "cdr ced-2-TextEditorDecorationType10-0",
+            "bg": "rgb(158, 106, 3)",
+            "border": "rgba(0, 0, 0, 0)",
+            "width": 51
+          },
+          {
+            "cls": "cdr ced-2-TextEditorDecorationType9-0",
+            "bg": "rgba(242, 204, 96, 0.5)",
+            "border": "rgba(0, 0, 0, 0)",
+            "width": 51
+          },
+          {
+            "cls": "cdr ced-2-TextEditorDecorationType9-0",
+            "bg": "rgba(242, 204, 96, 0.5)",
+            "border": "rgba(0, 0, 0, 0)",
+            "width": 51
+          }
+        ]
+      }
+    },
+    {
+      "name": "selection switches native preview to another remote file",
+      "status": "passed",
+      "ms": 368,
+      "detail": {
+        "selected": 2,
+        "preview": {
+          "uri": "file:///tmp/jbsearch-native-preview-probe/workspace/Other.bl",
+          "column": 3,
+          "active": false,
+          "language": "bl",
+          "selections": [
+            [
+              3,
+              8,
+              3,
+              8
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "name": "live theme change applies to native tokens",
+      "status": "passed",
+      "ms": 2393,
+      "detail": {
+        "lightKeyword": "rgb(175, 0, 219)",
+        "darkKeyword": "rgb(255, 123, 114)"
+      }
+    },
+    {
+      "name": "typing while each prefix updates native preview",
+      "status": "failed",
+      "ms": 13447,
+      "error": "Error: Preview did not settle\n    at finishPreview (/tmp/jbsearch-native-preview-probe/verify.cjs:52:11)\n    at async /tmp/jbsearch-native-preview-probe/verify.cjs:98:17\n    at async run (/tmp/jbsearch-native-preview-probe/verify.cjs:26:24)\n    at async /tmp/jbsearch-native-preview-probe/verify.cjs:94:3"
+    },
+    {
+      "name": "rapid result selection settles on latest result",
+      "status": "failed",
+      "ms": 18,
+      "error": "locator.evaluate: TypeError: Cannot read properties of undefined (reading 'click')\n    at eval (eval at evaluate (:290:30), <anonymous>:1:54)\n    at UtilityScript.evaluate (<anonymous>:292:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)\n    at /tmp/jbsearch-native-preview-probe/verify.cjs:104:37\n    at async run (/tmp/jbsearch-native-preview-probe/verify.cjs:26:24)\n    at async /tmp/jbsearch-native-preview-probe/verify.cjs:102:3"
+    },
+    {
+      "name": "Escape closes modal and preserves main editor",
+      "status": "failed",
+      "ms": 561,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n2 !== 0\n\n    at /tmp/jbsearch-native-preview-probe/verify.cjs:111:47\n    at async run (/tmp/jbsearch-native-preview-probe/verify.cjs:26:24)\n    at async /tmp/jbsearch-native-preview-probe/verify.cjs:109:3"
+    },
+    {
+      "name": "reopen restores session",
+      "status": "failed",
+      "ms": 356,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n'retrn' !== 'return'\n\n    at /tmp/jbsearch-native-preview-probe/verify.cjs:116:46\n    at async run (/tmp/jbsearch-native-preview-probe/verify.cjs:26:24)\n    at async /tmp/jbsearch-native-preview-probe/verify.cjs:115:3"
+    },
+    {
+      "name": "readonly virtual snapshot uses native BL highlighting",
+      "status": "failed",
+      "ms": 605,
+      "error": "TypeError: Cannot read properties of undefined (reading 'uri')\n    at /tmp/jbsearch-native-preview-probe/verify.cjs:122:71\n    at async run (/tmp/jbsearch-native-preview-probe/verify.cjs:26:24)\n    at async /tmp/jbsearch-native-preview-probe/verify.cjs:120:3"
+    },
+    {
+      "name": "key arriving during forced native focus transition",
+      "status": "limitation",
+      "ms": 1643,
+      "detail": {
+        "expected": "return",
+        "actual": "retur",
+        "hostQuery": "retur",
+        "msAfterBlur": 2,
+        "limitation": "A key arriving while the adapter focuses native preview is lost by the search field. A readonly preview prevents an accidental source edit, but does not preserve the key."
+      }
+    },
+    {
+      "name": "dirty source snapshot stays current without saving",
+      "status": "failed",
+      "ms": 662,
+      "error": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n\n  assert.ok(await page.locator('[role=dialog] .monaco-editor .view-lines').innerText().then(s=>s.includes('unsaved native preview')))\n\n    at /tmp/jbsearch-native-preview-probe/verify.cjs:150:12\n    at async run (/tmp/jbsearch-native-preview-probe/verify.cjs:26:24)\n    at async /tmp/jbsearch-native-preview-probe/verify.cjs:144:3"
+    },
+    {
+      "name": "native move-to-tab reveals split-layout limitation",
+      "status": "failed",
+      "ms": 657,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n1 !== 0\n\n    at /tmp/jbsearch-native-preview-probe/verify.cjs:155:12\n    at async run (/tmp/jbsearch-native-preview-probe/verify.cjs:26:24)\n    at async /tmp/jbsearch-native-preview-probe/verify.cjs:153:3"
+    }
+  ]
+}

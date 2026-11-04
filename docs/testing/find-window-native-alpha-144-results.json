@@ -1,0 +1,80 @@
+{
+  "version": "1.144.1",
+  "css": {
+    "vars": {
+      "selected": "rgba(255, 0, 0, 0.5)",
+      "ordinary": "rgba(0, 255, 0, 0.4)"
+    },
+    "syntax": [
+      {
+        "text": "alpha",
+        "color": "rgb(79, 193, 255)",
+        "opacity": "1"
+      }
+    ],
+    "decorations": [
+      {
+        "tag": "DIV",
+        "text": "",
+        "cls": "cdr ced-1-TextEditorDecorationType51-0",
+        "color": "rgb(204, 204, 204)",
+        "background": "color(srgb 1 0 0 / 0.351373)",
+        "border": "rgba(255, 255, 255, 0)",
+        "opacity": "1"
+      },
+      {
+        "tag": "DIV",
+        "text": "",
+        "cls": "cdr ced-1-TextEditorDecorationType50-0",
+        "color": "rgb(204, 204, 204)",
+        "background": "color(srgb 0 1 0 / 0.28)",
+        "border": "rgba(255, 255, 255, 0)",
+        "opacity": "1"
+      }
+    ]
+  },
+  "changed": [
+    {
+      "text": "",
+      "color": "rgb(204, 204, 204)",
+      "background": "color(srgb 0 0 1 / 0.175686)",
+      "opacity": "1"
+    }
+  ],
+  "syntaxAfter": [
+    {
+      "text": "alpha",
+      "color": "rgb(79, 193, 255)",
+      "opacity": "1"
+    }
+  ],
+  "missingBorder": {
+    "themeValue": "",
+    "decorations": [
+      {
+        "border": "rgba(0, 0, 0, 0)",
+        "background": "color(srgb 0 0 1 / 0.175686)"
+      }
+    ]
+  },
+  "caret": [
+    [
+      1,
+      5,
+      1,
+      5
+    ]
+  ],
+  "pendingSelections": [
+    [
+      1,
+      5,
+      1,
+      5
+    ]
+  ],
+  "afterPending": 0,
+  "transparency": "theme alpha × 0.7",
+  "nativeForegroundUnchanged": true,
+  "pendingNoCaretMovement": true
+}

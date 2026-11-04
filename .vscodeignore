@@ -3,5 +3,13 @@
 test/**
 AGENTS.md
 CONTRIBUTING.md
+.agents/**
+docs/**
+openspec/**
 .gitignore
 .vscodeignore
+scripts/**
+client/**
+.client-build/**
+# vsce excludes every *.vsix by default; this helper is a runtime resource.
+!bundled/jbsearch-client.vsix

@@ -1,0 +1,49 @@
+{
+  "date": "2026-11-04",
+  "nativeRightEditorGroup": {
+    "1.143.1": "1.143.1",
+    "1.144.1": "1.144.1"
+  },
+  "checks": [
+    "dirty source tab retained",
+    "dirty preview tab retained on navigation",
+    "native edit and Undo",
+    "preserve tree input focus",
+    "collapsed initial caret",
+    "update does not move caret",
+    "pending and invalid ranges excluded",
+    "70% of original fill alpha",
+    "syntax foreground and opacity unchanged",
+    "live theme color update",
+    "explicit transparent fallback for missing border"
+  ],
+  "runtimeDependenciesAdded": false,
+  "sources": [
+    {
+      "url": "https://code.visualstudio.com/api/references/vscode-api#window.showTextDocument",
+      "local": "/tmp/jbsearch-native-preview-api.html"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/microsoft/vscode/261c84cb1eddf11235f9e2c921425e9663fbe556/src/vscode-dts/vscode.d.ts",
+      "local": "/tmp/jbsearch-side-vscode.d.ts",
+      "fact": "ViewColumn covers editor grid only, no Secondary Side Bar target"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/microsoft/vscode/261c84cb1eddf11235f9e2c921425e9663fbe556/src/vs/workbench/browser/parts/auxiliarybar/auxiliaryBarPart.ts",
+      "local": "/tmp/jbsearch-side-auxiliaryBarPart.ts",
+      "fact": "AuxiliaryBarPart is a pane composite for view containers"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/microsoft/vscode/261c84cb1eddf11235f9e2c921425e9663fbe556/src/vs/editor/browser/services/abstractCodeEditorService.ts",
+      "local": "/tmp/jbsearch-side-decorationStyle.ts",
+      "fact": "Decoration CSS strings are emitted directly; ThemeColor without a value resolves transparent"
+    }
+  ],
+  "proofFiles": [
+    "adapter-results-1.143.1.json",
+    "adapter-results-1.144.1.json",
+    "native-alpha-update-results.json",
+    "native-alpha-update-results-143.json",
+    "unit-tests.log"
+  ]
+}

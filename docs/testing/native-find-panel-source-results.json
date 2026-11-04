@@ -1,0 +1,580 @@
+{
+  "date": "2026-11-04",
+  "platform": "Linux x64 / X11 / Xvfb",
+  "mode": "source Extension Development Host",
+  "checks": [
+    {
+      "name": "modal transfers into bottom Find without changing the central document",
+      "passed": true,
+      "detail": {
+        "results": 6,
+        "files": 4,
+        "groups": 1,
+        "focus": {
+          "role": "tree",
+          "panel": true,
+          "editor": false
+        },
+        "panelRect": {
+          "x": 352,
+          "y": 468,
+          "width": 1084,
+          "height": 400
+        }
+      }
+    },
+    {
+      "name": "native click opens BL source centrally, preserves tree focus, and uses native code highlighting",
+      "passed": true,
+      "detail": {
+        "column": 1,
+        "syntaxColors": [
+          "rgb(204, 204, 204)",
+          "rgb(197, 134, 192)"
+        ],
+        "matchDecorations": [
+          "color(srgb 0.619608 0.415686 0.0117647 / 0.7)",
+          "color(srgb 0.917647 0.360784 0 / 0.230588)"
+        ]
+      }
+    },
+    {
+      "name": "file and folder icons match Explorer and update when the icon theme changes",
+      "passed": true,
+      "detail": {
+        "comparisons": 10,
+        "languageIcon": "BL PNG fixture copied from installed language extension"
+      }
+    },
+    {
+      "name": "theme changes use native workbench colors without resetting the search or opening a file",
+      "passed": true,
+      "detail": {
+        "themes": [
+          "Dark Modern",
+          "Light Modern"
+        ]
+      }
+    },
+    {
+      "name": "gear opens an isolated draft; Escape preserves the saved snapshot",
+      "passed": true
+    },
+    {
+      "name": "confirming a gear draft updates the existing saved search",
+      "passed": true
+    },
+    {
+      "name": "Keep as a new search creates an independent snapshot and native QuickPick switches it",
+      "passed": true
+    },
+    {
+      "name": "hiding the panel retains sessions; Close Search releases only the selected one",
+      "passed": true
+    },
+    {
+      "name": "Replace uses the same panel and preserves the saved-search identity",
+      "passed": true
+    },
+    {
+      "name": "editing the central editor retains an INVALID row in its deterministic position",
+      "passed": true,
+      "detail": {
+        "invalid": 1,
+        "total": 6
+      }
+    },
+    {
+      "name": "unsafe Replace All is blocked; Undo restores the same occurrence",
+      "passed": true,
+      "detail": {
+        "rejection": "Error: These results are INVALID or still being checked. Rerun Search before replacing."
+      }
+    },
+    {
+      "name": "arrow focus with Enter, F4 and Replace operate on the selected occurrence",
+      "passed": true
+    },
+    {
+      "name": "Rerun preserves the open editor and central group; matches stay highlighted",
+      "passed": true
+    }
+  ],
+  "icons": [
+    {
+      "theme": "vs-seti",
+      "name": "package.json",
+      "native": {
+        "content": "\"\"",
+        "font": "seti",
+        "background": "none",
+        "color": "rgb(203, 203, 65)",
+        "size": "16px"
+      },
+      "explorer": {
+        "content": "\"\"",
+        "font": "seti",
+        "background": "none",
+        "color": "rgb(203, 203, 65)",
+        "size": "16px"
+      },
+      "equal": true
+    },
+    {
+      "theme": "vs-seti",
+      "name": "Alpha.js",
+      "native": {
+        "content": "\"\"",
+        "font": "seti",
+        "background": "none",
+        "color": "rgb(203, 203, 65)",
+        "size": "16px"
+      },
+      "explorer": {
+        "content": "\"\"",
+        "font": "seti",
+        "background": "none",
+        "color": "rgb(203, 203, 65)",
+        "size": "16px"
+      },
+      "equal": true
+    },
+    {
+      "theme": "vs-seti",
+      "name": "Dadata.bl",
+      "native": {
+        "content": "\" \"",
+        "font": "seti",
+        "background": "url(\"vscode-file://vscode-app/tmp/jbsearch-native-panel-check/extension/bl.png\")",
+        "color": null,
+        "size": "16px"
+      },
+      "explorer": {
+        "content": "\" \"",
+        "font": "seti",
+        "background": "url(\"vscode-file://vscode-app/tmp/jbsearch-native-panel-check/extension/bl.png\")",
+        "color": null,
+        "size": "16px"
+      },
+      "equal": true
+    },
+    {
+      "theme": "vs-seti",
+      "name": "src",
+      "native": {
+        "content": "none",
+        "font": "seti",
+        "background": "none",
+        "color": "rgb(204, 204, 204)",
+        "size": "16px"
+      },
+      "explorer": {
+        "content": "none",
+        "font": "seti",
+        "background": "none",
+        "color": "rgb(204, 204, 204)",
+        "size": "16px"
+      },
+      "equal": true
+    },
+    {
+      "theme": "vs-seti",
+      "name": "services",
+      "native": {
+        "content": "none",
+        "font": "seti",
+        "background": "none",
+        "color": "rgb(204, 204, 204)",
+        "size": "16px"
+      },
+      "explorer": {
+        "content": "none",
+        "font": "seti",
+        "background": "none",
+        "color": "rgb(204, 204, 204)",
+        "size": "16px"
+      },
+      "equal": true
+    },
+    {
+      "theme": "jbsearch-probe-icons",
+      "name": "package.json",
+      "native": {
+        "content": "\" \"",
+        "font": "system-ui, Ubuntu, \"Droid Sans\", sans-serif",
+        "background": "url(\"vscode-file://vscode-app/tmp/jbsearch-native-panel-check/extension/file.svg\")",
+        "color": null,
+        "size": "16px"
+      },
+      "explorer": {
+        "content": "\" \"",
+        "font": "system-ui, Ubuntu, \"Droid Sans\", sans-serif",
+        "background": "url(\"vscode-file://vscode-app/tmp/jbsearch-native-panel-check/extension/file.svg\")",
+        "color": null,
+        "size": "16px"
+      },
+      "equal": true
+    },
+    {
+      "theme": "jbsearch-probe-icons",
+      "name": "Alpha.js",
+      "native": {
+        "content": "\" \"",
+        "font": "system-ui, Ubuntu, \"Droid Sans\", sans-serif",
+        "background": "url(\"vscode-file://vscode-app/tmp/jbsearch-native-panel-check/extension/js.svg\")",
+        "color": null,
+        "size": "16px"
+      },
+      "explorer": {
+        "content": "\" \"",
+        "font": "system-ui, Ubuntu, \"Droid Sans\", sans-serif",
+        "background": "url(\"vscode-file://vscode-app/tmp/jbsearch-native-panel-check/extension/js.svg\")",
+        "color": null,
+        "size": "16px"
+      },
+      "equal": true
+    },
+    {
+      "theme": "jbsearch-probe-icons",
+      "name": "Dadata.bl",
+      "native": {
+        "content": "\" \"",
+        "font": "system-ui, Ubuntu, \"Droid Sans\", sans-serif",
+        "background": "url(\"vscode-file://vscode-app/tmp/jbsearch-native-panel-check/extension/bl.png\")",
+        "color": null,
+        "size": "16px"
+      },
+      "explorer": {
+        "content": "\" \"",
+        "font": "system-ui, Ubuntu, \"Droid Sans\", sans-serif",
+        "background": "url(\"vscode-file://vscode-app/tmp/jbsearch-native-panel-check/extension/bl.png\")",
+        "color": null,
+        "size": "16px"
+      },
+      "equal": true
+    },
+    {
+      "theme": "jbsearch-probe-icons",
+      "name": "src",
+      "native": {
+        "content": "\" \"",
+        "font": "system-ui, Ubuntu, \"Droid Sans\", sans-serif",
+        "background": "url(\"vscode-file://vscode-app/tmp/jbsearch-native-panel-check/extension/folder.svg\")",
+        "color": null,
+        "size": "16px"
+      },
+      "explorer": {
+        "content": "\" \"",
+        "font": "system-ui, Ubuntu, \"Droid Sans\", sans-serif",
+        "background": "url(\"vscode-file://vscode-app/tmp/jbsearch-native-panel-check/extension/folder.svg\")",
+        "color": null,
+        "size": "16px"
+      },
+      "equal": true
+    },
+    {
+      "theme": "jbsearch-probe-icons",
+      "name": "services",
+      "native": {
+        "content": "\" \"",
+        "font": "system-ui, Ubuntu, \"Droid Sans\", sans-serif",
+        "background": "url(\"vscode-file://vscode-app/tmp/jbsearch-native-panel-check/extension/folder.svg\")",
+        "color": null,
+        "size": "16px"
+      },
+      "explorer": {
+        "content": "\" \"",
+        "font": "system-ui, Ubuntu, \"Droid Sans\", sans-serif",
+        "background": "url(\"vscode-file://vscode-app/tmp/jbsearch-native-panel-check/extension/folder.svg\")",
+        "color": null,
+        "size": "16px"
+      },
+      "equal": true
+    }
+  ],
+  "vscode": "1.143.1",
+  "selectedInvalidColor": "rgb(204, 204, 204)",
+  "invalidColor": "rgb(248, 81, 73)",
+  "finalState": {
+    "version": "1.143.1",
+    "theme": "Dark Modern",
+    "main": "/home/codex/projects/vscode-extensions/jbsearch",
+    "sessions": [
+      {
+        "id": "947a54cf-8645-409b-8a70-3b88358cd981",
+        "mode": "replace",
+        "layout": "findWindow",
+        "query": "acceptDocz",
+        "replacement": "applyDocz",
+        "options": {
+          "caseSensitive": true,
+          "wholeWord": false,
+          "regex": false,
+          "preserveCase": false,
+          "maskEnabled": false,
+          "mask": "",
+          "include": "",
+          "exclude": "",
+          "respectExcludes": true
+        },
+        "scope": {
+          "kind": "workspace"
+        },
+        "generation": 4,
+        "results": [
+          {
+            "id": "file:///tmp/jbsearch-native-panel-check/workspace/package.json:9:10",
+            "uri": "file:///tmp/jbsearch-native-panel-check/workspace/package.json",
+            "relativePath": "package.json",
+            "label": "package.json",
+            "range": {
+              "start": {
+                "line": 0,
+                "character": 9
+              },
+              "end": {
+                "line": 0,
+                "character": 19
+              }
+            },
+            "lineText": "{\"name\":\"acceptDocz\"}",
+            "previewMatchStart": 9,
+            "previewMatchEnd": 19,
+            "rootName": "workspace",
+            "initialOrder": 0
+          },
+          {
+            "id": "file:///tmp/jbsearch-native-panel-check/workspace/src/Alpha.js:13:10",
+            "uri": "file:///tmp/jbsearch-native-panel-check/workspace/src/Alpha.js",
+            "relativePath": "src/Alpha.js",
+            "label": "Alpha.js",
+            "range": {
+              "start": {
+                "line": 0,
+                "character": 13
+              },
+              "end": {
+                "line": 0,
+                "character": 23
+              }
+            },
+            "lineText": "export const acceptDocz = 1;",
+            "previewMatchStart": 13,
+            "previewMatchEnd": 23,
+            "rootName": "workspace",
+            "initialOrder": 1
+          },
+          {
+            "id": "file:///tmp/jbsearch-native-panel-check/workspace/src/Alpha.js:41:10",
+            "uri": "file:///tmp/jbsearch-native-panel-check/workspace/src/Alpha.js",
+            "relativePath": "src/Alpha.js",
+            "label": "Alpha.js",
+            "range": {
+              "start": {
+                "line": 1,
+                "character": 12
+              },
+              "end": {
+                "line": 1,
+                "character": 22
+              }
+            },
+            "lineText": "console.log(acceptDocz);",
+            "previewMatchStart": 12,
+            "previewMatchEnd": 22,
+            "rootName": "workspace",
+            "initialOrder": 2
+          },
+          {
+            "id": "file:///tmp/jbsearch-native-panel-check/workspace/src/services/Dadata.bl:36:10",
+            "uri": "file:///tmp/jbsearch-native-panel-check/workspace/src/services/Dadata.bl",
+            "relativePath": "src/services/Dadata.bl",
+            "label": "Dadata.bl",
+            "range": {
+              "start": {
+                "line": 1,
+                "character": 14
+              },
+              "end": {
+                "line": 1,
+                "character": 24
+              }
+            },
+            "lineText": "  public void acceptDocz() {",
+            "previewMatchStart": 14,
+            "previewMatchEnd": 24,
+            "rootName": "workspace",
+            "initialOrder": 3
+          },
+          {
+            "id": "file:///tmp/jbsearch-native-panel-check/workspace/src/services/Dadata.bl:55:10",
+            "uri": "file:///tmp/jbsearch-native-panel-check/workspace/src/services/Dadata.bl",
+            "relativePath": "src/services/Dadata.bl",
+            "label": "Dadata.bl",
+            "range": {
+              "start": {
+                "line": 2,
+                "character": 4
+              },
+              "end": {
+                "line": 2,
+                "character": 14
+              }
+            },
+            "lineText": "    acceptDocz();",
+            "previewMatchStart": 4,
+            "previewMatchEnd": 14,
+            "rootName": "workspace",
+            "initialOrder": 4
+          },
+          {
+            "id": "file:///tmp/jbsearch-native-panel-check/workspace/test/Search.test.js:3:10",
+            "uri": "file:///tmp/jbsearch-native-panel-check/workspace/test/Search.test.js",
+            "relativePath": "test/Search.test.js",
+            "label": "Search.test.js",
+            "range": {
+              "start": {
+                "line": 0,
+                "character": 3
+              },
+              "end": {
+                "line": 0,
+                "character": 13
+              }
+            },
+            "lineText": "// acceptDocz fixture",
+            "previewMatchStart": 3,
+            "previewMatchEnd": 13,
+            "rootName": "workspace",
+            "initialOrder": 5
+          }
+        ],
+        "selectedId": "file:///tmp/jbsearch-native-panel-check/workspace/src/services/Dadata.bl:36:10",
+        "searching": false,
+        "partial": false,
+        "error": "",
+        "notice": "Replaced 1 matches. Changes are unsaved; use Undo in VS Code to revert.",
+        "replacing": false,
+        "patchAcks": {
+          "38f5da58-b1b8-4033-a697-68c26117affb": 1
+        },
+        "customScopes": [],
+        "panels": [],
+        "offsets": [
+          {
+            "id": "file:///tmp/jbsearch-native-panel-check/workspace/package.json:9:10",
+            "offset": 9,
+            "length": 10,
+            "source": "disk"
+          },
+          {
+            "id": "file:///tmp/jbsearch-native-panel-check/workspace/src/Alpha.js:13:10",
+            "offset": 13,
+            "length": 10,
+            "source": "disk"
+          },
+          {
+            "id": "file:///tmp/jbsearch-native-panel-check/workspace/src/Alpha.js:41:10",
+            "offset": 41,
+            "length": 10,
+            "source": "disk"
+          },
+          {
+            "id": "file:///tmp/jbsearch-native-panel-check/workspace/src/services/Dadata.bl:36:10",
+            "offset": 36,
+            "length": 10,
+            "source": "disk"
+          },
+          {
+            "id": "file:///tmp/jbsearch-native-panel-check/workspace/src/services/Dadata.bl:55:10",
+            "offset": 55,
+            "length": 10,
+            "source": "disk"
+          },
+          {
+            "id": "file:///tmp/jbsearch-native-panel-check/workspace/test/Search.test.js:3:10",
+            "offset": 3,
+            "length": 10,
+            "source": "disk"
+          }
+        ]
+      }
+    ],
+    "find": {
+      "activeId": "947a54cf-8645-409b-8a70-3b88358cd981",
+      "visible": true,
+      "title": "Replace",
+      "message": "6 results in 4 files\nIn Project · Match Case\nReplaced 1 matches. Changes are unsaved; use Undo in VS Code to revert."
+    },
+    "currentId": "947a54cf-8645-409b-8a70-3b88358cd981",
+    "previewOwner": "947a54cf-8645-409b-8a70-3b88358cd981",
+    "groups": [
+      {
+        "column": 1,
+        "active": true,
+        "tabs": [
+          {
+            "label": "Alpha.js",
+            "uri": "file:///tmp/jbsearch-native-panel-check/workspace/src/Alpha.js",
+            "dirty": false,
+            "preview": false,
+            "active": false
+          },
+          {
+            "label": "Dadata.bl",
+            "uri": "file:///tmp/jbsearch-native-panel-check/workspace/src/services/Dadata.bl",
+            "dirty": false,
+            "preview": false,
+            "active": true
+          },
+          {
+            "label": "Search.test.js",
+            "uri": "file:///tmp/jbsearch-native-panel-check/workspace/test/Search.test.js",
+            "dirty": false,
+            "preview": true,
+            "active": false
+          }
+        ]
+      }
+    ],
+    "editors": [
+      {
+        "column": 1,
+        "uri": "file:///tmp/jbsearch-native-panel-check/workspace/src/services/Dadata.bl",
+        "dirty": false,
+        "language": "bl",
+        "active": true,
+        "selections": [
+          [
+            1,
+            14,
+            1,
+            14
+          ]
+        ],
+        "text": "public class Dadata {\n  public void acceptDocz() {\n    acceptDocz();\n  }\n}\n"
+      }
+    ]
+  },
+  "passed": true,
+  "fixture": {
+    "query": "acceptDocz",
+    "replacement": "applyDocz",
+    "matches": 6,
+    "files": 4,
+    "languages": [
+      "javascript",
+      "json",
+      "bl"
+    ],
+    "bl": "minimal grammar and language icon test fixture",
+    "iconThemes": [
+      "vs-seti",
+      "jbsearch-probe-icons"
+    ],
+    "colorThemes": [
+      "Dark Modern",
+      "Light Modern"
+    ]
+  }
+}

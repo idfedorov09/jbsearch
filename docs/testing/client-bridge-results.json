@@ -1,0 +1,207 @@
+{
+  "date": "2026-11-03T23:04:05.305Z",
+  "environment": "VS Code1.143.1 Linux/X11 isolated Remote SSH loopback; normal source registration; GitHub theme only client; BL grammar only server",
+  "outcomes": [
+    {
+      "name": "source reload and remote inventory before first-use install",
+      "status": "passed",
+      "ms": 6451,
+      "detail": {
+        "vscode": "1.143.1",
+        "remote": "ssh-remote",
+        "theme": "GitHub Dark Default",
+        "clientHelperAbsent": true,
+        "themeAbsentOnServer": true
+      }
+    },
+    {
+      "name": "first search automatically installs and activates bundled UI support locally",
+      "status": "passed",
+      "ms": 3195,
+      "detail": {
+        "clientSummary": {
+          "protocol": 1,
+          "build": "f3ce5f362b4ed3364b9f13a89b949ac196c9180e2e03360b67702bd6d32ed4ab",
+          "revision": 0,
+          "themeId": "GitHub Dark Default",
+          "foundTheme": true,
+          "rules": 49,
+          "grammars": 82,
+          "hasJavaScript": true,
+          "incomplete": false,
+          "serverSeesClient": false,
+          "serverSeesJavaScriptGrammar": false
+        },
+        "keyword": "rgb(255, 123, 114)",
+        "matchHighlights": 2
+      }
+    },
+    {
+      "name": "client-only JavaScript grammar renders with the same client theme",
+      "status": "passed",
+      "ms": 100,
+      "detail": {
+        "preview": "Example.js",
+        "keyword": "rgb(255, 123, 114)"
+      }
+    },
+    {
+      "name": "live light and dark theme changes update syntax and webview",
+      "status": "passed",
+      "ms": 4011,
+      "detail": [
+        {
+          "theme": "Light Modern",
+          "keyword": "rgb(175, 0, 219)",
+          "background": "rgb(248, 248, 248)"
+        },
+        {
+          "theme": "GitHub Dark Dimmed",
+          "keyword": "rgb(244, 112, 103)",
+          "background": "rgb(45, 51, 59)"
+        },
+        {
+          "theme": "GitHub Dark Default",
+          "keyword": "rgb(255, 123, 114)",
+          "background": "rgb(22, 27, 34)"
+        }
+      ]
+    },
+    {
+      "name": "global and theme-specific customizations including font styles",
+      "status": "passed",
+      "ms": 2112,
+      "detail": {
+        "themeSpecificKeyword": "rgb(255, 0, 170)",
+        "stringStyles": "italic underline line-through",
+        "restored": true
+      }
+    },
+    {
+      "name": "slow and fast typing preserve every character and query focus",
+      "status": "passed",
+      "ms": 2167,
+      "detail": [
+        {
+          "delay": 210,
+          "query": "return",
+          "blurs": 0
+        },
+        {
+          "delay": 4,
+          "query": "return",
+          "blurs": 0
+        }
+      ]
+    },
+    {
+      "name": "rapid result selection keeps the most recent preview",
+      "status": "passed",
+      "ms": 604,
+      "detail": {
+        "selected": "Other.bl"
+      }
+    },
+    {
+      "name": "preview typing cannot modify the source document",
+      "status": "passed",
+      "ms": 658,
+      "detail": {
+        "readOnly": true,
+        "diskUnchanged": true
+      }
+    },
+    {
+      "name": "unsaved source changes participate in search and preview",
+      "status": "passed",
+      "ms": 1418,
+      "detail": {
+        "previewCurrent": true,
+        "sourceNotSaved": true
+      }
+    },
+    {
+      "name": "Open Editors excludes documents loaded only for preview",
+      "status": "passed",
+      "ms": 2749,
+      "detail": {
+        "previewDocumentsExcluded": true,
+        "openTextTabIncluded": true
+      }
+    },
+    {
+      "name": "Replace shortcut shares query and a single replacement uses normal Undo",
+      "status": "passed",
+      "ms": 2616,
+      "detail": {
+        "singleReplacement": true,
+        "undoRestored": true,
+        "unsaved": true
+      }
+    },
+    {
+      "name": "Replace All across files is unsaved and undone as a workspace edit",
+      "status": "passed",
+      "ms": 2959,
+      "detail": {
+        "files": 3,
+        "undoRestoredAll": true,
+        "unsaved": true
+      }
+    },
+    {
+      "name": "Open in Find Window keeps one unified tab and Escape/reopen preserve state",
+      "status": "passed",
+      "ms": 2418,
+      "detail": {
+        "unifiedTabs": 1,
+        "queryPreserved": true,
+        "preview": "Other.bl",
+        "escapeAndReopen": true
+      }
+    },
+    {
+      "name": "server source reload reuses the existing client build without reinstall",
+      "status": "passed",
+      "ms": 6806,
+      "detail": {
+        "sourceReloadWorks": true,
+        "helperReinstalled": false
+      }
+    }
+  ],
+  "localDate": "2026-11-04",
+  "timezone": "Europe/Moscow",
+  "fixture": "Synthetic BL and JavaScript workspace; no user source files",
+  "verification": {
+    "unitTests": {
+      "passed": 75,
+      "total": 75
+    },
+    "check": "passed",
+    "specCheck": "passed",
+    "guiScenarios": {
+      "passed": 14,
+      "total": 14
+    },
+    "mainVsixWithBundledClient": "passed package-content verification; installed-main-VSIX remote smoke checked separately",
+    "packageReport": "client-bridge-package-results.json",
+    "supplementalGuiUpgradeAndThemeStress": "passed",
+    "upgradeReport": "client-bridge-upgrade-results.json",
+    "installedMainVsixSmoke": "passed",
+    "installedMainVsixReport": "client-bridge-installed-results.json"
+  },
+  "notVerified": [
+    "macOS",
+    "Windows",
+    "Linux Wayland and ARM64",
+    "Remote SSH between separate machines",
+    "semantic tokens"
+  ],
+  "screenshots": {
+    "find": "assets/bridge-find.png",
+    "replace": "assets/bridge-replace.png",
+    "tab": "assets/bridge-tab.png",
+    "crop": "Search UI only; unrelated Remote SSH output panel removed"
+  }
+}

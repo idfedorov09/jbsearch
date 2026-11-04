@@ -1,0 +1,52 @@
+name: Publish VS Code Extension
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: marketplace-publication
+  queue: max
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    if: github.repository == 'idfedorov09/jbsearch' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run check
+      - run: npm test
+      - run: npm run spec:check
+      - run: npm run package
+
+  publish:
+    if: github.repository == 'idfedorov09/jbsearch' && github.ref == 'refs/heads/master'
+    needs: check
+    runs-on: ubuntu-latest
+    environment: marketplace
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run package
+      - name: Publish new version
+        run: ./node_modules/.bin/vsce publish --oidc --skip-duplicate --packagePath ./*.vsix

@@ -2,6 +2,8 @@ node_modules/
 *.vsix
 .vscode-test/
 coverage/
+bundled/
+.client-build/
 *.log
 .DS_Store
 
@@ -10,3 +12,9 @@ coverage/
 !.vscode/
 .vscode/*
 !.vscode/launch.json
+
+# Project decisions and specifications must survive global Git ignore rules.
+!docs/
+!docs/**
+!openspec/
+!openspec/**

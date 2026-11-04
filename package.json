@@ -1,8 +1,8 @@
 {
   "name": "jbsearch",
   "displayName": "JB Search",
-  "description": "A VS Code search extension inspired by JetBrains IDEs (scaffold).",
-  "version": "0.0.1",
+  "description": "Find and replace in a floating JetBrains-style dialog, with VS Code themes and syntax-highlighted previews.",
+  "version": "0.1.0",
   "publisher": "idfedorov09",
   "license": "MIT",
   "repository": {
@@ -14,30 +14,352 @@
   },
   "homepage": "https://github.com/idfedorov09/jbsearch#readme",
   "engines": {
-    "vscode": "^1.85.0",
-    "node": ">=22"
+    "vscode": "^1.143.1",
+    "node": ">=22.12.0"
   },
   "categories": [
     "Other"
   ],
   "main": "./src/extension.js",
   "activationEvents": [
-    "onCommand:jbsearch.checkInstallation"
+    "onCommand:jbsearch.checkInstallation",
+    "onCommand:jbsearch.findInFiles",
+    "onCommand:jbsearch.replaceInFiles",
+    "onCustomEditor:jbsearch.session",
+    "onView:jbsearch.results"
   ],
   "contributes": {
     "commands": [
       {
+        "command": "jbsearch.findInFiles",
+        "title": "JB Search: Find in Files"
+      },
+      {
+        "command": "jbsearch.replaceInFiles",
+        "title": "JB Search: Replace in Files"
+      },
+      {
         "command": "jbsearch.checkInstallation",
         "title": "JB Search: Check Installation"
+      },
+      {
+        "command": "jbsearch.setupClientPreview",
+        "title": "JB Search: Set Up Client Preview"
+      },
+      {
+        "command": "jbsearch.results.show",
+        "title": "Show Find Panel",
+        "category": "JB Search",
+        "icon": "$(search)"
+      },
+      {
+        "command": "jbsearch.results.newSearch",
+        "title": "New Search",
+        "category": "JB Search",
+        "icon": "$(add)"
+      },
+      {
+        "command": "jbsearch.results.refresh",
+        "title": "Rerun Search",
+        "category": "JB Search",
+        "icon": "$(refresh)",
+        "enablement": "jbsearch.results.canRefresh"
+      },
+      {
+        "command": "jbsearch.results.editSearch",
+        "title": "Edit Search",
+        "category": "JB Search",
+        "icon": "$(gear)",
+        "enablement": "jbsearch.results.canEdit"
+      },
+      {
+        "command": "jbsearch.results.switchSearch",
+        "title": "Switch Saved Search",
+        "category": "JB Search",
+        "icon": "$(history)",
+        "enablement": "jbsearch.results.hasSessions"
+      },
+      {
+        "command": "jbsearch.results.next",
+        "title": "Next Occurrence",
+        "category": "JB Search",
+        "icon": "$(arrow-down)",
+        "enablement": "jbsearch.results.hasResults"
+      },
+      {
+        "command": "jbsearch.results.previous",
+        "title": "Previous Occurrence",
+        "category": "JB Search",
+        "icon": "$(arrow-up)",
+        "enablement": "jbsearch.results.hasResults"
+      },
+      {
+        "command": "jbsearch.results.openResult",
+        "title": "Open and Focus Editor",
+        "category": "JB Search",
+        "icon": "$(go-to-file)",
+        "enablement": "jbsearch.results.hasSelection"
+      },
+      {
+        "command": "jbsearch.results.replace",
+        "title": "Replace Occurrence",
+        "category": "JB Search",
+        "icon": "$(replace)",
+        "enablement": "jbsearch.results.canReplace"
+      },
+      {
+        "command": "jbsearch.results.replaceAll",
+        "title": "Replace All",
+        "category": "JB Search",
+        "icon": "$(replace-all)",
+        "enablement": "jbsearch.results.canReplaceAll"
+      },
+      {
+        "command": "jbsearch.results.closeSearch",
+        "title": "Close Search",
+        "category": "JB Search",
+        "icon": "$(close)",
+        "enablement": "jbsearch.results.hasSession"
       }
-    ]
+    ],
+    "keybindings": [
+      {
+        "command": "jbsearch.findInFiles",
+        "key": "ctrl+shift+f",
+        "mac": "cmd+shift+f",
+        "when": "config.jbsearch.keybindings.overrideFindInFiles"
+      },
+      {
+        "command": "jbsearch.replaceInFiles",
+        "key": "ctrl+shift+r",
+        "mac": "cmd+shift+r",
+        "when": "config.jbsearch.keybindings.overrideFindInFiles"
+      },
+      {
+        "command": "jbsearch.results.next",
+        "key": "f4",
+        "when": "focusedView == jbsearch.results && !inputFocus"
+      },
+      {
+        "command": "jbsearch.results.previous",
+        "key": "shift+f4",
+        "when": "focusedView == jbsearch.results && !inputFocus"
+      },
+      {
+        "command": "jbsearch.results.openResult",
+        "key": "ctrl+enter",
+        "when": "focusedView == jbsearch.results && !inputFocus",
+        "mac": "cmd+enter"
+      }
+    ],
+    "customEditors": [
+      {
+        "viewType": "jbsearch.session",
+        "displayName": "JB Search",
+        "selector": [
+          {
+            "filenamePattern": "*.jbsearch"
+          }
+        ],
+        "priority": "option"
+      }
+    ],
+    "configuration": {
+      "title": "JB Search",
+      "properties": {
+        "jbsearch.keybindings.overrideFindInFiles": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Use Cmd/Ctrl+Shift+F for Find and Cmd/Ctrl+Shift+R for Replace by default. Configure the [Find shortcut](command:workbench.action.openGlobalKeybindings?%5B%22%40command%3Ajbsearch.findInFiles%22%5D) or [Replace shortcut](command:workbench.action.openGlobalKeybindings?%5B%22%40command%3Ajbsearch.replaceInFiles%22%5D) in VS Code Keyboard Shortcuts. This switch also controls shortcuts edited from these defaults unless their `when` condition is removed."
+        },
+        "jbsearch.search.debounceMs": {
+          "type": "number",
+          "default": 150,
+          "minimum": 0,
+          "maximum": 2000,
+          "description": "Delay after editing the query before searching, in milliseconds."
+        },
+        "jbsearch.search.maxResults": {
+          "type": "number",
+          "default": 5000,
+          "minimum": 1,
+          "maximum": 50000,
+          "description": "Maximum search results. Replace All requires a complete result set."
+        },
+        "jbsearch.search.maxFileSizeMiB": {
+          "type": "number",
+          "default": 2,
+          "minimum": 0.01,
+          "maximum": 128,
+          "description": "Skip files larger than this size. Skipped files make the result set incomplete."
+        },
+        "jbsearch.search.timeoutMs": {
+          "type": "number",
+          "default": 10000,
+          "minimum": 100,
+          "maximum": 300000,
+          "description": "Search deadline in milliseconds, including regular expression execution."
+        },
+        "jbsearch.search.respectExcludes": {
+          "type": "boolean",
+          "default": true,
+          "description": "Initial value of Use ignore files and exclusions for a new search session."
+        },
+        "jbsearch.scopes": {
+          "type": "array",
+          "default": [],
+          "scope": "resource",
+          "description": "Named project scopes. Patterns use semicolon separators or arrays; paths are relative to each root.",
+          "items": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "include": {
+                "type": [
+                  "string",
+                  "array"
+                ],
+                "items": {
+                  "type": "string"
+                }
+              },
+              "exclude": {
+                "type": [
+                  "string",
+                  "array"
+                ],
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "viewsContainers": {
+      "panel": [
+        {
+          "id": "jbsearch-find",
+          "title": "Find",
+          "icon": "$(search)"
+        }
+      ]
+    },
+    "views": {
+      "jbsearch-find": [
+        {
+          "id": "jbsearch.results",
+          "name": "Find",
+          "contextualTitle": "JB Search",
+          "type": "tree"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "jbsearch.results.refresh",
+          "when": "view == jbsearch.results && jbsearch.results.hasSession",
+          "group": "navigation@1"
+        },
+        {
+          "command": "jbsearch.results.previous",
+          "when": "view == jbsearch.results && jbsearch.results.hasSession",
+          "group": "navigation@2"
+        },
+        {
+          "command": "jbsearch.results.next",
+          "when": "view == jbsearch.results && jbsearch.results.hasSession",
+          "group": "navigation@3"
+        },
+        {
+          "command": "jbsearch.results.editSearch",
+          "when": "view == jbsearch.results && jbsearch.results.hasSession",
+          "group": "navigation@4"
+        },
+        {
+          "command": "jbsearch.results.switchSearch",
+          "when": "view == jbsearch.results && jbsearch.results.hasSessions",
+          "group": "navigation@5"
+        },
+        {
+          "command": "jbsearch.results.newSearch",
+          "when": "view == jbsearch.results",
+          "group": "navigation@6"
+        },
+        {
+          "command": "jbsearch.results.closeSearch",
+          "when": "view == jbsearch.results && jbsearch.results.hasSession",
+          "group": "navigation@7"
+        },
+        {
+          "command": "jbsearch.results.openResult",
+          "when": "view == jbsearch.results && jbsearch.results.hasSelection",
+          "group": "find@1"
+        },
+        {
+          "command": "jbsearch.results.replace",
+          "when": "view == jbsearch.results && jbsearch.results.isReplace",
+          "group": "find@2"
+        },
+        {
+          "command": "jbsearch.results.replaceAll",
+          "when": "view == jbsearch.results && jbsearch.results.isReplace",
+          "group": "find@3"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "jbsearch.results.openResult",
+          "when": "view == jbsearch.results && viewItem =~ /^jbsearch\\.match\\./",
+          "group": "find@1"
+        },
+        {
+          "command": "jbsearch.results.replace",
+          "when": "view == jbsearch.results && viewItem =~ /^jbsearch\\.match\\./ && jbsearch.results.isReplace",
+          "group": "find@2"
+        }
+      ]
+    }
   },
   "scripts": {
-    "check": "node --check src/extension.js",
-    "test": "node --test test/*.test.js",
-    "package": "vsce package"
+    "check": "node scripts/check.js",
+    "test": "node --test test/*.test.js client/test/*.test.js",
+    "prepare": "node scripts/package-client.js",
+    "prepare:client": "node scripts/package-client.js",
+    "package": "npm run prepare:client && vsce package && node scripts/verify-package.js",
+    "openspec": "openspec",
+    "spec:check": "openspec validate --all --strict --no-interactive"
   },
   "devDependencies": {
+    "@fission-ai/openspec": "1.16.0",
     "@vscode/vsce": "^4.1.0"
+  },
+  "dependencies": {
+    "@vscode/ripgrep-universal": "1.18.0",
+    "jsonc-parser": "3.3.1",
+    "vscode-oniguruma": "2.0.1",
+    "vscode-textmate": "9.3.2"
+  },
+  "extensionKind": [
+    "workspace"
+  ],
+  "api": "none",
+  "capabilities": {
+    "virtualWorkspaces": {
+      "supported": false,
+      "description": "Search uses a local filesystem backend."
+    },
+    "untrustedWorkspaces": {
+      "supported": true
+    }
   }
 }

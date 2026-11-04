@@ -1,0 +1,106 @@
+{
+  "date": "2026-11-03",
+  "extensionVersion": "0.0.1",
+  "vscodeVersion": "1.144.1",
+  "platform": "Linux x64 / X11 / Xvfb",
+  "installation": "VSIX in a clean profile, without extensionDevelopmentPath",
+  "automation": "Playwright/CDP on an isolated test instance only",
+  "passed": 17,
+  "failed": 0,
+  "tests": [
+    {
+      "test": "installed-vsix-find",
+      "title": "ChatView.js - workspace - Visual Studio Code",
+      "count": "5 matches in 3 files",
+      "syntaxTokens": 54
+    },
+    {
+      "test": "file-mask-intersection"
+    },
+    {
+      "test": "open-editors-excludes-preview-only-documents"
+    },
+    {
+      "test": "invalid-regex",
+      "message": "Invalid regular expression: /[/gimu: Unterminated character class"
+    },
+    {
+      "test": "multiline-literal"
+    },
+    {
+      "test": "zero-width-preview-marker",
+      "offset": 2
+    },
+    {
+      "test": "live-theme-and-syntax",
+      "darkColor": "color: rgb(197, 134, 192);",
+      "lightColor": "color: rgb(175, 0, 219);"
+    },
+    {
+      "test": "replace-selected-and-unsaved"
+    },
+    {
+      "test": "undo-selected"
+    },
+    {
+      "test": "replace-all-no-auto-save"
+    },
+    {
+      "test": "undo-multi-file-workspace-edit"
+    },
+    {
+      "test": "move-to-editor-tab-preserves-query"
+    },
+    {
+      "test": "tab-back-to-modal"
+    },
+    {
+      "test": "escape-closes-filter-first"
+    },
+    {
+      "test": "native-drag",
+      "before": {
+        "x": 200,
+        "y": 70,
+        "width": 1040,
+        "height": 760
+      },
+      "after": {
+        "x": 240,
+        "y": 90,
+        "width": 1040,
+        "height": 760
+      }
+    },
+    {
+      "test": "resize-small-controls-accessible",
+      "dialog": {
+        "x": 240,
+        "y": 90,
+        "width": 681,
+        "height": 411
+      },
+      "footer": {
+        "x": 241,
+        "y": 466,
+        "width": 679,
+        "height": 34
+      }
+    },
+    {
+      "test": "native-escape"
+    }
+  ],
+  "unitTests": {
+    "passed": 40,
+    "failed": 0
+  },
+  "package": {
+    "files": 65,
+    "bytes": 24227672,
+    "sha256": "9709c25be54a9820bd5845c934e3e2653fb38badd115039039290d990fca8beb",
+    "ripgrepBinaries": 12,
+    "onigurumaWasm": true,
+    "sourceAndMediaMatch": true
+  }
+}

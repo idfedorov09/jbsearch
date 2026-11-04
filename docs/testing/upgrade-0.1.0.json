@@ -1,0 +1,16 @@
+{
+  "date": "2026-11-03",
+  "vscodeVersion": "1.144.1",
+  "platform": "Linux x64 / X11 / Xvfb",
+  "from": "idfedorov09.jbsearch@0.0.1",
+  "to": "idfedorov09.jbsearch@0.1.0",
+  "installation": "VSIX update in the same test profile without --force",
+  "loadedVersionMessage": "JB Search 0.1.0 is ready. Use Find in Files or Replace in Files.",
+  "find": "5 matches in 3 files",
+  "replace": "Replace in Files, query preserved",
+  "unitTests": 40,
+  "package": {
+    "bytes": 24227896,
+    "sha256": "276e8a3e250b6ec9d874f04bc28a34c03913f7fd3ff477f09d3121dc28b95bce"
+  }
+}

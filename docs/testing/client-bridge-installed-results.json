@@ -1,0 +1,30 @@
+{
+  "date": "2026-11-03T23:13:58.210Z",
+  "status": "passed",
+  "environment": "VS Code 1.143.1 Linux/X11 Remote SSH loopback; main installed from VSIX into isolated directory with CLI, registered in isolated server profile; no development host",
+  "main": {
+    "path": "isolated-packaged-server-extensions/idfedorov09.jbsearch-0.1.0",
+    "version": "0.1.0"
+  },
+  "helperInstalledOnFirstPreview": true,
+  "client": {
+    "protocol": 1,
+    "build": "f3ce5f362b4ed3364b9f13a89b949ac196c9180e2e03360b67702bd6d32ed4ab",
+    "revision": 0,
+    "themeId": "GitHub Dark Default",
+    "foundTheme": true,
+    "rules": 49,
+    "grammars": 82,
+    "hasJavaScript": true,
+    "incomplete": false,
+    "serverSeesClient": false,
+    "serverSeesJavaScriptGrammar": false
+  },
+  "blKeyword": "rgb(255, 123, 114)",
+  "jsKeyword": "rgb(255, 123, 114)",
+  "matches": 2,
+  "replaceShortcut": true,
+  "unifiedTab": true,
+  "localDate": "2026-11-04",
+  "timezone": "Europe/Moscow"
+}

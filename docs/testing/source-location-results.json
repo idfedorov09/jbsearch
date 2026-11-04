@@ -1,0 +1,103 @@
+{
+  "date": "2026-11-03",
+  "vscodeVersion": "1.143.1",
+  "platform": "Linux x64 / X11 / Xvfb",
+  "sourceRegistration": "Developer: Install Extension from Location (resource)",
+  "sourcePathMatchesCheckout": true,
+  "sourceReload": "Source JS and manifest changes loaded after Reload Window without reinstall",
+  "sourceGuiScenariosPassed": 17,
+  "sourceGuiScenarios": [
+    {
+      "test": "source-find",
+      "title": "ChatView.js - workspace - Visual Studio Code",
+      "count": "5 matches in 3 files",
+      "syntaxTokens": 25
+    },
+    {
+      "test": "file-mask-intersection"
+    },
+    {
+      "test": "open-editors-excludes-preview-only-documents"
+    },
+    {
+      "test": "invalid-regex",
+      "message": "Invalid regular expression: /[/gimu: Unterminated character class"
+    },
+    {
+      "test": "multiline-literal"
+    },
+    {
+      "test": "zero-width-preview-marker",
+      "offset": 2
+    },
+    {
+      "test": "live-theme-and-syntax",
+      "darkColor": "color: rgb(197, 134, 192);",
+      "lightColor": "color: rgb(175, 0, 219);"
+    },
+    {
+      "test": "replace-selected-and-unsaved"
+    },
+    {
+      "test": "undo-selected"
+    },
+    {
+      "test": "replace-all-no-auto-save"
+    },
+    {
+      "test": "undo-multi-file-workspace-edit"
+    },
+    {
+      "test": "move-to-editor-tab-preserves-query"
+    },
+    {
+      "test": "tab-back-to-modal"
+    },
+    {
+      "test": "escape-closes-filter-first"
+    },
+    {
+      "test": "native-drag",
+      "before": {
+        "x": 199.5,
+        "y": 69.5,
+        "width": 1040,
+        "height": 760
+      },
+      "after": {
+        "x": 239.5,
+        "y": 89.5,
+        "width": 1040,
+        "height": 760
+      }
+    },
+    {
+      "test": "resize-small-controls-accessible",
+      "dialog": {
+        "x": 239.5,
+        "y": 89.5,
+        "width": 681,
+        "height": 411
+      },
+      "footer": {
+        "x": 240.5,
+        "y": 465.5,
+        "width": 679,
+        "height": 34
+      }
+    },
+    {
+      "test": "native-escape"
+    }
+  ],
+  "remoteSSH": {
+    "setup": "Loopback with separate VS Code window and server profile",
+    "find": "2 matches in 1 file",
+    "replaceAll": "2 unsaved changes; disk unchanged",
+    "undo": "2 matches restored",
+    "clientOnlyGrammars": "Not visible to remote extension host; preview reports fallback",
+    "registeredInWorkingServerProfile": true,
+    "unrelatedExtensionEntriesUnchanged": 26
+  },
+  "unitTestsPassed": 47
+}

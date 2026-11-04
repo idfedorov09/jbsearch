@@ -1,0 +1,67 @@
+[
+  {
+    "test": "native-modal",
+    "box": {
+      "x": 250,
+      "y": 125,
+      "width": 940,
+      "height": 650
+    }
+  },
+  {
+    "test": "drag",
+    "before": {
+      "x": 250,
+      "y": 125,
+      "width": 940,
+      "height": 650
+    },
+    "after": {
+      "x": 320,
+      "y": 170,
+      "width": 940,
+      "height": 650
+    }
+  },
+  {
+    "test": "resize",
+    "before": {
+      "x": 320,
+      "y": 170,
+      "width": 940,
+      "height": 650
+    },
+    "after": {
+      "x": 320,
+      "y": 170,
+      "width": 1016,
+      "height": 686
+    }
+  },
+  {
+    "test": "native-escape-from-webview",
+    "modalCount": 0
+  },
+  {
+    "test": "reopen-restores-query",
+    "query": "preserve this query"
+  },
+  {
+    "test": "live-theme",
+    "dark": "rgb(31, 31, 31)",
+    "light": "rgb(255, 255, 255)"
+  },
+  {
+    "test": "move-to-editor-tab",
+    "modalCount": 0,
+    "query": "preserve this query"
+  },
+  {
+    "test": "tab-back-to-modal",
+    "query": "preserve this query"
+  },
+  {
+    "test": "ordinary-file-in-main-editor",
+    "modalCount": 0
+  }
+]

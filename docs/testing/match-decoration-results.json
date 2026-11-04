@@ -1,0 +1,153 @@
+{
+  "date": "2026-11-04T00:13:04.725Z",
+  "localDate": "2026-11-04",
+  "environment": "Headless Chromium, production media/search.js and search.css; synthetic VS Code theme variables",
+  "themes": [
+    {
+      "name": "dark outlined current match",
+      "rows": [
+        {
+          "matches": 1,
+          "text": "static public final guid",
+          "rectangles": 1,
+          "width": 187.875,
+          "selected": false,
+          "background": "rgb(119, 60, 20)",
+          "outline": "rgba(0, 0, 0, 0)",
+          "childrenHaveNoOutline": true,
+          "colors": [
+            "rgb(255, 123, 114)",
+            "rgb(255, 123, 114)",
+            "rgb(255, 123, 114)",
+            "rgb(121, 192, 255)"
+          ]
+        },
+        {
+          "matches": 1,
+          "text": "static public final guid",
+          "rectangles": 1,
+          "width": 187.875,
+          "selected": true,
+          "background": "rgba(0, 0, 0, 0)",
+          "outline": "rgb(157, 165, 180)",
+          "childrenHaveNoOutline": true,
+          "colors": [
+            "rgb(255, 123, 114)",
+            "rgb(255, 123, 114)",
+            "rgb(255, 123, 114)",
+            "rgb(121, 192, 255)"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "light filled current match",
+      "rows": [
+        {
+          "matches": 1,
+          "text": "static public final guid",
+          "rectangles": 1,
+          "width": 187.875,
+          "selected": false,
+          "background": "rgb(255, 248, 197)",
+          "outline": "rgba(0, 0, 0, 0)",
+          "childrenHaveNoOutline": true,
+          "colors": [
+            "rgb(255, 123, 114)",
+            "rgb(255, 123, 114)",
+            "rgb(255, 123, 114)",
+            "rgb(121, 192, 255)"
+          ]
+        },
+        {
+          "matches": 1,
+          "text": "static public final guid",
+          "rectangles": 1,
+          "width": 187.875,
+          "selected": true,
+          "background": "rgb(255, 211, 61)",
+          "outline": "rgb(154, 103, 0)",
+          "childrenHaveNoOutline": true,
+          "colors": [
+            "rgb(255, 123, 114)",
+            "rgb(255, 123, 114)",
+            "rgb(255, 123, 114)",
+            "rgb(121, 192, 255)"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "high contrast",
+      "rows": [
+        {
+          "matches": 1,
+          "text": "static public final guid",
+          "rectangles": 1,
+          "width": 187.875,
+          "selected": false,
+          "background": "rgba(0, 0, 0, 0)",
+          "outline": "rgb(243, 133, 24)",
+          "childrenHaveNoOutline": true,
+          "colors": [
+            "rgb(255, 123, 114)",
+            "rgb(255, 123, 114)",
+            "rgb(255, 123, 114)",
+            "rgb(121, 192, 255)"
+          ]
+        },
+        {
+          "matches": 1,
+          "text": "static public final guid",
+          "rectangles": 1,
+          "width": 187.875,
+          "selected": true,
+          "background": "rgba(0, 0, 0, 0)",
+          "outline": "rgb(255, 255, 255)",
+          "childrenHaveNoOutline": true,
+          "colors": [
+            "rgb(255, 123, 114)",
+            "rgb(255, 123, 114)",
+            "rgb(255, 123, 114)",
+            "rgb(121, 192, 255)"
+          ]
+        }
+      ]
+    }
+  ],
+  "adjacent": {
+    "separate": true,
+    "text": [
+      "bcd",
+      "efg"
+    ]
+  },
+  "multiline": {
+    "oneContainerPerLine": true
+  },
+  "zeroWidth": {
+    "visibleMarkers": 5,
+    "textUnchanged": [
+      "abcd",
+      ""
+    ]
+  },
+  "tabs": {
+    "decorated": [
+      31.3125,
+      93.921875,
+      156.546875
+    ],
+    "plain": [
+      31.3125,
+      93.921875,
+      156.546875
+    ],
+    "text": "\tstatic\tpublic\tguid"
+  },
+  "originalReproduction": {
+    "beforeContainers": 7,
+    "afterContainers": 1
+  },
+  "status": "passed"
+}

@@ -1,0 +1,112 @@
+{
+  "date": "2026-11-04T01:22:41.592Z",
+  "checks": [
+    {
+      "name": "Find shortcut and modal live search",
+      "status": "passed",
+      "version": "1.144.1",
+      "theme": "GitHub Dark Default",
+      "results": 7
+    },
+    {
+      "name": "Dedicated Find tab and native right editor",
+      "status": "passed",
+      "resultColumn": 1,
+      "previewColumn": 2,
+      "language": "bl",
+      "groups": 2
+    },
+    {
+      "name": "Native edit marks retained occurrence INVALID without focus or order loss",
+      "status": "passed",
+      "retainsRows": true,
+      "unsaved": true,
+      "generation": 1
+    },
+    {
+      "name": "Native Undo restores the same occurrence",
+      "status": "passed",
+      "sameIdentity": true
+    },
+    {
+      "name": "Insert before matches tracks coordinates; new matches wait for rerun",
+      "status": "passed",
+      "frozenCount": 7,
+      "rerunCount": 8,
+      "deterministicOrder": true
+    },
+    {
+      "name": "Gear draft cancel preserves the originating snapshot",
+      "status": "passed",
+      "query": "acceptDocz",
+      "results": 8,
+      "draftsReleased": true
+    },
+    {
+      "name": "Gear confirm updates the same Find tab with filters",
+      "status": "passed",
+      "sameTab": true,
+      "mask": "*.bl",
+      "query": "completeDocx"
+    },
+    {
+      "name": "Keyboard Enter follows the visible selection after changing search parameters",
+      "status": "passed",
+      "selectionAndKeyboardAgree": true
+    },
+    {
+      "name": "New Tab creates independent query and snapshot",
+      "status": "passed",
+      "independentTabs": true,
+      "queries": [
+        "completeDocx",
+        "acceptDocz"
+      ],
+      "previewOwner": "0cb6c67c-5e2d-4b6c-8b52-d4dd0a335580"
+    },
+    {
+      "name": "Rapid selection and focus stay consistent",
+      "status": "passed",
+      "lastSelectionWins": true,
+      "treeKeepsFocus": true
+    },
+    {
+      "name": "Theme changes update the product and native syntax",
+      "status": "passed",
+      "lightBackground": "rgb(255, 255, 255)",
+      "nativeEditor": true
+    },
+    {
+      "name": "Replace shortcut opens parameters for this Find tab",
+      "status": "passed",
+      "sameTab": true,
+      "replacement": "finishDocx"
+    },
+    {
+      "name": "Single replace, Undo, Replace All and INVALID guards",
+      "status": "passed",
+      "retainsRows": true,
+      "invalid": 2,
+      "replaceAllGuarded": true,
+      "unsaved": true
+    },
+    {
+      "name": "Rerun removes obsolete rows and Escape leaves Find tab open",
+      "status": "passed",
+      "resultsAfterRerun": 0,
+      "escapeKeepsTab": true
+    },
+    {
+      "name": "Closing a Find tab releases its snapshot before later document changes",
+      "status": "passed",
+      "closedSnapshotReleased": true,
+      "otherSearchStillOpen": true
+    },
+    {
+      "name": "Restored result tabs keep the dedicated view after Reload Window",
+      "status": "passed",
+      "dedicatedRendererRestored": true,
+      "history": "in-memory; queries/results intentionally reset"
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+[
+  {
+    "test": "source-find",
+    "title": "ChatView.js - workspace - Visual Studio Code",
+    "count": "5 matches in 3 files",
+    "syntaxTokens": 15
+  },
+  {
+    "test": "file-mask-intersection"
+  },
+  {
+    "test": "open-editors-excludes-preview-only-documents"
+  },
+  {
+    "test": "invalid-regex",
+    "message": "Invalid regular expression: /[/gimu: Unterminated character class"
+  },
+  {
+    "test": "multiline-literal"
+  },
+  {
+    "test": "zero-width-preview-marker",
+    "offset": 2
+  },
+  {
+    "test": "live-theme-and-syntax",
+    "darkColor": "color: rgb(197, 134, 192);",
+    "lightColor": "color: rgb(175, 0, 219);"
+  },
+  {
+    "test": "replace-selected-and-unsaved"
+  },
+  {
+    "test": "undo-selected"
+  },
+  {
+    "test": "replace-all-no-auto-save"
+  },
+  {
+    "test": "undo-multi-file-workspace-edit"
+  },
+  {
+    "test": "move-to-editor-tab-preserves-query"
+  },
+  {
+    "test": "tab-back-to-modal"
+  },
+  {
+    "test": "escape-closes-filter-first"
+  },
+  {
+    "test": "native-drag",
+    "before": {
+      "x": 279.5,
+      "y": 109.5,
+      "width": 820,
+      "height": 640
+    },
+    "after": {
+      "x": 309.5,
+      "y": 129.5,
+      "width": 820,
+      "height": 640
+    }
+  },
+  {
+    "test": "resize-small-controls-accessible",
+    "dialog": {
+      "x": 309.5,
+      "y": 129.5,
+      "width": 681,
+      "height": 411
+    },
+    "footer": {
+      "x": 310.5,
+      "y": 505.5,
+      "width": 679,
+      "height": 34
+    }
+  },
+  {
+    "test": "native-escape"
+  }
+]

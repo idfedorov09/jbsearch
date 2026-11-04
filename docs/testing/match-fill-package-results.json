@@ -1,0 +1,43 @@
+{
+  "checkedAt": "2026-11-04T00:18:54.829Z",
+  "package": "jbsearch-0.1.0.vsix",
+  "size": 24309709,
+  "sha256": "72906e6647480b54578bea88d394ac8a9400e3047bddd78f1266f404454eda5e",
+  "main": {
+    "id": "idfedorov09.jbsearch",
+    "version": "0.1.0",
+    "files": 68,
+    "dependencies": {
+      "@vscode/ripgrep-universal": "1.18.0",
+      "jsonc-parser": "3.3.1",
+      "vscode-oniguruma": "2.0.1",
+      "vscode-textmate": "9.3.2"
+    },
+    "ripgrepPlatforms": [
+      "linux-arm",
+      "linux-arm64",
+      "linux-ia32",
+      "linux-ppc64",
+      "linux-riscv64",
+      "linux-s390x",
+      "linux-x64",
+      "darwin-arm64",
+      "darwin-x64",
+      "win32-arm64",
+      "win32-ia32",
+      "win32-x64"
+    ]
+  },
+  "client": {
+    "id": "idfedorov09.jbsearch-client",
+    "version": "0.1.0",
+    "build": "f3ce5f362b4ed3364b9f13a89b949ac196c9180e2e03360b67702bd6d32ed4ab",
+    "size": 82935,
+    "files": 31,
+    "dependencies": {
+      "jsonc-parser": "3.3.1",
+      "vscode-textmate": "9.3.2"
+    }
+  },
+  "passed": true
+}

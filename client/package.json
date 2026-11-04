@@ -1,0 +1,20 @@
+{
+  "name": "jbsearch-client",
+  "displayName": "JB Search — Client Support",
+  "description": "Shares the active VS Code theme and TextMate grammars with JB Search in remote workspaces.",
+  "version": "0.1.0",
+  "publisher": "idfedorov09",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "https://github.com/idfedorov09/jbsearch.git" },
+  "engines": { "vscode": "^1.143.1", "node": ">=22.12.0" },
+  "main": "./extension.js",
+  "extensionKind": ["ui"],
+  "api": "none",
+  "activationEvents": ["onCommand:jbsearch.client.previewResources"],
+  "contributes": {
+    "commands": [{ "command": "jbsearch.client.previewResources", "title": "JB Search Client: Preview Resources" }],
+    "menus": { "commandPalette": [{ "command": "jbsearch.client.previewResources", "when": "false" }] }
+  },
+  "capabilities": { "virtualWorkspaces": true, "untrustedWorkspaces": { "supported": true } },
+  "dependencies": { "jsonc-parser": "3.3.1", "vscode-textmate": "9.3.2" }
+}
