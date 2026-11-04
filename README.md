@@ -210,15 +210,20 @@ is bundled with the extension and is not downloaded when you run a search.
 
 ## Roadmap
 
-Current priorities:
+Planned areas of development:
 
-- Complete acceptance testing on macOS and Windows.
-- Validate Remote SSH between separate physical machines, including client setup,
-  theme changes, Replace, and Undo.
-- Add demo recordings and complete Marketplace release preparation.
+- More search scopes.
+- Improved search history.
+- Better navigation through results.
+- Broader platform support and validation.
+- Search and replace UX improvements.
 
-Progress and outstanding checks are tracked in the
-[release checklist](docs/release-readiness.md) and [OpenSpec changes](openspec/changes/).
+These are development directions; specific features, priorities, and timing are
+subject to planning. Suggest ideas and react to existing requests in
+[GitHub Issues](https://github.com/idfedorov09/jbsearch/issues).
+
+Release readiness and outstanding platform checks are tracked in the
+[release checklist](docs/release-readiness.md).
 
 ## Contributing
 
