@@ -1,275 +1,215 @@
 # JB Search
 
-Поиск и замена в компактном плавающем диалоге, вдохновлённом Find/Replace in Files
-JetBrains и оформленном текущей темой VS Code. В диалоге результаты находятся
-сверху, read-only preview с TextMate syntax highlighting и выделением matches —
-снизу. Для последовательной работы есть **Find** в нижней панели:
-штатное дерево VS Code с клиентскими файловыми иконками и настоящий редактор в центре.
+<!-- TODO: Add the hero GIF here. -->
 
-Текущий кандидат — **0.1.0**. Что входит в выпуск: [changelog](CHANGELOG.md).
-Выполненные проверки и оставшаяся приёмка: [готовность к выпуску](docs/release-readiness.md).
+JetBrains-style Find & Replace<br>
+for Visual Studio Code.
 
-## Использование
+[Install](#installation) · [GitHub](https://github.com/idfedorov09/jbsearch) · [Report a bug](https://github.com/idfedorov09/jbsearch/issues/new)
 
-Нужен **desktop VS Code 1.143.1+** и файловый workspace. Команды:
+Currently a **0.1.0 release candidate**. See the [changelog](CHANGELOG.md) and
+[release checklist](docs/release-readiness.md) for the current status.
 
-| Действие | macOS | Windows / Linux |
-| --- | --- | --- |
-| Find in Files | Cmd+Shift+F | Ctrl+Shift+F |
-| Replace in Files | Cmd+Shift+R | Ctrl+Shift+R |
-| Открыть результаты в Find Panel | Cmd+Enter | Ctrl+Enter |
-| Перевод строки в поле | Shift+Enter | Shift+Enter |
-| Закрыть диалог | Esc | Esc |
+## Why JB Search?
 
-Команды также доступны в Command Palette как **JB Search: Find in Files** и
-**JB Search: Replace in Files**. Перехват сочетаний включён по умолчанию;
-`jbsearch.keybindings.overrideFindInFiles: false` отключает оба. Их можно назначить
-иначе через Keyboard Shortcuts. В настройке перехвата есть отдельные ссылки
-**Find shortcut** и **Replace shortcut**, открывающие нужную команду в редакторе
-клавиш. При редактировании стандартного сочетания VS Code копирует условие `when`,
-поэтому переключатель продолжит управлять и переназначенным сочетанием; чтобы
-отвязать его от переключателя, удалите это условие в Keyboard Shortcuts. Поиск не
-регистрирует глобальные клавиши ОС.
+If you are used to JetBrains IDEs, searching across a project in VS Code can feel
+unfamiliar. JB Search brings the floating Find/Replace workflow to VS Code:
+refine a query, inspect matching code, and navigate results without losing your
+place. The dialog follows your VS Code theme, while the results panel opens files
+in the regular editor for editing, language support, and Undo.
 
-- Области: весь проект, workspace folder, directory внутри workspace,
-  **Open Editors** (включая untitled и unsaved text) и именованные scopes.
-- Файловые маски: `*.js;*.ts`, `src/**`, `**/*.{js,ts}`. Несколько масок через `;`.
-- Match Case, Whole Words, Regex, многострочный запрос, include/exclude и ignore.
-- В диалоге results выбираются мышью или стрелками. Enter/двойной клик открывает файл.
-- Tab/Shift+Tab и Space управляют controls. Разделитель results/preview можно
-  перетаскивать или двигать стрелками при фокусе.
-- **Open in Find Panel** сохраняет поиск в нижней панели Find.
-  Checkbox **Keep as a new search** создаёт независимую сессию с копией параметров.
+## Demo
 
-## Find Panel
+**Floating dialog**
 
-Find находится в обычной области Panel рядом с Terminal/Problems. Дерево
-«корень → каталоги → файл → вхождение» рисует сам VS Code: иконки файлов и папок
-выбираются из активной клиентской темы, включая language icons расширений.
-Смена темы иконок не требует её установки на сервер. Панель можно перемещать
-штатными средствами VS Code; расширение не перестраивает пользовательский layout.
+<!-- TODO: Add a GIF showing the floating Find/Replace dialog. -->
 
-Клик по вхождению открывает файл в **текущей центральной editor group**, без split
-или создания правой группы. Само открытие панели и фоновое завершение поиска
-не переключают документ. Источник — обычный TextEditor с темой, подсветкой языка,
-semantic tokens при их наличии, редактированием, сохранением и Undo. Клик сохраняет
-фокус у дерева; **Open and Focus Editor** / Cmd/Ctrl+Enter переводит фокус в исходник
-и закрепляет вкладку. F4/Shift+F4 при фокусе Find переходят между вхождениями.
-Стрелки перемещают фокус по штатному дереву, Enter выбирает вхождение и открывает
-его в редакторе. Команды замены относятся к выбранному вхождению.
-В дереве используются стандартные highlights VS Code; подсветка синтаксиса — в исходнике.
+Search, filter files, and switch scopes in a movable, resizable dialog.
 
-В заголовке есть **Rerun Search**, **Previous/Next Occurrence**, шестерёнка
-**Edit Search**, **Switch Saved Search**, **New Search**, **Close Search** и штатный
-**Collapse All**. Переключатель появляется при нескольких сохранённых поисках.
-Replace и Replace All доступны в меню заголовка в режиме Replace; выбранное
-вхождение можно заменить также через контекстное меню.
+**Preview and navigation**
 
-Шестерёнка открывает modal с параметрами выбранного поиска. Правки сначала живут
-в отдельном черновике: подтверждение обновляет ту же сессию, Esc оставляет прежние
-параметры и снимок. **Keep as a new search** создаёт независимый поиск, доступный
-через Switch Saved Search. Hide Panel сохраняет поиски; Close Search освобождает
-выбранный снимок и прекращает его проверки. Независимых editor tabs результатов
-больше нет: каждый поиск хранится как сессия одной Find-панели.
+<!-- TODO: Add a GIF showing code preview and result navigation. -->
 
-Завершённая выдача имеет детерминированный порядок по корню, пути и позиции.
-При изменении файла строки сначала получают **Checking**, затем worker проверяет
-исходное условие, включая контекст regex. Исчезнувшее совпадение остаётся на месте
-с **INVALID**, исходным фрагментом и актуальной позицией. Undo может восстановить
-то же вхождение. INVALID стоит перед фрагментом и отмечен красным значком ошибки
-из активной темы (`errorForeground`); после восстановления оба маркера исчезают.
-В выбранной строке цвет значка подчиняется штатным правилам контраста VS Code.
-Новые совпадения появляются после **Rerun Search**; этот запуск
-убирает исчезнувшие. Для внешней правки закрытого файла точное перемещение старых
-диапазонов без события редактора недоступно: проверяются текущие координаты,
-а для полного пересчёта нужен Rerun Search.
+Inspect highlighted matches, then open the native Find panel to work through results.
 
-Сессии хранятся в памяти extension host и сбрасываются после **Developer: Reload
-Window**. Старые восстановленные editor tabs Find Window перенаправляются в пустую
-native панель. Актуальные проверки — в [протоколе Find Panel](docs/testing/native-find-panel.md);
-[прежний протокол](docs/testing/find-window.md) сохраняет историю HTML-реализации.
+**Replace workflow**
 
-## Replace
+<!-- TODO: Add a GIF showing Replace, INVALID results, and Undo. -->
 
-В режиме Replace есть replacement, Preserve Case, Replace и Replace All.
-Regex-замены поддерживают `$1…$99`, `$<name>`, `$&`, `$$` и escapes `\n`, `\r`, `\t`.
-При выключенном Regex replacement буквальный. Matcher — ECMAScript, с leading
-`(?i)`, `(?m)`, `(?s)`; это не Java/PCRE2 regex JetBrains.
+Preview a replacement, apply it, and use the editor's Undo to restore your changes.
 
-Замены применяются штатным **WorkspaceEdit**, остаются несохранёнными и отменяются
-через Undo в редакторе VS Code. Перед заменой проверяются версия, содержимое и
-диапазоны. Replace All доступен только после полного поиска; при лимите, timeout
-или пропущенных файлах сначала сузьте область/маску либо измените лимиты.
-В Find Panel одиночная замена и Replace All также блокируются для INVALID и
-непроверенных строк. После замены строки снимка остаются на месте и проверяются
-заново; переставшие совпадать получают INVALID до следующего Rerun Search. Ошибка
-или timeout проверки оставляет Checking с пояснением и блокирует небезопасную замену.
+## Features
 
-## Тема, preview и ограничения
+- **Floating Find/Replace dialog** — a compact, movable and resizable dialog with
+  colors and fonts from your active VS Code theme.
+- **Live search preview** — matching snippets and a read-only code preview with
+  TextMate syntax highlighting and highlighted occurrences.
+- **Native VS Code results panel** — a folder/file/result tree with your client's
+  file icons. Selecting a result opens the source in the active central editor group.
+- **Regex and multiline search** — Match Case, Whole Words, regular expressions,
+  multiline queries, file masks, and include/exclude filters.
+- **Named search scopes** — Project, Folder, Directory, Open Editors, and custom
+  scopes. Open Editors includes unsaved and untitled text buffers.
+- **Safe Replace & Undo** — replacements use VS Code edits and stay unsaved until
+  you save them. Stale, unchecked, or incomplete results block unsafe replacements.
+- **Remote SSH support** — searches run on the workspace host; a bundled client
+  component supplies local theme rules and TextMate grammars for the dialog preview.
 
-Контейнер, рамка, drag/resize и Esc — штатные modal editors VS Code. Содержимое —
-semantic HTML webview controls с `--vscode-*`, шрифтами и цветами активной темы.
-Read-only preview внутри диалога использует grammar/theme contributions
-установленных расширений, включая theme includes и
-`editor.tokenColorCustomizations`. Для языка без TextMate
-grammar показывается plain text с объяснением. LSP semantic tokens, minimap и
-расширения обычного редактора внутрь modal preview не встраиваются. Эти ограничения
-не относятся к настоящему центральному редактору Find Panel: он использует обычные
-возможности VS Code. В modal preview и исходном редакторе заливка совпадений сохраняет 70%
-исходной alpha цвета темы, не меняя цвет и непрозрачность синтаксических токенов.
+Use **Open in Find Panel** to keep a search. Results have a stable order and form
+a snapshot: edits trigger revalidation, and occurrences that no longer match are
+marked **INVALID**. Undo can restore them. **Rerun Search** rebuilds the snapshot
+and discovers new matches. The **Edit Search** gear reopens that search's parameters;
+**Keep as a new search** creates an independent session.
 
-При Remote SSH для modal preview активная тема читается **на клиенте**, где
-установлен VS Code, а HTML preview строится на сервере. Для этого основной
-JB Search автоматически устанавливает из своего пакета небольшое обычное
-UI-расширение **JB Search —
-Client Support** (`idfedorov09.jbsearch-client`). Оно передаёт правила темы,
-пользовательские token colors и ресурсы клиентских TextMate grammars через команды
-VS Code; query и содержимое найденных файлов ему не передаются. Серверные grammars
-сохраняют приоритет для совпадающего языка/scope, клиентские дополняют отсутствующие.
-Устанавливать GitHub Dark Default или другую клиентскую тему на сервер не нужно.
-В локальном workspace дополнительный компонент для preview не требуется.
-
-Если клиентская часть отключена, её установка не удалась или ресурс недоступен,
-modal preview показывает пояснение и сохраняет выделение совпадений. Команда
-**JB Search: Set Up Client Preview** позволяет повторить настройку. Автоматическая попытка
-установки ограничена одним разом за активацию; обновлённая, но ещё не загруженная
-клиентская часть предлагает **Developer: Reload Window**.
-
-Открытие диалога зависит от **внутренней команды VS Code**, изолированной в
-`src/modal.js`. Совместимость будущих версий не гарантирована. При
-`workbench.editor.useModal: off` расширение объясняет ограничение и предлагает
-открыть Settings; настройка не изменяется автоматически. Режим `some` подходит,
-включать `all` для остальных файлов не требуется.
-
-Node worker и bundled ripgrep работают на стороне extension host: при Remote SSH
-это сервер. Поиск не отправляет query или
-файлы сервисам и не загружает executable во время использования. Поддерживается
-UTF-8; binary, UTF-16 и слишком большие/недоступные файлы явно учитываются как
-пропуски. Symlinks не обходятся. Поиск по файловому workspace через Remote SSH
-проверен на Linux; клиентский канал preview реализован отдельно, а точный состав
-проверенных сценариев указан в [матрице](docs/testing/find-replace.md).
-Проверка Remote SSH между разными машинами остаётся открытой.
-WSL/Containers отдельно не проверены; virtual workspaces
-и браузерная версия не поддерживаются. История запросов на диск не записывается;
-сессии живут в памяти extension host, перезапуск её сбрасывает.
-
-Один VSIX содержит ripgrep для macOS, Windows и Linux, x64/ARM64 и дополнительных
-архитектур upstream. Реальный запуск проверяется отдельно от наличия binaries:
-актуальная [матрица Find/Replace](docs/testing/find-replace.md) и
-[протокол Find Panel](docs/testing/native-find-panel.md) разделяют актуальные и исторические проверки.
-Прежний HTML Find Window проверялся в stock VS Code 1.144.1; эти результаты
-не заменяют проверку новой панели. Ручная проверка macOS/Windows
-и Remote SSH между разными физическими машинами ещё требуется.
-
-## Настройки
-
-Шестерёнка **JB Search Settings** в плавающем диалоге открывает обычные Settings
-VS Code (`@ext:idfedorov09.jbsearch`). Шестерёнка **Edit Search** в Find Panel
-возвращает к параметрам конкретного поиска.
-Доступны debounce, max results, max file size, timeout, default exclusions и scopes:
+Configure limits and scopes in **Settings → JB Search**. For example:
 
 ```json
 {
   "jbsearch.scopes": [
-    { "name": "Sources", "include": ["src/**"], "exclude": ["**/generated/**"] }
+    {
+      "name": "Sources",
+      "include": ["src/**"],
+      "exclude": ["**/generated/**"]
+    }
   ],
   "jbsearch.search.maxResults": 5000
 }
 ```
 
-Начальные и фиксированные значения, поведение preview и технические ограничения
-перечислены отдельно в [аудите параметров](docs/implementation-limits.md).
+File masks accept patterns such as `*.js;*.ts`, `src/**`, and `**/*.{js,ts}`.
 
-## Разработка и установка
+## Keyboard shortcuts
 
-Нужны Node.js 22.12+ и npm. Исходники JavaScript/CommonJS не требуют компиляции.
-`npm ci` также подготавливает вложенный пакет клиентской части для Remote:
+| Action | macOS | Windows / Linux | Context |
+| --- | --- | --- | --- |
+| Find in Files | `Cmd+Shift+F` | `Ctrl+Shift+F` | VS Code window |
+| Replace in Files | `Cmd+Shift+R` | `Ctrl+Shift+R` | VS Code window |
+| Open in Find Panel | `Cmd+Enter` | `Ctrl+Enter` | Search dialog |
+| Insert a newline | `Shift+Enter` | `Shift+Enter` | Query or replacement field |
+| Close the dialog | `Esc` | `Esc` | Search dialog |
+| Open and focus the editor | `Cmd+Enter` | `Ctrl+Enter` | Find panel |
+| Next / previous occurrence | `F4` / `Shift+F4` | `F4` / `Shift+F4` | Find panel |
+
+The Command Palette also provides **JB Search: Find in Files** and
+**JB Search: Replace in Files**. Use `Tab` / `Shift+Tab` to move between dialog
+controls and `Space` to toggle an option.
+
+Find/Replace shortcuts are enabled by default. Set
+`jbsearch.keybindings.overrideFindInFiles` to `false` to disable both defaults,
+or customize them in **Keyboard Shortcuts**. The JB Search setting includes
+links to each command. A remapped default keeps its `when` condition unless you
+remove it, so the setting continues to control that binding.
+
+## Installation
+
+Install a locally built VSIX or register the source folder. Marketplace
+installation instructions will be added after publication.
+
+### Install from VSIX
+
+Building the package requires **Node.js 22.12+** and npm:
 
 ```sh
+git clone --branch dev https://github.com/idfedorov09/jbsearch.git
+cd jbsearch
 npm ci
-npm run check
-npm test
-npm run spec:check
-```
-
-В VS Code нажмите F5, откройте тестовый workspace в Extension Development Host
-и вызовите Find/Replace. После правок выполните **Developer: Reload Window**
-в dev-host; повышать версию для этого не нужно.
-
-Для работы с исходниками в обычном окне, без повторной сборки и переустановки VSIX:
-
-1. В нужном окне и профиле VS Code выполните **Developer: Install Extension from Location…**.
-2. Выберите папку этого репозитория целиком, содержащую `package.json`. Для Remote SSH
-   выбирайте папку на сервере; в файловом диалоге должен быть выбран удалённый хост.
-3. Выполните **Developer: Reload Window**. Команда **JB Search: Check Installation**
-   покажет версию и фактическую папку загруженного расширения.
-
-VS Code регистрирует эту папку как ресурс расширения. После следующих правок
-сохраните файлы и выполните **Developer: Reload Window**: VSIX переустанавливать
-не нужно. Для установки в другом профиле/на другом хосте регистрацию нужно
-выполнить один раз и там. Зависимости в папке исходников устанавливаются через
-`npm ci`; при изменении зависимостей их потребуется обновить.
-
-При Remote SSH первая настройка preview установит клиентский компонент из
-`bundled/jbsearch-client.vsix`. Изменения только серверных исходников по-прежнему
-подхватываются через **Developer: Reload Window** без пересборки пакетов. Если
-меняется `client/`, выполните `npm run prepare:client` в корне и затем **JB Search:
-Set Up Client Preview**; после обновления может потребоваться Reload Window.
-Для разработки самой клиентской части её папку `client/` можно один раз
-зарегистрировать через **Install Extension from Location…** на локальном хосте
-клиента, предварительно выполнив в ней `npm ci`. Эта регистрация также обновляется
-через Reload Window.
-
-Для установки отдельного VSIX:
-
-```sh
 npm run package
 ```
 
-Выберите созданный VSIX через Extensions → … → **Install from VSIX…**.
-Это снимок файлов: после изменений пересоберите и переустановите VSIX, затем
-перезагрузите окно. Основной VSIX содержит binaries всех платформ и вложенный
-VSIX клиентской части; отдельное приложение или скачивание поискового executable
-при использовании не нужны. В Remote видны два extension ID, хотя пользователь
-устанавливает основной пакет один раз. Сгенерированные VSIX не добавляйте в Git.
-Иконка расширения — [PNG 256×256](media/icon.png), подготовленный из
-[предоставленного SVG](docs/artwork/icon.svg).
+In VS Code, open **Extensions → … → Install from VSIX…** and select the generated
+`jbsearch-0.1.0.vsix` from the repository root. Run **Developer: Reload Window**,
+then **JB Search: Find in Files**.
 
-После установки VSIX выполните **Developer: Reload Window**. **JB Search: Check
-Installation** показывает фактически загруженные версию и расположение: папку
-исходников при регистрации из папки или установленную копию при установке VSIX.
+For Remote SSH, install JB Search in the remote window. The main package includes
+**JB Search — Client Support** (`idfedorov09.jbsearch-client`), which is installed
+locally when remote preview first needs it. No separate desktop application or
+server-side installation of your client theme is required. If setup fails, run
+**JB Search: Set Up Client Preview** and follow its message.
 
-## ADR и OpenSpec
+### Run from source
 
-Причины решений — в [ADR](docs/adr/README.md), контракт и задачи — в
-[design-floating-search](openspec/changes/design-floating-search/) и
-[implement-find-window](openspec/changes/implement-find-window/), затем
-[use-native-find-panel](openspec/changes/use-native-find-panel/). Реализация
-разрешена пользователем; изменения остаются открытыми до завершения
-предусмотренных проверок.
-Незавершённые пункты не считаются работающими возможностями. OpenSpec закреплён
-в devDependencies; CLI вызывается через `npm run openspec -- <команда>`.
+After cloning the repository and running `npm ci`:
 
-## Ветки
+1. Run **Developer: Install Extension from Location…** in the target VS Code window.
+2. Select the repository root. In Remote SSH, select the folder on the remote host.
+3. Run **Developer: Reload Window**.
 
-- `dev` — единый рабочий trunk: небольшие изменения и короткие итерации.
-- `master` — стабильная точка; в неё переносится готовая и проверенная история из `dev`.
+Register the folder once per profile and host. After source changes, save your
+files and reload the window; rebuilding or reinstalling a VSIX is unnecessary.
+**JB Search: Check Installation** shows the loaded version and its actual location.
+A separately installed VSIX is a copy and must be rebuilt and reinstalled to update.
 
-Работа ведётся в этих двух ветках, без Git Flow и без feature/release-веток.
-В исходниках подготовлен workflow публикации в Marketplace через GitHub Actions;
-его активация требует отдельных настроек и переноса в `master`. После активации
-push в `master` с новой версией может опубликовать её автоматически. Подробности
-и ручной чек-лист — в [инструкции по публикации](docs/marketplace-publishing.md).
+For an isolated development window, open the repository and press `F5`.
+See [Contributing](CONTRIBUTING.md) for client-component development and validation.
 
-## Первая отправка веток на GitHub
+## Requirements & limitations
 
-Если удалённый репозиторий ещё пуст, первоначальную отправку обеих локальных
-веток можно выполнить один раз:
+- **Desktop VS Code 1.143.1+** and a filesystem workspace are required. VS Code for
+  the Web and virtual workspaces are unsupported.
+- The floating dialog uses an internal VS Code command. Future compatibility is
+  not guaranteed. `workbench.editor.useModal` must not be `off`; `some` is sufficient.
+- The dialog's code preview is read-only and uses TextMate grammars. It does not
+  embed semantic tokens or full editor features. Files opened from the Find panel
+  use the regular editable VS Code editor and its language extensions.
+- Regex uses **ECMAScript** semantics. Expressions written for Java or PCRE2
+  may need changes. Regex replacement supports capture groups, named groups, and newline/tab escapes;
+  with Regex disabled, replacement text is literal.
+- File search supports **UTF-8**. Binary, UTF-16, oversized, and inaccessible files
+  are reported as skipped; symlinks are not followed. Replace All requires a complete
+  result set. Narrow the scope or adjust limits when a search is incomplete.
+- Saved searches live in memory and are cleared when the extension host restarts.
+  Changes to closed files outside the editor may require **Rerun Search** to rebuild
+  result positions.
+- GUI validation has been performed on **Linux/X11**. macOS, Windows, and Remote SSH
+  between separate physical machines still need acceptance testing. Linux Remote
+  loopback checks do not replace that testing. WSL and Dev Containers are unverified.
 
-```sh
-git push -u origin master
-git push -u origin dev
-```
+See the [implementation limits](docs/implementation-limits.md),
+[Find/Replace test matrix](docs/testing/find-replace.md), and
+[native Find panel validation](docs/testing/native-find-panel.md) for details.
 
-Проверьте на GitHub, что ветка по умолчанию — `master`. После активации workflow
-отправка `master` с новой версией может также запустить публикацию в Marketplace.
+## Privacy
+
+JB Search runs searches in the workspace extension host. With Remote SSH, that
+host is your remote server. It does not send search queries or file contents to
+external search services and includes no extension telemetry or analytics.
+
+The Remote client component exchanges theme rules and TextMate grammar resources
+through VS Code commands. It does not receive your search queries or source files.
+Search history is kept in memory rather than written to disk. The search executable
+is bundled with the extension and is not downloaded when you run a search.
+
+## Roadmap
+
+Current priorities:
+
+- Complete acceptance testing on macOS and Windows.
+- Validate Remote SSH between separate physical machines, including client setup,
+  theme changes, Replace, and Undo.
+- Add demo recordings and complete Marketplace release preparation.
+
+Progress and outstanding checks are tracked in the
+[release checklist](docs/release-readiness.md) and [OpenSpec changes](openspec/changes/).
+
+## Contributing
+
+Bug reports, reproducible examples, platform testing, and pull requests are welcome.
+Start with [CONTRIBUTING.md](CONTRIBUTING.md). Development happens in `dev`;
+`master` is the stable branch.
+
+Keep the root **README.md in English**, including future sections and examples.
+Architecture decisions live in [ADR](docs/adr/README.md), while requirements and
+changes are tracked with [OpenSpec](openspec/README.md). Internal development and
+validation documents are currently in Russian.
+
+Extension artwork: [PNG icon](media/icon.png) and [SVG source](docs/artwork/icon.svg).
+
+## Support development
+
+Star the repository, share JB Search with other developers, report reproducible
+bugs, or help test it on your platform. Feedback about the search and replacement
+workflow is especially useful while the first release is being prepared.
+
+## License
+
+[MIT](LICENSE) © 2026 idfedorov09.
