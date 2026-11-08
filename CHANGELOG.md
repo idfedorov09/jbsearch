@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.1 — 2026-11-08
+
+### Changed
+
+- Added a manually dispatched GitHub Actions workflow for publishing to Open
+  VSX, with a token for the first release and trusted publishing afterward.
+
+The extension's search and replace behavior and bundled client are unchanged.
+
 ## 0.3.0 — 2026-11-08
 
 ### Added
