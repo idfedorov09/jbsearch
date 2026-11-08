@@ -98,10 +98,20 @@ class SearchController {
         )
           for (const session of this.sessions.values()) {
             this.notify(session);
-            if (session.query && session.layout !== 'findWindow') this.schedule(session, 150);
+            if (session.query && (session.layout !== 'findWindow' ||
+                (session.searching && session.scope.kind === 'custom' &&
+                 event.affectsConfiguration('jbsearch')))) this.schedule(session, 150);
           }
       })
     );
+    if (vscode.workspace.onDidChangeWorkspaceFolders)
+      context.subscriptions.push(vscode.workspace.onDidChangeWorkspaceFolders(() => {
+        for (const session of this.sessions.values()) {
+          if (session.query && session.scope.kind === 'custom' && !session.replacing &&
+              (session.layout !== 'findWindow' || session.searching))
+            this.schedule(session, 150);
+        }
+      }));
     const watcher = vscode.workspace.createFileSystemWatcher('**/*');
     for (const event of ['onDidChange', 'onDidCreate', 'onDidDelete'])
       context.subscriptions.push(
@@ -470,6 +480,7 @@ class SearchController {
     session.notice = '';
     session.partial = false;
     session.results = [];
+    session.namedScopeBinding = undefined;
     session.selectedId = null;
     session.autoSelected = false;
     session.validationNotice = false;
@@ -561,6 +572,43 @@ class SearchController {
       this.updateNativePreview(session);
     }
   }
+  resolveNamedScope(name, roots = this.v.workspace.workspaceFolders || []) {
+    const custom = this.configuration().get('scopes', []).find((item) => item.name === name);
+    if (!custom) throw new Error('This custom scope no longer exists. Choose another scope.');
+    const scope = { kind: 'custom', name, include: custom.include, exclude: custom.exclude };
+    if (!Object.hasOwn(custom, 'root')) return { scope };
+    if (typeof custom.root !== 'string' || !custom.root.trim())
+      throw new Error(`Named scope "${name}" requires a non-empty workspace folder name in root.`);
+    const matches = roots.filter((root) => root.name === custom.root);
+    if (!matches.length)
+      throw new Error(`Workspace folder "${custom.root}" for named scope "${name}" was not found. Check the root setting or open that folder.`);
+    if (matches.length > 1)
+      throw new Error(`Workspace folder name "${custom.root}" for named scope "${name}" is ambiguous. Use unique workspace folder names.`);
+    const root = matches[0];
+    return {
+      scope: { ...scope, kind: 'folder', rootPath: root.uri.fsPath },
+      binding: { scopeName: name, rootName: custom.root, uri: root.uri.toString() }
+    };
+  }
+  assertNamedScopeBinding(session) {
+    const previous = session.namedScopeBinding;
+    if (session.scope.kind !== 'custom') {
+      if (previous) throw new Error('The named scope changed. Rerun Search before replacing.');
+      return;
+    }
+    const custom = this.configuration().get('scopes', [])
+      .find((item) => item.name === session.scope.name);
+    if (!previous && (!custom || !Object.hasOwn(custom, 'root'))) return;
+    let current;
+    try {
+      current = this.resolveNamedScope(session.scope.name).binding;
+    } catch (error) {
+      throw new Error(`${error.message} Rerun Search before replacing.`);
+    }
+    if (!previous || !current || previous.scopeName !== current.scopeName ||
+        previous.rootName !== current.rootName || previous.uri !== current.uri)
+      throw new Error('The named scope workspace folder changed. Rerun Search before replacing.');
+  }
   async request(session) {
     const v = this.v,
       roots = v.workspace.workspaceFolders || [];
@@ -570,12 +618,12 @@ class SearchController {
       );
     if (session.scope.kind !== 'openEditors' && !roots.length)
       throw new Error('Open a project folder, or choose Open Editors.');
-    const config = this.configuration(),
-      scope = { ...session.scope };
+    const config = this.configuration();
+    let scope = { ...session.scope }, namedScopeBinding;
     if (scope.kind === 'custom') {
-      const custom = config.get('scopes', []).find((item) => item.name === scope.name);
-      if (!custom) throw new Error('This custom scope no longer exists. Choose another scope.');
-      Object.assign(scope, { include: custom.include, exclude: custom.exclude });
+      const resolved = this.resolveNamedScope(scope.name, roots);
+      scope = resolved.scope;
+      namedScopeBinding = resolved.binding;
     }
     const openUris = new Set(
       v.window.tabGroups.all
@@ -602,6 +650,7 @@ class SearchController {
       masksEnabled: session.options.maskEnabled,
       fileMask: session.options.mask,
       scope,
+      namedScopeBinding,
       maxResults: config.get('search.maxResults', 5000),
       maxFileSizeMiB: config.get('search.maxFileSizeMiB', 2),
       timeoutMs: config.get('search.timeoutMs', 10000),
@@ -641,6 +690,7 @@ class SearchController {
     try {
       const request = await this.request(session);
       if (!live()) return;
+      session.namedScopeBinding = request.namedScopeBinding;
       const output = await this.engine.search(request, {
         signal: abort.signal,
         onBatch: (matches) => {
@@ -936,7 +986,7 @@ class SearchController {
     const window = target || (newTab ? this.create(source.mode, source) : source);
     const previous = Object.fromEntries([
       'mode', 'query', 'replacement', 'options', 'scope', 'results', 'selectedId',
-      'layout', 'uri', 'searching', 'partial', 'error', 'notice'
+      'layout', 'uri', 'searching', 'partial', 'error', 'notice', 'namedScopeBinding'
     ].map(key => [key, window[key]]));
     const wasSearching = source.searching;
     if (window !== source) {
@@ -947,6 +997,7 @@ class SearchController {
       Object.assign(window, {
         mode: source.mode, query: source.query, replacement: source.replacement,
         options: { ...source.options }, scope: { ...source.scope },
+        namedScopeBinding: source.namedScopeBinding && { ...source.namedScopeBinding },
         results: source.results.map(result => ({ ...result })), selectedId: source.selectedId,
         searching: false, partial: source.partial, error: source.error, notice: source.notice
       });
@@ -1035,6 +1086,7 @@ class SearchController {
     if (!matches.length) return;
     if (matches.some(match => match.invalid || match.pending))
       throw new Error('These results are INVALID or still being checked. Rerun Search before replacing.');
+    this.assertNamedScopeBinding(session);
     session.replacing = true;
     session.error = '';
     this.notify(session);
@@ -1082,6 +1134,7 @@ class SearchController {
       for (const [uri, document] of opened)
         if (document.version !== documents.get(uri).version)
           throw new Error('A file changed before replacement. Refresh first.');
+      this.assertNamedScopeBinding(session);
       if (!(await this.v.workspace.applyEdit(edit)))
         throw new Error('VS Code could not apply the replacement. No success was assumed.');
       success = true;

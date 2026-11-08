@@ -127,11 +127,19 @@ Configure limits and named scopes in **Settings → JB Search**. For example:
       "name": "Sources",
       "include": ["src/**"],
       "exclude": ["**/generated/**"]
-    }
+    },
+    { "name": "API", "root": "api", "include": ["src/**"] }
   ],
   "jbsearch.search.maxResults": 5000
 }
 ```
+
+The optional `root` selects a workspace folder by its exact, case-sensitive name
+(including aliases). Patterns are relative to that folder; omit `root` to search
+all folders. Invalid or ambiguous folder names produce an error.
+
+**Downgrading:** Older versions ignore `root` and may search all folders. Remove
+rooted scopes or use **Folder** scope before downgrading.
 
 File masks accept patterns such as `*.js;*.ts`, `src/**`, and `**/*.{js,ts}`.
 

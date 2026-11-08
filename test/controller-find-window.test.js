@@ -80,6 +80,7 @@ function fixture(t, engine = new SearchEngine()) {
       getWorkspaceFolder: () => ({}),
       openTextDocument: async () => document,
       onDidChangeTextDocument: listen('document'), onDidChangeConfiguration: listen('configuration'),
+      onDidChangeWorkspaceFolders: listen('folders'),
       createFileSystemWatcher: () => ({
         onDidChange: listen('fileChange'), onDidCreate: listen('fileCreate'), onDidDelete: listen('fileDelete'), dispose() {}
       }),
@@ -551,4 +552,73 @@ test('toolbar commands target the active search while native selection still ref
   assert.equal(f.controller.sessions.has(first.id), true);
   assert.equal(f.controller.sessions.has(second.id), false);
   assert.equal(f.controller.findTree.activeId, first.id);
+});
+
+test('rooted snapshot identity follows transferred results and survives a failed draft transfer', async t => {
+  const f = fixture(t), target = f.session('cat', {}, 'replace');
+  const binding = { scopeName: 'API', rootName: 'API Alias', uri: 'file:///workspace/api' };
+  const prior = { scopeName: 'Web', rootName: 'Web', uri: 'file:///workspace/web' };
+  target.scope = { kind: 'custom', name: 'Web' };
+  target.namedScopeBinding = prior;
+  f.controller.schedule = () => {};
+  await f.controller.message(target, { type: 'editSearch' });
+  let draft = f.controller.sessions.get(f.controller.currentId);
+  draft.scope = { kind: 'custom', name: 'API' };
+  draft.namedScopeBinding = binding;
+  draft.results = f.matches();
+  const show = f.controller.findTree.show;
+  f.controller.findTree.show = async () => { throw new Error('show failed'); };
+  await assert.rejects(() => f.controller.openFindWindow(draft, false), /show failed/);
+  assert.deepEqual(target.namedScopeBinding, prior, 'rollback restores the old results binding');
+  f.controller.findTree.show = show;
+  await f.controller.openFindWindow(draft, false);
+  assert.deepEqual(target.namedScopeBinding, binding);
+  assert.notEqual(target.namedScopeBinding, binding, 'transferred identity is independent');
+  assert.deepEqual(target.scope, { kind: 'custom', name: 'API' });
+  await f.controller.message(target, { type: 'editSearch' });
+  draft = f.controller.sessions.get(f.controller.currentId);
+  draft.scope = { kind: 'custom', name: 'API' };
+  draft.namedScopeBinding = binding;
+  draft.results = f.matches();
+  await f.controller.openFindWindow(draft, true);
+  const independent = f.controller.sessions.get(f.controller.currentId);
+  assert.deepEqual(independent.namedScopeBinding, binding);
+  assert.notEqual(independent.namedScopeBinding, target.namedScopeBinding);
+  assert.deepEqual(target.namedScopeBinding, binding);
+});
+
+test('changing rooted configuration or workspace during a search discards late batches but preserves finished snapshots', async t => {
+  const f = fixture(t);
+  const s = f.session();
+  s.scope = { kind: 'custom', name: 'API' };
+  const savedRows = s.results;
+  f.events.configuration({ affectsConfiguration: section => section === 'jbsearch' });
+  f.events.folders({ added: [], removed: [] });
+  assert.equal(s.results, savedRows, 'completed snapshots remain frozen');
+  assert.equal(s.timer, undefined);
+  for (const trigger of [
+    () => f.events.configuration({ affectsConfiguration: section => section === 'jbsearch' }),
+    () => f.events.folders({ added: [], removed: [] })
+  ]) {
+    let finish, batch;
+    f.controller.request = async () => ({ query: s.query,
+      namedScopeBinding: { scopeName: 'API', rootName: 'API', uri: 'file:///workspace/api' } });
+    f.controller.engine = { search: (_request, callbacks) => {
+      batch = callbacks.onBatch;
+      return new Promise(resolve => { finish = resolve; });
+    }, dispose() {} };
+    s.searching = true;
+    s.results = [];
+    const searching = f.controller.search(s);
+    await pause();
+    const oldGeneration = s.generation;
+    trigger();
+    clearTimeout(s.timer);
+    assert.ok(s.generation > oldGeneration);
+    const stale = f.matches();
+    batch(stale);
+    finish(output(stale));
+    await searching;
+    assert.deepEqual(s.results, [], 'results from a previous root must be discarded');
+  }
 });

@@ -245,7 +245,7 @@
           "type": "array",
           "default": [],
           "scope": "resource",
-          "description": "Named project scopes. Patterns use semicolon separators or arrays; paths are relative to each root.",
+          "description": "Named project scopes. Optionally select a workspace folder by name; patterns use semicolon separators or arrays and are relative to each searched root.",
           "items": {
             "type": "object",
             "required": [
@@ -256,6 +256,11 @@
               "name": {
                 "type": "string",
                 "minLength": 1
+              },
+              "root": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Exact, case-sensitive workspace folder name, including any workspace alias. Omit to search all folders."
               },
               "include": {
                 "type": [
