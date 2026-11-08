@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.0 — 2026-11-08
+
+### Added
+
+- Named scopes can target a workspace folder using an optional `root`: its exact,
+  case-sensitive name or workspace alias. Include/exclude patterns are relative
+  to that folder; scopes without `root` still search all folders.
+- Invalid or ambiguous roots stop the search. If a root changes after a search,
+  rerun it before replacing results.
+
+Older versions ignore `root` and may search all folders. Remove rooted scopes or
+use **Folder** scope before downgrading.
+
 ## 0.2.3 — 2026-11-04
 
 ### Changed
