@@ -157,3 +157,6 @@ publication require separate agreement. Once the prepared workflow is activated,
 a push to `master` with a new version can automatically publish it; account for
 that effect when agreeing to push. Access setup, branch restrictions, and
 validation are covered in the [publishing guide](docs/marketplace-publishing.md).
+Open VSX uses a separate manually dispatched workflow and Environment; its
+bootstrap token and trusted-publishing transition are described in the
+[Open VSX publishing guide](docs/open-vsx-publishing.md).

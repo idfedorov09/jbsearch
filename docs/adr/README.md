@@ -14,6 +14,7 @@ in full here.
 | [0006](0006-remote-preview-theme.md) | Accepted | Client themes/grammars through VS Code commands for Remote preview |
 | [0007](0007-find-window-and-native-editor.md) | Accepted | Separate Find Window, result snapshot, and native editor on the right |
 | [0008](0008-native-find-panel.md) | Accepted | Native Find Panel and central editor; supersedes the layout in ADR 0007 |
+| [0009](0009-open-vsx-publication.md) | Accepted | Manual Open VSX publication with a trusted-publishing transition |
 
 Statuses: Proposed — under discussion; Accepted — adopted; Superseded — replaced
 by another ADR; Rejected — considered and rejected. Accepted does not mean the code

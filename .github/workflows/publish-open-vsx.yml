@@ -1,0 +1,88 @@
+name: Publish to Open VSX
+
+on:
+  workflow_dispatch:
+    inputs:
+      authentication:
+        description: Token for the first release; trusted after registering the publisher
+        type: choice
+        required: true
+        default: token
+        options:
+          - token
+          - trusted
+
+concurrency:
+  group: open-vsx-publication
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    if: github.repository == 'idfedorov09/jbsearch' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run check
+      - run: npm test
+      - run: npm run spec:check
+      - run: npm run package
+
+  publish-token:
+    if: github.repository == 'idfedorov09/jbsearch' && github.ref == 'refs/heads/master' && inputs.authentication == 'token'
+    needs: check
+    runs-on: ubuntu-latest
+    environment: open-vsx
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run package
+      - name: Publish verified VSIX with bootstrap token
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: |
+          if [ -z "$OVSX_PAT" ]; then
+            echo '::error::Configure OVSX_PAT in the protected open-vsx environment.'
+            exit 1
+          fi
+          package="jbsearch-$(node -p 'require("./package.json").version').vsix"
+          ./node_modules/.bin/ovsx --registryUrl https://open-vsx.org publish "$package"
+
+  publish-trusted:
+    if: github.repository == 'idfedorov09/jbsearch' && github.ref == 'refs/heads/master' && inputs.authentication == 'trusted'
+    needs: check
+    runs-on: ubuntu-latest
+    environment: open-vsx
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run package
+      - name: Publish verified VSIX with trusted publishing
+        run: |
+          package="jbsearch-$(node -p 'require("./package.json").version').vsix"
+          ./node_modules/.bin/ovsx --registryUrl https://open-vsx.org publish "$package" --trusted-publishing
