@@ -321,6 +321,8 @@
     $('message').hidden = !state.error && !state.notice;
     $('message').className = state.error ? 'error' : '';
     $('message').textContent = state.error || state.notice || '';
+    $('diagnostics').hidden = !state.diagnostics;
+    $('diagnostics').textContent = state.diagnostics || '';
     $('empty').textContent = state.error
       ? 'Fix the query or filters to continue'
       : !state.query

@@ -248,6 +248,8 @@ test('search reports binary, unsupported encoding and oversized files as partial
   assert.equal(result.results.length, 1);
   assert.equal(result.truncated, true);
   assert.equal(result.stats.skipped.binary, 1);
+  assert.equal(result.stats.excludedBinaryFiles, 1);
+  assert.equal(result.stats.blockingSkippedFiles, 2);
   assert.equal(result.stats.skipped.encoding, 1);
   assert.equal(result.stats.skipped.tooLarge, 1);
 });

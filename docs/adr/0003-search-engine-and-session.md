@@ -34,7 +34,8 @@ preview uses plaintext with an explanation.
 The VSIX needs native ripgrep for desktop platforms, onig.wasm, and the packages'
 JS runtime; packaging is verified separately. Windows/macOS runtime verification
 is still required. The regex dialect is documented as ECMAScript, not Java/PCRE2.
-Encoding is UTF-8; binary/unsupported inputs appear in partial status. Remote/web
+Encoding is UTF-8; binary/unsupported inputs originally appeared in partial status.
+The treatment of binary inputs was later revised in [ADR 0010](0010-binary-search-exclusion.md). Remote/web
 support is not promised on the basis of Linux desktop testing. Content/queries
 are not sent to external services.
 

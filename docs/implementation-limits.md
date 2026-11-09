@@ -112,8 +112,30 @@ a VS Code setting are listed as defaults.
 | `jbsearch.search.timeoutMs` | 10000 ms | 100–300000 ms |
 | `jbsearch.search.respectExcludes` | enabled | `true` / `false` |
 
-Replace All is not applied to incomplete results, for example due to a limit,
-timeout, or skipped files. Document change handling additionally uses a 150 ms
+Replace All is not applied to incomplete results, for example due to a result
+limit, timeout, unreadable input, unsupported encoding, or an unclassified file
+exceeding the text-size limit. Inputs identified as binary are excluded from text
+search without blocking solely for that reason; their contents are not searched
+or replaced. The status lists up to 20 representative excluded/skipped paths and
+reasons, prioritizing blocking inputs, and reports how many details were omitted.
+
+Detection uses content, not extensions: structurally recognized ZIP, common
+binary signatures, and NUL bytes are binary evidence. Known UTF-16/32 BOMs and
+likely BOM-less UTF-16/32 patterns are treated as unsupported encodings before
+the generic NUL rule. These are heuristics, not a perfect distinction between
+arbitrary binary and text: binary bytes that look like UTF-8 can still be searched,
+and text (including unsupported encodings) can be mistaken for binary and excluded.
+Ambiguous binary data can also be treated as a blocking encoding error. Review the
+reported exclusions before bulk replacement.
+For oversized files, the generic binary probe is bounded to 8192 bytes; an
+unclassified oversized input remains blocking. VS Code editor snapshots are
+already decoded: they are searched as text except for literal NUL-containing
+snapshots, which are excluded as binary.
+
+ZIP32 structural recognition additionally inspects bounded directory and local
+headers without extraction or full integrity validation (at most 2048 entries and
+a 1 MiB central directory). ZIP64 and other unsupported structures still use
+the general binary checks. Document change handling additionally uses a 150 ms
 delay, and file-system handling uses 250 ms; these are not separately configurable.
 
 ## Other fixed boundaries

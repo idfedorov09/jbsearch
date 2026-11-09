@@ -1,5 +1,25 @@
 # JB Search release readiness
 
+## 0.3.2 release preparation — November 9, 2026
+
+Main version **0.3.2** fixes Replace All availability when identified binary
+files are present and adds exclusion/error diagnostics. Binary classification
+remains heuristic; see the [release notes](releases/v0.3.2.md) and
+[implementation limits](implementation-limits.md). The bundled client remains
+at 0.1.0.
+
+Local checks passed: `npm run check`, 231 tests, strict OpenSpec validation,
+`git diff --check`, and a verified VSIX built after `npm ci --ignore-scripts` in
+an isolated copy. Automated real-editor checks used VS Code 1.144.1 on
+Linux/X11/Xvfb, as described in [Replace All testing](testing/replace-all-zip-exclusion.md).
+They do not establish macOS, Windows, or physical Remote SSH acceptance. Local
+checks and packaging do not establish the outcome of any public release.
+
+On November 9, the clean install's `npm audit` reported one moderate `minimatch`
+advisory affecting three development-tool packages (`minimatch`, `@vscode/vsce`,
+and `ovsx`); `npm audit --omit=dev` reported no vulnerabilities. No dependency
+upgrade or automatic audit fix was applied during release preparation.
+
 ## 0.2.3 release preparation — November 4, 2026
 
 Main version **0.2.3** updates Marketplace keywords and the short description;

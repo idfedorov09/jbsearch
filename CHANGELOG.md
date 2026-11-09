@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.3.2 — 2026-11-09
+
+### Fixed
+
+- Exclude identified binary files, including ZIP/DOCX containers, from text
+  search without disabling Replace All solely because they are present.
+- Show bounded path-and-reason diagnostics for binary exclusions and for inputs
+  that leave results incomplete. Unsupported encodings, read errors, unknown
+  oversized inputs, and existing validity checks continue to block replacement.
+
+Binary detection is heuristic: some binary data can look like text, and text can
+be mistaken for binary. Review exclusions before bulk replacement. The bundled
+client remains at 0.1.0.
+
 ## 0.3.1 — 2026-11-09
 
 ### Changed

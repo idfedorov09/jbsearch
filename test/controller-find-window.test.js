@@ -217,6 +217,14 @@ test('incomplete validation leaves rows visibly unverified and refuses Replace A
   await assert.rejects(() => f.controller.replace(s, true, { generation: s.generation }), /still being checked/);
 });
 
+test('a text snapshot becoming NUL-containing binary invalidates its saved matches', async t => {
+  const f = fixture(t), s = f.session('cat', {}, 'replace');
+  f.change([{ rangeOffset: f.document.text.length, rangeLength: 0, text: '\0' }]);
+  await f.validate(s);
+  assert.ok(s.results.every(result => result.invalid && !result.pending));
+  await assert.rejects(() => f.controller.replace(s, true, { generation: s.generation }), /INVALID/);
+});
+
 test('deleting a file aborts validation and retains its INVALID rows at the same positions', async t => {
   let finish;
   const f = fixture(t, { search: () => new Promise(resolve => { finish = resolve; }), dispose() {} });
@@ -306,7 +314,8 @@ test('confirming the gear draft updates the same Find tab, including replacement
   await f.controller.message(s, { type: 'editSearch' });
   const draft = f.controller.sessions.get(f.controller.currentId);
   Object.assign(draft, { query: 'cat!', mode: 'replace', replacement: 'dog',
-    scope: { kind: 'custom', name: 'Sources' }, results: f.matches('cat!') });
+    scope: { kind: 'custom', name: 'Sources' }, results: f.matches('cat!'),
+    diagnostics: 'draft excluded archive' });
   await f.controller.message(draft, { type: 'openTab' });
   assert.equal(f.controller.currentId, s.id);
   assert.equal(s.query, 'cat!');
@@ -319,6 +328,8 @@ test('confirming the gear draft updates the same Find tab, including replacement
   assert.equal(f.commands.filter(command => command[0] === 'vscode.openWith').length, 0);
   assert.equal(f.controller.findTree.state.query, 'cat!');
   assert.equal(f.controller.findTree.state.mode, 'replace');
+  assert.equal(s.diagnostics, 'draft excluded archive');
+  assert.equal(f.controller.findTree.state.diagnostics, 'draft excluded archive');
 });
 
 test('New Tab from a gear draft creates an independent Find snapshot', async t => {
@@ -425,6 +436,7 @@ test('transfer disposes the modal, retains its snapshot and does not open or spl
   const f = fixture(t), s = f.controller.create();
   s.query = 'cat';
   s.results = f.matches();
+  s.diagnostics = 'excluded archive in original search';
   s.selectedId = s.results[0].id;
   const source = f.panel(s, undefined);
   await f.controller.openFindWindow(s, false);
@@ -433,6 +445,7 @@ test('transfer disposes the modal, retains its snapshot and does not open or spl
   assert.equal(s.results.length, 2);
   assert.equal(s.panels.size, 0);
   assert.equal(f.controller.findTree.activeId, s.id);
+  assert.equal(f.controller.findTree.state.diagnostics, s.diagnostics);
   assert.equal(f.events.focus, 'results', 'modal disposal must not steal the final tree focus');
   assert.equal(f.previews.filter(item => item[0] === 'show').length, 0);
   assert.equal(f.commands.filter(command => command[0] === 'vscode.openWith' || command[0].includes('newGroup')).length, 0);
@@ -460,9 +473,11 @@ test('a failed transfer keeps the modal usable and does not leak an independent 
 
 test('rollback resumes pending validation of the saved search being edited', async t => {
   const f = fixture(t), target = f.session('cat', {}, 'replace');
+  target.diagnostics = 'original archive details';
   f.change([{ rangeOffset: 0, rangeLength: 1, text: 'b' }]);
   await f.controller.message(target, { type: 'editSearch' });
   const draft = f.controller.sessions.get(f.controller.currentId);
+  draft.diagnostics = 'new draft archive details';
   const execute = f.v.commands.executeCommand;
   f.v.commands.executeCommand = async (...args) => {
     if (args[0] === 'jbsearch.results.focus') throw new Error('Open failed');
@@ -470,6 +485,8 @@ test('rollback resumes pending validation of the saved search being edited', asy
   };
   await assert.rejects(() => f.controller.openFindWindow(draft, false), /Open failed/);
   assert.ok(target.results.every(result => result.pending));
+  assert.equal(target.diagnostics, 'original archive details');
+  assert.equal(draft.diagnostics, 'new draft archive details');
   assert.equal(target.validations.size, 1, 'rollback must resume the cancelled checks');
   await f.validate(target);
   assert.deepEqual(target.results.map(result => Boolean(result.invalid)), [true, false]);

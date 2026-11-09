@@ -3,6 +3,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const fs = require('node:fs/promises');
 const { SearchEngine } = require('./search');
+const { incompleteSearch, skipDiagnostics } = require('./search/diagnostics');
 const { PreviewProvider } = require('./preview');
 const { openModal } = require('./modal');
 const { planReplacements } = require('./replace');
@@ -164,6 +165,7 @@ class SearchController {
       partial: false,
       error: '',
       notice: '',
+      diagnostics: '',
       patchAcks: new Map(),
       previewRevision: 0
     };
@@ -453,6 +455,7 @@ class SearchController {
       partial: session.partial,
       error: session.error,
       notice: session.notice,
+      diagnostics: session.diagnostics || '',
       replacing: Boolean(session.replacing),
       patchAcks: Object.fromEntries(session.patchAcks || []),
       customScopes: this.configuration()
@@ -478,6 +481,7 @@ class SearchController {
     session.searching = Boolean(session.query);
     session.error = '';
     session.notice = '';
+    session.diagnostics = '';
     session.partial = false;
     session.results = [];
     session.namedScopeBinding = undefined;
@@ -547,7 +551,7 @@ class SearchController {
         this.queueValidation(session, uri);
         return;
       }
-      if (output.truncated || output.stats?.timedOut || output.stats?.skippedFiles || output.stats?.errors?.length)
+      if (incompleteSearch(output))
         throw new Error('The file check is incomplete. Rerun Search before replacing.');
       session.results = reconcileDocumentResults(session.results, uri, output.results, document);
       session.validations.delete(uri);
@@ -709,16 +713,15 @@ class SearchController {
       if (session.layout === 'findWindow' && (session.autoSelected || !session.selectedId))
         session.selectedId = session.results[0]?.id || null;
       session.searching = false;
-      session.partial = output.truncated;
+      session.partial = incompleteSearch(output);
       session.error = '';
+      session.diagnostics = skipDiagnostics(output.stats);
       session.notice =
         output.reason === 'limit'
           ? 'Result limit reached. Narrow the search before Replace All.'
           : output.stats.timedOut
             ? 'Search timed out. Results are incomplete.'
-            : output.stats.skippedFiles
-              ? `${output.stats.skippedFiles} files skipped (binary, encoding, size, or access). Results are incomplete.`
-              : '';
+            : '';
       if (output.stats.errors.length) session.notice += ' Some files could not be read.';
       session.notice = session.notice || session.feedback || '';
       session.feedback = '';
@@ -986,7 +989,7 @@ class SearchController {
     const window = target || (newTab ? this.create(source.mode, source) : source);
     const previous = Object.fromEntries([
       'mode', 'query', 'replacement', 'options', 'scope', 'results', 'selectedId',
-      'layout', 'uri', 'searching', 'partial', 'error', 'notice', 'namedScopeBinding'
+      'layout', 'uri', 'searching', 'partial', 'error', 'notice', 'diagnostics', 'namedScopeBinding'
     ].map(key => [key, window[key]]));
     const wasSearching = source.searching;
     if (window !== source) {
@@ -999,7 +1002,8 @@ class SearchController {
         options: { ...source.options }, scope: { ...source.scope },
         namedScopeBinding: source.namedScopeBinding && { ...source.namedScopeBinding },
         results: source.results.map(result => ({ ...result })), selectedId: source.selectedId,
-        searching: false, partial: source.partial, error: source.error, notice: source.notice
+        searching: false, partial: source.partial, error: source.error, notice: source.notice,
+        diagnostics: source.diagnostics
       });
     }
     window.layout = 'findWindow';

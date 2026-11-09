@@ -2,7 +2,7 @@
   "name": "jbsearch",
   "displayName": "JB Search — JetBrains-style Find & Replace",
   "description": "JetBrains-style Find & Replace for VS Code.",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "publisher": "idfedorov09",
   "icon": "media/icon.png",
   "license": "MIT",
@@ -227,7 +227,7 @@
           "default": 2,
           "minimum": 0.01,
           "maximum": 128,
-          "description": "Skip files larger than this size. Skipped files make the result set incomplete."
+          "description": "Maximum size for searchable text. Unclassified oversized files make results incomplete; inputs identified as binary are excluded from text search."
         },
         "jbsearch.search.timeoutMs": {
           "type": "number",

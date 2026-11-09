@@ -110,6 +110,16 @@ test('native provider gives file and directory URIs to workbench, including file
   assert.deepEqual(h.selections, []);
 });
 
+test('Find Panel retains skip diagnostics as plain message text without changing replacement guards', t => {
+  const h = fixture(t);
+  const diagnostics = '1 ZIP container excluded from text search.\n/workspace/<archive>.docx — ZIP container excluded';
+  h.tree.update(snapshot('session-one', [result()], { mode: 'replace', diagnostics }));
+  assert.match(h.view.message, /<archive>\.docx/);
+  assert.equal(h.tree.actionsFor().canReplaceAll, true);
+  h.tree.update(snapshot('session-one', [result()], { mode: 'replace', diagnostics, partial: true }));
+  assert.equal(h.tree.actionsFor().canReplaceAll, false);
+});
+
 test('groups preserve snapshot order, stable identities, duplicate workspace names and aggregate statuses', t => {
   const h = fixture(t);
   const results = [result('z', 'src/z.bl'), result('a', 'src/a.bl', { invalid: true }),

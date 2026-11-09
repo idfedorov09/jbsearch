@@ -1,12 +1,15 @@
 'use strict';
 
 const fs = require('node:fs/promises');
+const { constants: fsConstants } = require('node:fs');
 const { createHash } = require('node:crypto');
 const path = require('node:path');
 const { pathToFileURL, fileURLToPath } = require('node:url');
 const { spawn } = require('node:child_process');
 const { parentPort, workerData } = require('node:worker_threads');
 const { acceptsFile, iterateMatches, isPathWithin, splitPatterns } = require('./matcher');
+const { isConfirmedZip } = require('./zip');
+const { PROBE_BYTES, classifyBytes } = require('./binary');
 
 const { request, rgPath, batchSize } = workerData;
 const stats = {
@@ -15,6 +18,10 @@ const stats = {
   matches: 0,
   skippedFiles: 0,
   skipped: { tooLarge: 0, binary: 0, encoding: 0, unreadable: 0 },
+  excludedBinaryFiles: 0,
+  blockingSkippedFiles: 0,
+  skippedDetails: [],
+  skippedDetailsOmitted: 0,
   errors: [],
   cancelled: false,
   timedOut: false
@@ -78,9 +85,30 @@ function flush() {
   batch = [];
 }
 
-function skip(reason, filePath, error) {
+const MAX_SKIP_DETAILS = 20;
+
+function skip(reason, filePath, { error, root, metadata, blocking = true, format, kind } = {}) {
   stats.skippedFiles += 1;
   stats.skipped[reason] += 1;
+  if (blocking) stats.blockingSkippedFiles += 1;
+  else stats.excludedBinaryFiles += 1;
+  const detail = {
+    path: filePath || metadata?.uri || metadata?.relativePath || 'Untitled',
+    relativePath: metadata?.relativePath || (filePath && root ? path.relative(root.path, filePath).replace(/\\/g, '/') : ''),
+    rootName: metadata?.rootName || root?.name || '',
+    rootPath: metadata?.rootPath || root?.path || '',
+    reason,
+    blocking,
+    ...(format ? { format } : {}),
+    ...(kind ? { kind } : {})
+  };
+  if (stats.skippedDetails.length < MAX_SKIP_DETAILS) stats.skippedDetails.push(detail);
+  else {
+    // Do not let numerous deliberately excluded archives hide every blocker.
+    const replace = blocking ? stats.skippedDetails.findIndex(item => !item.blocking) : -1;
+    if (replace !== -1) stats.skippedDetails[replace] = detail;
+    stats.skippedDetailsOmitted += 1;
+  }
   if (error && stats.errors.length < 20)
     stats.errors.push({ path: filePath, message: error.message || String(error) });
 }
@@ -116,8 +144,14 @@ function insideScope(filePath, root) {
 
 async function scanText(text, metadata) {
   if (cancelled || limit) return;
+  // Editor snapshots are already decoded by VS Code, but a literal NUL is
+  // still the binary signal and must not be fed to the text matcher.
+  if (text.includes('\0')) {
+    skip('binary', metadata.fsPath, { metadata, blocking: false, format: 'binary' });
+    return;
+  }
   if (Buffer.byteLength(text, 'utf8') > maxBytes) {
-    skip('tooLarge', metadata.fsPath);
+    skip('tooLarge', metadata.fsPath, { metadata });
     return;
   }
   stats.filesScanned += 1;
@@ -184,6 +218,7 @@ async function scanDocument(document, root, filePath) {
     relativePath,
     label: path.basename(relativePath),
     rootName: root?.name || '',
+    rootPath: root?.path || '',
     version: document.version,
     documentVersion: document.version,
     languageId: document.languageId,
@@ -211,42 +246,83 @@ async function scanDisk(filePath, root) {
     // regular file with a symlink before it is read.
     const info = await fs.lstat(filePath);
     if (!info.isFile()) return;
-    if (info.size > maxBytes) {
-      skip('tooLarge', filePath);
-      return;
-    }
-    const bytes = await fs.readFile(filePath);
-    if (bytes.length > maxBytes) {
-      skip('tooLarge', filePath);
-      return;
-    }
-    if ((bytes[0] === 0xff && bytes[1] === 0xfe) || (bytes[0] === 0xfe && bytes[1] === 0xff)) {
-      skip('encoding', filePath);
-      return;
-    }
-    if (bytes.includes(0)) {
-      skip('binary', filePath);
-      return;
-    }
-    let text;
+    const handle = await fs.open(filePath, fsConstants.O_RDONLY | (fsConstants.O_NOFOLLOW || 0));
     try {
-      text = decoder.decode(bytes);
-    } catch {
-      skip('encoding', filePath);
-      return;
+      const sameFile = (a, b) => b.isFile() && a.dev === b.dev && a.ino === b.ino &&
+        a.size === b.size && a.mtimeMs === b.mtimeMs && a.ctimeMs === b.ctimeMs;
+      const opened = await handle.stat();
+      if (!sameFile(info, opened)) throw new Error('The file changed while it was being opened.');
+      const assertUnchanged = async () => {
+        if (!sameFile(opened, await handle.stat()) || !sameFile(opened, await fs.lstat(filePath)))
+          throw new Error('The file changed while it was being searched.');
+      };
+      // Confirm supported containers before the text-size limit, using bounded
+      // reads from this same handle rather than loading large archives.
+      if (await isConfirmedZip(handle, opened.size)) {
+        await assertUnchanged();
+        skip('binary', filePath, { root, blocking: false, format: 'ZIP' });
+        return;
+      }
+      const probe = Buffer.allocUnsafe(Math.min(opened.size, PROBE_BYTES));
+      let probeLength = 0;
+      while (probeLength < probe.length) {
+        const { bytesRead } = await handle.read(probe, probeLength, probe.length - probeLength, probeLength);
+        if (!bytesRead) throw new Error('The file changed while it was being inspected.');
+        probeLength += bytesRead;
+      }
+      const prefix = classifyBytes(probe);
+      if (prefix.kind !== 'unknown') {
+        await assertUnchanged();
+        skip(prefix.kind === 'binary' ? 'binary' : 'encoding', filePath, {
+          root, blocking: prefix.kind !== 'binary', format: prefix.format
+        });
+        return;
+      }
+      if (opened.size > maxBytes) {
+        skip('tooLarge', filePath, { root });
+        return;
+      }
+      // Read at most the observed size plus one byte, even if a file grows.
+      const buffer = Buffer.allocUnsafe(opened.size + 1);
+      let count = 0;
+      while (count < buffer.length) {
+        const { bytesRead } = await handle.read(buffer, count, buffer.length - count, count);
+        if (!bytesRead) break;
+        count += bytesRead;
+      }
+      if (count !== opened.size) throw new Error('The file changed while it was being searched.');
+      await assertUnchanged();
+      const bytes = buffer.subarray(0, count);
+      const classification = classifyBytes(bytes);
+      if (classification.kind !== 'unknown') {
+        skip(classification.kind === 'binary' ? 'binary' : 'encoding', filePath, {
+          root, blocking: classification.kind !== 'binary', format: classification.format
+        });
+        return;
+      }
+      let text;
+      try {
+        text = decoder.decode(bytes);
+      } catch {
+        skip('encoding', filePath, { root });
+        return;
+      }
+      await scanText(text, {
+        uri: pathToFileURL(filePath).toString(),
+        fsPath: filePath,
+        relativePath,
+        label: path.basename(relativePath),
+        rootName: root.name,
+        rootPath: root.path,
+        source: 'disk',
+        mtimeMs: opened.mtimeMs,
+        fileSize: opened.size
+      });
+    } finally {
+      await handle.close();
     }
-    await scanText(text, {
-      uri: pathToFileURL(filePath).toString(),
-      fsPath: filePath,
-      relativePath,
-      label: path.basename(relativePath),
-      rootName: root.name,
-      source: 'disk',
-      mtimeMs: info.mtimeMs,
-      fileSize: info.size
-    });
   } catch (error) {
-    skip('unreadable', filePath, error);
+    skip('unreadable', filePath, { root, error });
   }
 }
 
@@ -322,11 +398,9 @@ async function enumerate(root, visit) {
     const { code, error } = await closed;
     if (error) throw error;
     if (code > 1 && !cancelled && !limit) {
-      stats.errors.push({
-        path: root.path,
-        message: stderr.trim() || `ripgrep exited with code ${code}`
+      skip('unreadable', root.path, {
+        root, kind: 'enumeration', error: new Error(stderr.trim() || `ripgrep exited with code ${code}`)
       });
-      stats.skippedFiles += 1;
     }
   } finally {
     process.kill();
@@ -380,8 +454,8 @@ async function main() {
   flush();
   parentPort.postMessage({
     type: 'done',
-    truncated: limit || stats.timedOut || stats.skippedFiles > 0 || stats.errors.length > 0,
-    reason: cancelReason || (limit ? 'limit' : stats.skippedFiles ? 'skippedFiles' : undefined),
+    truncated: limit || stats.timedOut || stats.blockingSkippedFiles > 0 || stats.errors.length > 0,
+    reason: cancelReason || (limit ? 'limit' : stats.blockingSkippedFiles ? 'skippedFiles' : undefined),
     stats
   });
   parentPort.close();

@@ -161,9 +161,16 @@ remove it, so the setting continues to control that binding.
 - Regex uses **ECMAScript** semantics. Expressions written for Java or PCRE2
   may need changes. Regex replacement supports capture groups, named groups, and
   newline/tab escapes; with Regex disabled, replacement text is literal.
-- File search supports **UTF-8**. Binary, UTF-16, oversized, and inaccessible files
-  are reported as skipped; symlinks are not followed. Replace All requires a complete
-  result set. Narrow the scope or adjust limits when a search is incomplete.
+- File search supports **UTF-8**. Inputs identified as binary, including ZIP/DOCX
+  and common image/document formats, are excluded from text search and do not by
+  themselves block Replace All; their contents are not searched or replaced.
+  Unsupported encodings, unclassified oversized inputs, and inaccessible files
+  make results incomplete. Binary detection uses content signatures and a NUL-byte
+  heuristic, so arbitrary bytes cannot always be classified perfectly: a text
+  input can be mistaken for binary, and vice versa. Review the representative
+  paths and reasons in the diagnostics before replacing. Symlinks are not followed.
+  Replace All requires complete results for eligible text; narrow the scope or
+  adjust limits when a search is incomplete.
 - Saved searches live in memory and are cleared when the extension host restarts.
   Changes to closed files outside the editor may require **Rerun Search** to rebuild
   result positions.

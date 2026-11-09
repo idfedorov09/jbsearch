@@ -282,11 +282,15 @@ textarea::placeholder {
 #filters input:not([type='checkbox']) {
   width: 155px;
 }
-#message {
+#message, #diagnostics {
   font-size: 12px;
   padding: 6px 16px;
   color: var(--vscode-descriptionForeground);
   border-bottom: 1px solid var(--edge);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 110px;
+  overflow-y: auto;
 }
 #message.error {
   color: var(--vscode-errorForeground);

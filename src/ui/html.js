@@ -11,6 +11,7 @@ function getHtml(webview, extensionUri, vscode) {
 <nav class="scopes" aria-label="Search scope"><button data-scope="workspace" class="scope active">In Project</button><button data-scope="folder" class="scope">Folder</button><button data-scope="directory" class="scope">Directory</button><button data-scope="openEditors" class="scope">Open Editors</button><select id="customScope" aria-label="Custom scope"><option value="">Scope…</option></select><span id="scopePath" class="muted"></span></nav>
 <section id="filters" hidden><label><input type="checkbox" id="respectExcludes" checked>Use ignore files and exclusions</label><label>Include<input id="include" placeholder="src/**;test/**" aria-label="Include patterns"></label><label>Exclude<input id="exclude" placeholder="**/generated/**" aria-label="Exclude patterns"></label></section>
 <div id="message" role="status" hidden></div>
+<div id="diagnostics" role="status" hidden></div>
 <section id="results" role="listbox" aria-label="Search results" tabindex="0"><div id="resultRows"></div><div id="empty" class="empty">Type to search in your project</div></section>
 <div id="splitter" role="separator" aria-label="Resize results and preview" aria-orientation="horizontal" tabindex="0"></div>
 <section class="preview"><div class="preview-header"><strong id="previewName">Preview</strong><span id="previewPath" class="muted"></span><span id="previewNote" class="muted"></span></div><div id="code" tabindex="0" aria-label="Code preview"><div class="empty">Select a result to preview its code</div></div></section>

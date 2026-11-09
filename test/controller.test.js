@@ -2,6 +2,7 @@
 const test = require('node:test'),
   assert = require('node:assert/strict');
 const { SearchController } = require('../src/controller');
+const { classifySkips, incompleteSearch, skipDiagnostics } = require('../src/search/diagnostics');
 const pause = () => new Promise((resolve) => setTimeout(resolve, 5));
 function session() {
   return {
@@ -133,6 +134,57 @@ test('replacement refuses partial results and a mismatched generation before ope
   await assert.rejects(() => controller.replace(s, true, { generation: 1 }), /complete/);
   s.partial = false;
   await assert.rejects(() => controller.replace(s, true, { generation: 0 }), /current search/);
+});
+
+test('search completeness fails closed for missing or inconsistent skip counts', () => {
+  assert.equal(incompleteSearch({ truncated: false, stats: { skippedFiles: 0, errors: [] } }), false);
+  assert.equal(incompleteSearch({ truncated: false, stats: { skippedFiles: 1, errors: [] } }), true);
+  assert.equal(incompleteSearch({ truncated: false, stats: {
+    skippedFiles: 1, excludedBinaryFiles: 1, blockingSkippedFiles: 1, errors: []
+  } }), true);
+  assert.equal(incompleteSearch({ truncated: false, stats: {
+    skippedFiles: 0, excludedBinaryFiles: 1, blockingSkippedFiles: 0, errors: []
+  } }), true);
+  assert.equal(incompleteSearch({ truncated: false, stats: {
+    skippedFiles: 1, excludedBinaryFiles: 1, blockingSkippedFiles: 0, errors: [],
+    skippedDetails: [{ blocking: true, reason: 'encoding' }], skippedDetailsOmitted: 0
+  } }), true, 'details contradicting aggregate counts must fail closed');
+  assert.equal(classifySkips({ skippedFiles: 1, excludedBinaryFiles: 1, blockingSkippedFiles: 0 }).blocking, 0);
+  assert.equal(incompleteSearch({ truncated: false, stats: {
+    skippedFiles: 1, excludedBinaryFiles: 1, blockingSkippedFiles: 0, errors: [],
+    skippedDetails: [{ path: '/workspace/image.png', reason: 'binary', blocking: false, format: 'PNG' }],
+    skippedDetailsOmitted: 0
+  } }), false);
+  assert.match(skipDiagnostics({ skippedFiles: 1, excludedBinaryFiles: 1, blockingSkippedFiles: 0,
+    skippedDetails: [{ path: '/workspace/image.png', reason: 'binary', blocking: false, format: 'PNG' }],
+    skippedDetailsOmitted: 0 }), /image\.png — binary file excluded/);
+});
+
+test('search reports excluded archives separately and retains bounded, plain-text blocker details', async () => {
+  const pathWithMarkup = '/workspace/<script>\narchive.docx';
+  const stats = { skippedFiles: 2, excludedBinaryFiles: 1, blockingSkippedFiles: 1, errors: [],
+    skippedDetails: [
+      { path: pathWithMarkup, reason: 'binary', blocking: false, format: 'ZIP' },
+      { path: '/workspace/legacy.txt', reason: 'encoding', blocking: true }
+    ] };
+  const controller = stub({ search: async () => ({ results: [{ id: 'match' }], truncated: false, stats }) });
+  controller.configuration = () => ({ get: (_key, fallback) => fallback });
+  const s = { ...session(), mode: 'replace', searching: true };
+  await controller.search(s);
+  assert.equal(s.partial, true, 'a blocker must override even an inconsistent truncated flag');
+  assert.match(s.diagnostics, /binary file excluded from text search/);
+  assert.match(s.diagnostics, /contents are not searched or replaced/);
+  assert.match(s.diagnostics, /legacy\.txt — unsupported encoding/);
+  assert.ok(s.diagnostics.includes('<script>\\u000aarchive.docx'));
+  assert.equal(controller.snapshot(s).diagnostics, s.diagnostics);
+  controller.resetSearch(s);
+  assert.equal(s.diagnostics, '', 'a new generation must discard old paths');
+
+  const overflow = skipDiagnostics({ skippedFiles: 25, excludedBinaryFiles: 25, blockingSkippedFiles: 0,
+    skippedDetailsOmitted: 5,
+    skippedDetails: Array.from({ length: 20 }, (_, index) => ({ path: `path-${index}`, reason: 'binary', blocking: false, format: 'ZIP' })) });
+  assert.match(overflow, /5 additional paths are not shown/);
+  assert.doesNotMatch(overflow, /path-20/);
 });
 test('preview replies from a previously selected result are discarded', async () => {
   const delivered = [],

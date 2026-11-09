@@ -403,7 +403,7 @@ class FindTree {
     this.view.title = state?.mode === 'replace' ? 'Replace' : 'Find';
     this.view.description = state ? String(state.query || '').replace(/\s+/g, ' ').slice(0, 100) : '';
     this.view.message = state
-      ? [state.error || (state.searching ? 'Searching…' : this.summary(state)), this.scopeSummary(state), state.notice].filter(Boolean).join('\n')
+      ? [state.error || (state.searching ? 'Searching…' : this.summary(state)), this.scopeSummary(state), state.notice, state.diagnostics].filter(Boolean).join('\n')
       : 'Run a search, then choose Open in Find Panel to keep its results here.';
     this.view.badge = state ? { value: state.results.length, tooltip: this.summary(state) } : undefined;
     for (const [key, value] of Object.entries(this.actionsFor())) {

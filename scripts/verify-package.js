@@ -86,7 +86,8 @@ async function verifyPackage(filename) {
     throw new Error('Packaged extension icon differs from the source asset');
   requireFile(files, 'extension/' + path.posix.normalize(manifest.main));
   for (const resource of [
-    'src/controller.js', 'src/search/worker.js', 'src/preview.js', 'src/client-preview.js',
+    'src/controller.js', 'src/search/index.js', 'src/search/worker.js', 'src/search/matcher.js',
+    'src/search/zip.js', 'src/search/binary.js', 'src/search/diagnostics.js', 'src/preview.js', 'src/client-preview.js',
     'src/find-results.js', 'src/find-preview.js', 'src/find-tree.js',
     'media/search.js', 'media/search.css',
     'node_modules/vscode-oniguruma/release/onig.wasm'

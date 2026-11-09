@@ -8,6 +8,7 @@ const { fileURLToPath, pathToFileURL } = require('node:url');
 const test = require('node:test');
 const { SearchController } = require('../src/controller');
 const { SearchEngine } = require('../src/search');
+const { zipFixture } = require('./zip-fixture');
 
 function uriFor(file) {
   const value = file.startsWith('file:') ? file : pathToFileURL(file).toString();
@@ -315,4 +316,54 @@ test('rooted replacement retains partial, pending, invalid and changed-document 
   await fs.writeFile(f.session.results[0].fsPath, 'changed since searching');
   await assert.rejects(() => f.controller.replace(f.session, true, { generation: f.session.generation }), /changed/);
   assert.equal(f.edits.length, 0);
+});
+
+test('binary files do not block one unsaved workspace replacement and remain untouched', async t => {
+  const f = await fixture(t);
+  const archivePath = path.join(f.api, 'src/template.docx');
+  const archive = zipFixture('needle inside a Word-like container');
+  await fs.writeFile(archivePath, archive);
+  const binaryPath = path.join(f.api, 'src/data.bin');
+  const pdfPath = path.join(f.api, 'src/report.pdf');
+  const binary = Buffer.from('needle\0binary');
+  const pdf = Buffer.from('%PDF-1.7\nneedle\n%%EOF');
+  await fs.writeFile(binaryPath, binary);
+  await fs.writeFile(pdfPath, pdf);
+  await f.controller.search(f.session);
+  assert.equal(f.session.partial, false);
+  assert.match(f.session.diagnostics, /template\.docx — ZIP container excluded/);
+  assert.ok(f.session.results.length);
+  assert.ok(f.session.results.every(item => ![archivePath, binaryPath, pdfPath].includes(item.fsPath)));
+
+  const documents = new Map();
+  for (const uri of new Set(f.session.results.map(result => result.uri))) {
+    const parsed = uriFor(uri), original = await fs.readFile(parsed.fsPath, 'utf8');
+    const document = { uri: parsed, fileName: parsed.fsPath, version: 1, eol: 1, isDirty: false,
+      text: original, getText() { return this.text; } };
+    documents.set(uri, { document, original });
+  }
+  f.controller.v.workspace.openTextDocument = async uri => documents.get(uri.toString()).document;
+  let editsApplied = 0;
+  f.controller.v.workspace.applyEdit = async edit => {
+    editsApplied++;
+    for (const entry of edit.entries) {
+      const document = documents.get(entry.uri.toString()).document;
+      assert.equal(entry.range.start.line, 0);
+      document.text = document.text.slice(0, entry.range.start.character) + entry.replacement +
+        document.text.slice(entry.range.end.character);
+      document.isDirty = true;
+    }
+    return true;
+  };
+  f.controller.queueValidation = () => {};
+  await f.controller.replace(f.session, true, { generation: f.session.generation });
+  assert.equal(editsApplied, 1, 'all replacements are submitted as one workspace edit');
+  for (const { document, original } of documents.values()) {
+    assert.equal(document.text, original.replace('needle', 'replacement'));
+    assert.equal(document.isDirty, true);
+    assert.equal(await fs.readFile(document.fileName, 'utf8'), original, 'disk content is not autosaved');
+  }
+  assert.deepEqual(await fs.readFile(archivePath), archive);
+  assert.deepEqual(await fs.readFile(binaryPath), binary);
+  assert.deepEqual(await fs.readFile(pdfPath), pdf);
 });

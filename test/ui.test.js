@@ -426,6 +426,21 @@ test('pending replacement blocks both mouse and Enter and rejected patches roll 
   assert.equal(ui.messages.at(-1).type, 'replace');
 });
 
+test('diagnostics render file paths as text and do not block complete searches', () => {
+  const ui = harness();
+  const diagnostics = '1 binary file excluded from text search.\n/workspace/<script>.png — binary file excluded';
+  ui.deliver({ ...ui.snapshot, diagnostics });
+  const element = ui.elements.get('diagnostics');
+  assert.equal(element.hidden, false);
+  assert.equal(element.textContent, diagnostics);
+  assert.deepEqual(element.children, [], 'paths must not be interpreted as HTML');
+  assert.equal(ui.elements.get('replaceAll').disabled, false);
+  ui.deliver({ ...ui.snapshot, diagnostics, partial: true });
+  assert.equal(ui.elements.get('replaceAll').disabled, true);
+  ui.deliver({ ...ui.snapshot, diagnostics: '' });
+  assert.equal(element.hidden, true);
+});
+
 test('compact virtualized results stay navigable at the end of a long list', () => {
   const ui = harness();
   const results = Array.from({ length: 150 }, (_, index) => ({
