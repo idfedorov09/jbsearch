@@ -2,6 +2,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { FindPreview } = require('../src/find-preview');
+const { PhysicalOpenGate } = require('../src/validation-open-boundary');
 
 const result = (id, uri = 'file:///workspace/A.js', line = 2) => ({
   id, uri,
@@ -229,4 +230,98 @@ test('clear and dispose cancel pending navigation and leave all editors and dirt
   assert.equal(f.calls.filter((c) => c[0] === 'disposeDecoration').length, 2);
   assert.equal(f.groups.length, 2);
   assert.equal(f.source.tabs[1].isDirty, true);
+});
+
+test('injected shared opening gate bounds native preview waiting and ignores late navigation', async () => {
+  const f = fixture();
+  let release;
+  const blocked = new Promise(resolve => { release = resolve; });
+  const open = f.v.workspace.openTextDocument;
+  const gate = new PhysicalOpenGate(async uri => {
+    if (String(uri).endsWith('/A.js')) await blocked;
+    return open(uri);
+  }, { limit: 1 });
+  const adapter = new FindPreview(f.v, { openDocument: (uri, options) =>
+    gate.open(uri, { ...options, timeoutMs: 30 }) });
+  const first = adapter.show(result('a'));
+  await new Promise(resolve => setImmediate(resolve));
+  const second = assert.rejects(adapter.show(result('b', 'file:///workspace/B.js')), { code: 'GATE_TIMEOUT' });
+  assert.equal(await first, undefined, 'superseding selection cancels only its caller');
+  await second;
+  assert.equal(gate.active, 1);
+  assert.equal(gate.waiting, 0);
+  release();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(f.calls.filter(call => call[0] === 'show').length, 0);
+  assert.ok(await adapter.show(result('c', 'file:///workspace/C.js')));
+  assert.equal(f.calls.filter(call => call[0] === 'show').length, 1);
+  adapter.dispose();
+  gate.dispose();
+});
+
+test('disposing native preview cancels a gated waiter without releasing the actual physical open', async () => {
+  const f = fixture();
+  let release;
+  const blocked = new Promise(resolve => { release = resolve; });
+  const gate = new PhysicalOpenGate(async uri => { await blocked; return f.v.workspace.openTextDocument(uri); });
+  const adapter = new FindPreview(f.v, { openDocument: (uri, options) => gate.open(uri, options) });
+  const showing = adapter.show(result('a'));
+  await new Promise(resolve => setImmediate(resolve));
+  adapter.dispose();
+  assert.equal(await showing, undefined);
+  assert.equal(gate.active, 1);
+  release();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(gate.active, 0);
+  assert.equal(f.calls.filter(call => call[0] === 'show').length, 0);
+  gate.dispose();
+});
+
+test('an external cancellation during showTextDocument cannot decorate or reveal its late editor', async () => {
+  const f = fixture(), adapter = new FindPreview(f.v), abort = new AbortController();
+  const show = f.v.window.showTextDocument;
+  let finishShow, announce;
+  const started = new Promise(resolve => { announce = resolve; });
+  f.v.window.showTextDocument = async function (...args) {
+    const editor = await show.apply(this, args);
+    announce();
+    await new Promise(resolve => { finishShow = resolve; });
+    return editor;
+  };
+  const showing = adapter.show(result('a'), [], { signal: abort.signal });
+  await started;
+  abort.abort();
+  finishShow();
+  assert.equal(await showing, undefined);
+  assert.equal(adapter.editor, undefined);
+  assert.equal(f.calls.filter(call => ['decorate', 'revealRange'].includes(call[0])).length, 0);
+  assert.equal(f.calls.filter(call => call[0] === 'show').length, 1,
+    'an already dispatched native show cannot be revoked');
+  adapter.dispose();
+});
+
+test('Close before native show dispatch suppresses an already opening document, but not later explicit inspection', async () => {
+  const f = fixture(); let release;
+  const adapter = new FindPreview(f.v, { openDocument: () => new Promise(resolve => { release = resolve; }) });
+  const opening = adapter.show(result('old'));
+  await new Promise(resolve => setImmediate(resolve));
+  const document = { uri: f.v.Uri.parse('file:///workspace/A.js'), isClosed: true, validateRange: range => range };
+  release(document); await opening;
+  assert.equal(f.calls.some(call => call[0] === 'show'), false);
+  adapter.openDocument = async () => ({ ...document, isClosed: false });
+  await adapter.show({ ...result('old'), invalid: true });
+  assert.equal(f.calls.filter(call => call[0] === 'show').length, 1, 'a fresh explicit INVALID inspection remains usable');
+  adapter.dispose();
+});
+
+test('native acquisition checks its immutable controller binding immediately before dispatch', async () => {
+  const f = fixture(); let release, current = true;
+  const adapter = new FindPreview(f.v, { openDocument: () => new Promise(resolve => { release = resolve; }) });
+  const opening = adapter.show(result('same-id'), [], { current: () => current });
+  await new Promise(resolve => setImmediate(resolve));
+  current = false;
+  release({ uri: f.v.Uri.parse('file:///workspace/A.js'), validateRange: range => range });
+  await opening;
+  assert.equal(f.calls.some(call => call[0] === 'show'), false);
+  adapter.dispose();
 });

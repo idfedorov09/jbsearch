@@ -20,6 +20,11 @@ because it complicated consistent capture replacement.
 
 SessionController belongs to the extension host; the UI sends intents and receives
 snapshots/batches. Generation and preview revision discard stale responses.
+The modal also validates those bindings on receipt, together with the selected
+row revision and an explicit per-client selection request; a reused result ID
+is not sufficient. Query reset clears selection/preview immediately rather than
+retaining the previous generation's rows. See the
+[query-reset change](../../openspec/changes/verify-modal-query-reset/design.md).
 Replace uses captures and checks the full content/version before WorkspaceEdit;
 incomplete results do not allow Replace All. Changes are not saved automatically.
 

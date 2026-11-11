@@ -1,11 +1,35 @@
 'use strict';
 
+const { captureActionBinding, sameActionBinding, requestPresentationKey,
+  rowActionKey, captureRowResult, sameRowPresentationData } = require('./find-presentation');
+
 const VIEW_ID = 'jbsearch.results';
 const SELECT_COMMAND = 'jbsearch.results.select';
 
 const uriText = (value) => typeof value === 'string' ? value : value?.toString() || '';
 const nodeId = (sessionId, ...parts) => JSON.stringify([sessionId, ...parts]);
 const normalizePath = (value) => String(value || '').replaceAll('\\', '/');
+let nativeIdentity = 0;
+
+function matchNode(snapshot, result, parent, index, binding = snapshot.actionBinding,
+  requestKey = requestPresentationKey(snapshot)) {
+  const id = nodeId(snapshot.id, 'match', result.id);
+  // Logical IDs remain stable, but action-relevant revisions must NOT reuse a
+  // native handle: VS Code resolves context arguments through handle -> latest
+  // provider element, independently of when its frontend paints the new item.
+  const nativeId = nodeId(snapshot.id, 'match', result.id, snapshot.generation, ++nativeIdentity);
+  const action = Object.freeze({ sessionId: snapshot.id, id: result.id,
+    generation: snapshot.generation, resultRevision: result.resultRevision,
+    nativeId, actionBinding: binding || null });
+  const node = { id, nativeId, kind: 'match', sessionId: snapshot.id,
+    result: captureRowResult(result), parent, index };
+  Object.defineProperties(node, {
+    action: { value: action, enumerable: true },
+    actionKey: { value: rowActionKey(result) },
+    requestKey: { value: requestKey }
+  });
+  return node;
+}
 
 function resultUri(vscode, result) {
   return typeof result.uri === 'string' ? vscode.Uri.parse(result.uri) : result.uri;
@@ -25,19 +49,34 @@ function fileLocation(vscode, result) {
 
 /** The controller owns sorting. Preserve that frozen order after file edits. */
 function buildTree(vscode, snapshot) {
+  snapshot = { ...snapshot, actionBinding: captureActionBinding(snapshot.actionBinding) };
   const roots = [];
   const byId = new Map();
   const byResultId = new Map();
   const rootGroups = new Map();
+  const resultOrder = [];
+  const requestKey = requestPresentationKey(snapshot);
+  let unambiguous = true;
+  const seen = new Set();
+  for (const result of snapshot.results || []) {
+    if (typeof result.id !== 'string' || !result.id || seen.has(result.id)) {
+      return { roots, byId, byResultId, presentations: new Map(), resultOrder,
+        unambiguous: false, scopeKind: snapshot.scope?.kind,
+        error: 'Results have missing or duplicate identifiers. Rerun Search before using this list.' };
+    }
+    seen.add(result.id);
+  }
   const createGroup = (id, label, kind, parent, uri) => {
     const node = {
       id, label, kind, sessionId: snapshot.id, parent,
       uri, children: [], groups: new Map(), total: 0, invalid: 0, pending: 0
     };
+    if (byId.has(id)) unambiguous = false;
     byId.set(id, node);
     return node;
   };
   for (const result of snapshot.results || []) {
+    resultOrder.push(result.id);
     const location = fileLocation(vscode, result);
     const rootKey = [String(result.rootName || ''), uriText(location.rootUri)];
     const rootId = nodeId(snapshot.id, 'root', ...rootKey);
@@ -62,7 +101,7 @@ function buildTree(vscode, snapshot) {
       }
       parent = node;
     }
-    const fileId = nodeId(snapshot.id, 'file', uriText(location.uri) || location.relative);
+    const fileId = nodeId(snapshot.id, 'file', parent.id, uriText(location.uri) || location.relative);
     let file = parent.groups.get(fileId);
     if (!file) {
       file = createGroup(fileId, result.label || location.parts.at(-1) || 'Untitled', 'file', parent.id, location.uri);
@@ -70,11 +109,9 @@ function buildTree(vscode, snapshot) {
       parent.groups.set(fileId, file);
       parent.children.push(file);
     }
-    const match = {
-      id: nodeId(snapshot.id, 'match', result.id), kind: 'match',
-      sessionId: snapshot.id, result, parent: file.id
-    };
+    const match = matchNode(snapshot, result, file.id, file.children.length, snapshot.actionBinding, requestKey);
     file.children.push(match);
+    if (byId.has(match.id) || byResultId.has(result.id)) unambiguous = false;
     byId.set(match.id, match);
     byResultId.set(result.id, match);
     for (let ancestor = file; ancestor; ancestor = byId.get(ancestor.parent)) {
@@ -83,7 +120,102 @@ function buildTree(vscode, snapshot) {
       else if (result.invalid) ancestor.invalid += 1;
     }
   }
-  return { roots, byId, byResultId };
+  const presentations = new Map();
+  for (const [id, node] of byId) presentations.set(id, nodePresentation(node));
+  return { roots, byId, byResultId, presentations, resultOrder, unambiguous,
+    actionRevision: 0, scopeKind: snapshot.scope?.kind };
+}
+
+function nodePresentation(value) {
+  return value.kind === 'match'
+    ? [
+        uriText(value.result.uri), value.result.relativePath, value.result.label,
+        value.result.lineText, value.result.previewMatchStart, value.result.previewMatchEnd,
+        value.result.range?.start?.line, value.result.range?.start?.character,
+        value.result.invalid, value.result.pending, value.result.invalidReason,
+        value.result.resultRevision, value.result.identityUnknown, value.result.rootName
+      ]
+    : [
+        value.label, uriText(value.uri), value.path, value.total, value.invalid, value.pending
+      ];
+}
+
+function samePresentation(left, right) {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
+/** Return undefined on uncertainty, before mutating any provider element. */
+function updateUnchangedTree(tree, snapshot) {
+  const results = snapshot.results;
+  if (!tree.unambiguous || tree.resultOrder.length !== results.length ||
+      tree.byResultId.size !== results.length || tree.scopeKind !== snapshot.scope?.kind ||
+      (tree.scopeKind != null && typeof tree.scopeKind !== 'string')) return undefined;
+
+  // These fields determine every grouping key, file label, and root label.
+  // Compare against stored primitives rather than potentially mutated inputs.
+  for (let index = 0; index < results.length; index += 1) {
+    const result = results[index];
+    const node = tree.byResultId.get(result.id);
+    const before = node && tree.presentations.get(node.id);
+    if (typeof result.id !== 'string' || typeof result.uri !== 'string' ||
+        [result.relativePath, result.label, result.rootName].some(value => value != null && typeof value !== 'string') ||
+        result.id !== tree.resultOrder[index] || !before ||
+        before[0] !== result.uri || before[1] !== result.relativePath || before[2] !== result.label ||
+        before[13] !== result.rootName) return undefined;
+    // Non-primitive presentation values cannot be snapshotted by reference.
+    if (before.some(value => value != null && (typeof value === 'object' || typeof value === 'function')) ||
+        nodePresentation({ kind: 'match', result }).some(value => value != null &&
+          (typeof value === 'object' || typeof value === 'function'))) return undefined;
+  }
+
+  const changed = new Set(), ancestors = new Set();
+  const requestKey = requestPresentationKey(snapshot);
+  let actionsChanged = false;
+  for (const result of results) {
+    let node = tree.byResultId.get(result.id);
+    const before = tree.presentations.get(node.id);
+    const after = nodePresentation({ kind: 'match', result });
+    const bindingChanged = snapshot.actionBinding &&
+      !sameActionBinding(node.action.actionBinding, snapshot.actionBinding);
+    const actionChanged = bindingChanged || node.requestKey !== requestKey ||
+      node.actionKey !== rowActionKey(result);
+    if (actionChanged) {
+      actionsChanged = true;
+      const parent = tree.byId.get(node.parent);
+      node = matchNode(snapshot, result, node.parent, node.index, snapshot.actionBinding, requestKey);
+      parent.children[node.index] = node;
+      tree.byId.set(node.id, node);
+      tree.byResultId.set(result.id, node);
+      // A new provider object is unknown to the extension-host element map.
+      // Refresh its existing parent, not the new child with an equal logical ID.
+      changed.add(parent);
+    } else {
+      // The action/descriptor is immutable; only non-action presentation may
+      // update in place. An absent current binding never upgrades an old one.
+      if (!sameRowPresentationData(node.result, result)) node.result = captureRowResult(result);
+    }
+    if (!samePresentation(before, after)) {
+      if (!actionChanged) changed.add(node);
+      tree.presentations.set(node.id, after);
+      const pendingDelta = Number(Boolean(result.pending)) - Number(Boolean(before[9]));
+      const invalidDelta = Number(!result.pending && Boolean(result.invalid)) -
+        Number(!before[9] && Boolean(before[8]));
+      if (pendingDelta || invalidDelta) {
+        for (let parent = tree.byId.get(node.parent); parent; parent = tree.byId.get(parent.parent)) {
+          parent.pending += pendingDelta;
+          parent.invalid += invalidDelta;
+          ancestors.add(parent);
+        }
+      }
+    }
+  }
+  for (const node of ancestors) {
+    const after = nodePresentation(node);
+    if (!samePresentation(tree.presentations.get(node.id), after)) changed.add(node);
+    tree.presentations.set(node.id, after);
+  }
+  if (actionsChanged) tree.actionRevision += 1;
+  return [...changed];
 }
 
 function countsFor(results = []) {
@@ -144,7 +276,7 @@ class FindTree {
       this.changeEmitter,
       this.view,
       this.view.onDidChangeSelection(event => this.selectionChanged(event.selection)),
-      vscode.commands.registerCommand(SELECT_COMMAND, (sessionId, resultId) => this.select(sessionId, resultId))
+      vscode.commands.registerCommand(SELECT_COMMAND, action => this.activate(action))
     ];
     this.updatePresentation();
   }
@@ -165,13 +297,15 @@ class FindTree {
   }
 
   getTreeItem(node) {
-    node = this.currentNode(node) || node;
+    // A delayed request for an obsolete element must not acquire a new row's
+    // action. Replacement children are fetched through their current parent.
+    if (this.currentNode(node) !== node) return undefined;
     const match = node.kind === 'match';
     const item = new this.v.TreeItem(
       match ? this.matchLabel(node) : node.label,
       match ? this.v.TreeItemCollapsibleState.None : this.v.TreeItemCollapsibleState.Expanded
     );
-    item.id = node.id;
+    item.id = match ? node.nativeId : node.id;
     item.contextValue = match
       ? `jbsearch.match.${node.result.pending ? 'pending' : node.result.invalid ? 'invalid' : 'valid'}`
       : `jbsearch.${node.kind}`;
@@ -190,7 +324,7 @@ class FindTree {
       };
       // Use a command rather than reacting to programmatic TreeView.reveal:
       // synchronizing the visible selection must never open a document itself.
-      item.command = { command: SELECT_COMMAND, title: 'Open Search Result', arguments: [node.sessionId, result.id] };
+      item.command = { command: SELECT_COMMAND, title: 'Open Search Result', arguments: [node.action] };
     } else {
       item.resourceUri = node.uri;
       // Files have match children, so relying on collapsibleState would select
@@ -220,6 +354,7 @@ class FindTree {
     // update controls, but only TreeItem.command activates a source document.
     if (node && node.sessionId !== this.activeId) return;
     const current = node && entry.tree.byId.get(node.id);
+    if (node && current !== node) return;
     entry.snapshot = {
       ...entry.snapshot,
       selectedId: current?.kind === 'match' ? current.result.id : null
@@ -231,9 +366,14 @@ class FindTree {
   update(snapshot, { activate = false } = {}) {
     if (this.disposed || !snapshot?.id) return;
     const previous = this.sessions.get(snapshot.id);
-    const sameGeneration = previous?.snapshot.generation === snapshot.generation;
+    const previousActiveId = this.activeId;
+    const sameGeneration = Boolean(previous && previous.snapshot.generation === snapshot.generation);
     const originals = sameGeneration ? previous.originals : new Map();
-    const state = { ...snapshot, results: Array.isArray(snapshot.results) ? snapshot.results : [] };
+    const state = { ...snapshot,
+      actionBinding: captureActionBinding(snapshot.actionBinding),
+      results: Array.isArray(snapshot.results) ? snapshot.results : [] };
+    const bindingInvalid = Boolean(snapshot.actionBinding && (!state.actionBinding ||
+      state.actionBinding.sessionId !== snapshot.id || state.actionBinding.generation !== snapshot.generation));
     // Controller notifications track the last activated editor occurrence.
     // Keep the tree's actual keyboard selection during same-snapshot validation.
     const selectionKnown = Boolean(sameGeneration && previous.selectionKnown);
@@ -246,25 +386,42 @@ class FindTree {
         previewMatchEnd: result.previewMatchEnd
       });
     }
-    this.sessions.set(snapshot.id, { snapshot: state, originals, selectionKnown, tree: buildTree(this.v, state) });
+    const changed = sameGeneration && !bindingInvalid && (!activate || previousActiveId === snapshot.id)
+      ? updateUnchangedTree(previous.tree, state) : undefined;
+    const tree = changed ? previous.tree : buildTree(this.v, state);
+    if (bindingInvalid) {
+      tree.error = 'The action snapshot is invalid. Rerun Search before using this list.';
+      tree.unambiguous = false;
+    }
+    if (!tree.unambiguous) state.selectedId = null;
+    this.sessions.set(snapshot.id, { snapshot: state, originals, selectionKnown, tree, bindingInvalid,
+      requestKey: requestPresentationKey(state) });
     if (activate || !this.activeId) this.activeId = snapshot.id;
     this.updatePresentation();
-    if (this.activeId === snapshot.id) this.changeEmitter.fire(undefined);
+    if (this.activeId === snapshot.id) {
+      if (previousActiveId !== this.activeId || !changed) this.changeEmitter.fire(undefined);
+      else if (changed.length) this.changeEmitter.fire(changed);
+    }
   }
 
   setSessions(snapshots, activeId = this.activeId) {
     if (this.disposed) return;
+    const previousActiveId = this.activeId;
     const ids = new Set(snapshots.map(snapshot => snapshot.id));
     for (const id of this.sessions.keys()) if (!ids.has(id)) this.sessions.delete(id);
     for (const snapshot of snapshots) this.update(snapshot);
     this.activeId = this.sessions.has(activeId) ? activeId : this.sessions.keys().next().value;
+    if (this.activeId !== previousActiveId) this.renewActiveHandles();
     this.updatePresentation();
     this.changeEmitter.fire(undefined);
   }
 
   remove(sessionId) {
     if (this.disposed || !this.sessions.delete(sessionId)) return false;
-    if (sessionId === this.activeId) this.activeId = [...this.sessions.keys()].at(-1);
+    if (sessionId === this.activeId) {
+      this.activeId = [...this.sessions.keys()].at(-1);
+      this.renewActiveHandles();
+    }
     this.updatePresentation();
     this.changeEmitter.fire(undefined);
     return true;
@@ -278,11 +435,23 @@ class FindTree {
       const entry = this.sessions.get(sessionId);
       entry.snapshot = { ...entry.snapshot, selectedId: null };
       entry.selectionKnown = true;
+      this.renewActiveHandles();
     }
     this.updatePresentation();
-    this.changeEmitter.fire(undefined);
+    if (changed) this.changeEmitter.fire(undefined);
     if (changed && notify) await this.onSessionChange?.(sessionId);
     return true;
+  }
+
+  renewActiveHandles() {
+    const entry = this.sessions.get(this.activeId);
+    if (entry) {
+      entry.tree = buildTree(this.v, entry.snapshot);
+      if (entry.bindingInvalid) {
+        entry.tree.error = 'The action snapshot is invalid. Rerun Search before using this list.';
+        entry.tree.unambiguous = false;
+      }
+    }
   }
 
   async pickSession() {
@@ -299,27 +468,50 @@ class FindTree {
   }
 
   async select(sessionId, resultId) {
-    if (this.disposed) return false;
+    if (this.disposed || sessionId !== this.activeId) return false;
     let entry = this.sessions.get(sessionId);
-    if (!entry?.tree.byResultId.has(resultId)) return false;
+    const node = entry?.tree.byResultId.get(resultId);
+    if (!node || !entry.tree.unambiguous) return false;
     await this.selectSession(sessionId);
     entry = this.sessions.get(sessionId);
-    if (!entry?.tree.byResultId.has(resultId)) return false;
+    if (!this.actionCurrent(node.action)) return false;
     entry.snapshot = { ...entry.snapshot, selectedId: resultId };
     entry.selectionKnown = true;
     this.updatePresentation();
-    await this.onSelect?.(sessionId, resultId);
-    return true;
+    const outcome = await this.onSelect?.(sessionId, resultId, {
+      generation: node.action.generation,
+      resultRevision: node.action.resultRevision,
+      ...(node.action.actionBinding ? { actionBinding: node.action.actionBinding } : {})
+    });
+    return outcome !== false;
   }
 
-  async show(sessionId = this.activeId, { focus = true } = {}) {
-    if (this.disposed) return false;
+  actionCurrent(action) {
+    if (this.disposed || !action || action.sessionId !== this.activeId) return false;
+    const entry = this.sessions.get(action.sessionId);
+    const node = entry?.tree.byResultId.get(action.id);
+    const result = entry?.snapshot.results.find(row => row.id === action.id);
+    return Boolean(entry?.tree.unambiguous && node && node.action.nativeId === action.nativeId &&
+      entry.snapshot.generation === action.generation && node.action.resultRevision === action.resultRevision &&
+      entry.requestKey === requestPresentationKey(entry.snapshot) &&
+      node.actionKey === rowActionKey(node.result) && result && node.actionKey === rowActionKey(result));
+  }
+
+  async activate(action) {
+    if (!this.actionCurrent(action)) return false;
+    return this.select(action.sessionId, action.id);
+  }
+
+  async show(sessionId = this.activeId, { focus = true, current = () => true } = {}) {
+    if (this.disposed || !current()) return false;
     if (sessionId && !await this.selectSession(sessionId, { notify: false })) return false;
+    if (this.disposed || !current() || (sessionId && !this.sessions.has(sessionId))) return false;
     if (focus) await this.v.commands.executeCommand(`${VIEW_ID}.focus`);
+    if (this.disposed || !current() || (sessionId && !this.sessions.has(sessionId))) return false;
     const entry = this.sessions.get(this.activeId);
     const node = entry?.tree.byResultId.get(entry.snapshot.selectedId) || entry?.tree.roots[0];
     if (node) await this.view.reveal(node, { select: node.kind === 'match', focus: false, expand: true });
-    return true;
+    return !this.disposed && current() && (!sessionId || this.sessions.has(sessionId));
   }
 
   async navigate(delta) {
@@ -329,19 +521,23 @@ class FindTree {
     const count = state.results.length;
     const next = index === -1 ? (delta < 0 ? count - 1 : 0) : ((index + delta) % count + count) % count;
     const result = state.results[next];
-    await this.select(state.id, result.id);
+    const action = this.sessions.get(state.id)?.tree.byResultId.get(result.id)?.action;
+    if (!await this.select(state.id, result.id)) return false;
+    if (!this.actionCurrent(action)) return false;
     const node = this.sessions.get(state.id)?.tree.byResultId.get(result.id);
     if (node) await this.view.reveal(node, { select: true, focus: true, expand: true });
     return true;
   }
 
-  async action(type, node) {
+  async action(type, node, { provided = node !== undefined } = {}) {
     if (this.disposed) return false;
     if (type === 'close') type = 'closeSearch';
+    if (provided && (!node || node.sessionId !== this.activeId || this.currentNode(node) !== node)) return false;
     const sessionId = node?.sessionId || this.activeId;
     const entry = this.sessions.get(sessionId);
-    if (!entry) return false;
+    if (!entry || (!entry.tree.unambiguous && !['refresh', 'editSearch', 'closeSearch'].includes(type))) return false;
     const state = entry.snapshot;
+    if (entry.requestKey !== requestPresentationKey(state)) return false;
     const id = node?.kind === 'match' ? node.result.id : state.selectedId;
     const selected = state.results.find(result => result.id === id);
     if (node?.kind === 'match' && !selected) return false;
@@ -351,18 +547,48 @@ class FindTree {
         (type === 'refresh' && !available.canRefresh) ||
         (type === 'editSearch' && !available.canEdit) ||
         (type === 'focusPreview' && !selected)) return false;
+    const action = node?.kind === 'match' ? node.action : undefined;
+    const requestKey = entry.requestKey;
+    const initialBinding = state.actionBinding;
+    const tree = entry.tree, actionRevision = tree.actionRevision;
+    if (action && !this.actionCurrent(action)) return false;
+    if ((type === 'replace' || type === 'replaceAll') && action?.actionBinding &&
+        !sameActionBinding(action.actionBinding, initialBinding)) return false;
     await this.selectSession(sessionId);
+    const current = this.sessions.get(sessionId);
+    if (this.disposed || this.activeId !== sessionId || current?.requestKey !== requestKey ||
+        current.requestKey !== requestPresentationKey(current.snapshot) ||
+        current.tree !== tree || current.tree.actionRevision !== actionRevision ||
+        current.snapshot.generation !== state.generation ||
+        (action && !this.actionCurrent(action)) ||
+        (initialBinding ? !sameActionBinding(initialBinding, current.snapshot.actionBinding)
+          : Boolean(current.snapshot.actionBinding))) return false;
+    const liveSelected = current.snapshot.results.find(result => result.id === id);
+    if (['replace', 'openResult', 'focusPreview'].includes(type) && !liveSelected) return false;
+    const liveAvailable = this.actionsFor(current.snapshot, liveSelected);
+    if ((type === 'replace' && !liveAvailable.canReplace) ||
+        (type === 'replaceAll' && !liveAvailable.canReplaceAll) ||
+        (type === 'refresh' && !liveAvailable.canRefresh)) return false;
     const message = { type: type === 'focusPreview' ? 'openResult' : type };
+    if (type === 'refresh') message.generation = state.generation;
     if (type === 'replace' || type === 'openResult' || type === 'focusPreview') message.id = id;
-    if (type === 'replace' || type === 'replaceAll') message.generation = state.generation;
-    await this.onAction?.(sessionId, message);
-    return true;
+    if (['replace', 'replaceAll', 'openResult', 'focusPreview'].includes(type)) {
+      message.generation = state.generation;
+      if (selected?.resultRevision !== undefined) message.resultRevision = selected.resultRevision;
+    }
+    // Only an explicit row argument carries an immutable client action. Native
+    // toolbar/keyboard actions have no snapshot binding and require the backend
+    // frozen-review path; never borrow the latest provider's token for them.
+    if ((type === 'replace' || type === 'replaceAll') && action?.actionBinding)
+      message.actionBinding = action.actionBinding;
+    return await this.onAction?.(sessionId, message) !== false;
   }
 
   actionsFor(state = this.state, selected) {
     const results = state?.results || [];
     selected ||= results.find(result => result.id === state?.selectedId);
-    const canReplace = Boolean(state?.mode === 'replace' && state.query &&
+    const trustworthy = !state || this.sessions.get(state.id)?.tree.unambiguous !== false;
+    const canReplace = Boolean(trustworthy && state?.mode === 'replace' && state.query &&
       !state.searching && !state.replacing && !state.error);
     return {
       hasSession: Boolean(state),
@@ -371,10 +597,10 @@ class FindTree {
       isReplace: state?.mode === 'replace',
       canRefresh: Boolean(state && !state.searching && !state.replacing),
       canEdit: Boolean(state && !state.replacing),
-      hasSelection: Boolean(selected),
-      canReplace: Boolean(canReplace && selected && !selected.invalid && !selected.pending),
+      hasSelection: Boolean(trustworthy && selected),
+      canReplace: Boolean(canReplace && selected && !selected.invalid && !selected.pending && !selected.identityUnknown),
       canReplaceAll: Boolean(canReplace && results.length && !state.partial &&
-        results.every(result => !result.invalid && !result.pending))
+        results.every(result => !result.invalid && !result.pending && !result.identityUnknown))
     };
   }
 
@@ -403,7 +629,7 @@ class FindTree {
     this.view.title = state?.mode === 'replace' ? 'Replace' : 'Find';
     this.view.description = state ? String(state.query || '').replace(/\s+/g, ' ').slice(0, 100) : '';
     this.view.message = state
-      ? [state.error || (state.searching ? 'Searching…' : this.summary(state)), this.scopeSummary(state), state.notice, state.diagnostics].filter(Boolean).join('\n')
+      ? [this.sessions.get(state.id)?.tree.error || state.error || (state.searching ? 'Searching…' : this.summary(state)), this.scopeSummary(state), state.notice, state.diagnostics].filter(Boolean).join('\n')
       : 'Run a search, then choose Open in Find Panel to keep its results here.';
     this.view.badge = state ? { value: state.results.length, tooltip: this.summary(state) } : undefined;
     for (const [key, value] of Object.entries(this.actionsFor())) {

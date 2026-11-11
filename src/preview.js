@@ -5,6 +5,7 @@ const tm = require('vscode-textmate');
 const onig = require('vscode-oniguruma');
 const { parse } = require('jsonc-parser');
 const { ClientPreviewBridge } = require('./client-preview');
+const { readDocumentSnapshot, MAX_SNAPSHOT_BYTES } = require('./document-snapshot');
 let wasm;
 async function initializeOnig() {
   if (!wasm)
@@ -234,9 +235,11 @@ class PreviewProvider {
     });
     return { registry, languages, foundTheme, hasDefaultForeground, clientIssue: this.client.issue, clientIncomplete: client?.incomplete };
   }
-  async render(document, result, matches = []) {
+  async render(document, result, matches = [], { maxBytes = MAX_SNAPSHOT_BYTES } = {}) {
     const { registry, languages, foundTheme, hasDefaultForeground, clientIssue, clientIncomplete } = await this.load();
-    const text = document.getText(),
+    // Bound the actual whole-buffer read AFTER theme/client loading: a source
+    // can grow while that await is outstanding, including INVALID inspection.
+    const { text, version } = readDocumentSnapshot(document, maxBytes),
       source = text.split(/\r\n|\r|\n/);
     const selectedLine = result.range.start.line;
     const first = Math.max(0, selectedLine - 8),
@@ -322,7 +325,7 @@ class PreviewProvider {
           : tokenStart > 0
             ? 'Syntax context limited for this large file.'
             : '',
-      version: document.version
+      version
     };
   }
   dispose() {

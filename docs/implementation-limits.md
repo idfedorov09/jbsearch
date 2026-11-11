@@ -1,7 +1,9 @@
 # Fixed parameters and limitations
 
-This describes the current implementation, not planned capabilities. Values with
-a VS Code setting are listed as defaults.
+This describes the combined issue #3 staging implementation, not a released or
+newly native-verified build. Values with a VS Code setting are defaults.
+[Combined regression evidence and remaining acceptance gates](testing/issue-3-integrated-regressions.md)
+are separate from the earlier local and historical platform reports.
 
 ## Appearance and controls
 
@@ -83,19 +85,30 @@ a VS Code setting are listed as defaults.
   remove both markers. Coordinate tracking keeps the last 128 states and the
   file's initial state; full document text copies are not stored in this history.
   There is no separate history-depth setting.
-- During an unfinished search, a relevant file change restarts snapshot creation.
-  A cancelled generation's response is not published over newer coordinates.
-  After completion, the search changes its set of rows only through explicit
-  Rerun Search or confirmation of new parameters.
+- During initial preparation/enumeration, a relevant delivered event conservatively
+  marks the result partial/unverified without silently restarting the search. A
+  bounded URI journal invalidates affected rows, or the entire initial snapshot
+  when membership/ignore/configuration is uncertain or the journal overflows.
+  This is not evidence that a particular match was lost. After completion,
+  relevant events set scope staleness without retroactively setting initial
+  partial. New matches require explicit Rerun or changed search parameters.
+  Query, mask, scope and other search-affecting parameters clear old rows,
+  selection, accessibility reference and preview immediately, before ACK.
 - An external edit to a closed file has no old text or TextDocumentChangeEvent,
   so the exact movement of old ranges cannot be reconstructed. Validation uses
-  current coordinates; a mismatch makes the row INVALID. A full recalculation
-  requires Rerun Search. A deleted file remains unavailable INVALID.
+  the current full regex context but cannot revive unknown identity merely from
+  matching text/coordinates. A full recalculation requires Rerun Search. A
+  deleted or closed source remains unavailable/identity-unknown INVALID.
 - File revalidation is limited to 50000 matches; the size limit and timeout come
   from the shared `jbsearch.search.maxFileSizeMiB` and `jbsearch.search.timeoutMs`.
-  An error, timeout, or incomplete response leaves Checking with an explanation.
-  The delay after document edits is 150 ms, and after file-system events 250 ms;
-  these validation parameters have no separate settings.
+  An error, timeout or incomplete response settles non-pending INVALID with an
+  explanation and Rerun guidance. The delay after document edits is 150 ms, and
+  after file-system events 250 ms, with a 1000 ms maximum debounce age. The
+  original absolute caller deadline includes debounce, FIFO, opens and worker
+  waiting; hot requeues or pending-row owner transfer cannot extend it. At most
+  four logical validation callers and 512 admitted entries are retained across
+  sessions, including debounce, FIFO and canceled running operations until
+  logical settlement. This is not a four-physically-live-worker guarantee.
 - INVALID and Checking block replacement of the corresponding row; Replace All
   requires the entire set to be valid and verified, and the search to be complete.
   After the extension's own replacement, snapshot rows are preserved and rechecked,
@@ -110,7 +123,35 @@ a VS Code setting are listed as defaults.
 | `jbsearch.search.maxResults` | 5000 matches | 1–50000 |
 | `jbsearch.search.maxFileSizeMiB` | 2 MiB per file | 0.01–128 MiB |
 | `jbsearch.search.timeoutMs` | 10000 ms | 100–300000 ms |
+| `jbsearch.replace.prepareTimeoutMs` | 60000 ms | 100–300000 ms |
 | `jbsearch.search.respectExcludes` | enabled | `true` / `false` |
+
+The replacement preparation deadline is cumulative across document and file
+preparation and does not include the independent worker search. A timeout before
+edit submission applies no edit; the limit can be increased or the scope
+narrowed. After a WorkspaceEdit is submitted, its outcome must be awaited instead
+of assuming the timeout can revoke it. This deadline does not promise to
+interrupt a kernel-blocked filesystem operation.
+
+Physical document opens share a controller-owned limit of four active requests
+and 512 FIFO waiters; a separate lane gives whole disk-read/assertion/close jobs
+the same limits. Caller timeout/cancellation does not free an unresolved physical
+slot. Four permanently hung operations can stall their shared lane even for
+unrelated sessions; later actual settlement permits FIFO progress. Exhaustion
+refuses further work rather than bypassing safety checks. These
+limits are not a guarantee about the number of physically exited worker threads.
+
+Replacement binds an immutable full client model, not just visible virtual rows
+or the latest mutable native provider state. A reliably bound action adds no
+confirmation; an action with no reliable binding opens a separate frozen
+read-only review with an explicit action, not Edit Search. A stale supplied
+binding refuses instead of adopting current targets. Complete fresh-scope
+equality is required for All; mismatch preserves the old results and offers
+explicit Rerun. Observed Save can lazily rebase a verified changed disk baseline
+only with exact current known document/row/request/epoch and lossless no-follow
+state-equality guards. Unknown history, unsupported encoding, permission/resource
+errors or missing safe-open support do not take that path. The approved source
+baseline stays immutable. See [combined evidence and boundaries](testing/issue-3-integrated-regressions.md).
 
 Replace All is not applied to incomplete results, for example due to a result
 limit, timeout, unreadable input, unsupported encoding, or an unclassified file
@@ -120,9 +161,11 @@ or replaced. The status lists up to 20 representative excluded/skipped paths and
 reasons, prioritizing blocking inputs, and reports how many details were omitted.
 
 Detection uses content, not extensions: structurally recognized ZIP, common
-binary signatures, and NUL bytes are binary evidence. Known UTF-16/32 BOMs and
-likely BOM-less UTF-16/32 patterns are treated as unsupported encodings before
-the generic NUL rule. These are heuristics, not a perfect distinction between
+binary signatures, and NUL bytes are binary evidence. Without an explicit known
+clean-document codec, UTF-16/32 BOMs and likely BOM-less UTF-16/32 patterns are
+treated as unsupported before the generic NUL rule. Explicit clean UTF-16 LE/BE
+documents can use lossless disk decoding; conflicting BOMs and known unsupported
+codecs remain blocking. These are heuristics, not a perfect distinction between
 arbitrary binary and text: binary bytes that look like UTF-8 can still be searched,
 and text (including unsupported encodings) can be mistaken for binary and excluded.
 Ambiguous binary data can also be treated as a blocking encoding error. Review the
@@ -155,7 +198,9 @@ delay, and file-system handling uses 250 ms; these are not separately configurab
 - The list displays a limited line fragment around the match; navigating to a
   result shows the full file. The list is virtualized; worker communication uses
   batches of up to 80 matches. The Node worker's old-generation heap has a 256 MiB
-  limit, and the worker is forcibly terminated 40 ms after cancellation.
+  limit. Cancellation requests worker termination after a 40 ms grace period,
+  but the engine does not await physical exit before logical settlement; this
+  is not a hard live-worker or whole-worker-I/O resource bound.
 - Search uses ECMAScript regex in a worker and bundled ripgrep for file enumeration,
   supports UTF-8, does not traverse symlinks, and does not search browser or virtual
   workspaces. These limitations are not UI toggles.
@@ -190,7 +235,7 @@ update does not need an extension version bump: **Developer: Reload Window** is
 enough. Find Panel server source changes require neither rebuilding `client/`
 nor reinstalling the client component.
 
-The current Find Panel was tested in stock VS Code 1.143.1 from source and 1.144.1
+The earlier Find Panel implementation was tested in stock VS Code 1.143.1 from source and 1.144.1
 from an installed VSIX on Linux/X11: 13 GUI scenarios each, including native icons,
 dark/light themes, INVALID/Undo, and no split. Scenario details and verification
 boundaries are in the [Find Panel report](testing/native-find-panel.md).
@@ -202,4 +247,36 @@ later user-reported macOS/Linux acceptance is recorded separately in
 [platform acceptance](testing/platform-acceptance.md); Windows and Wayland
 execution remain unverified.
 Find Panel over physical Remote still needs separate acceptance testing; the
-earlier loopback modal test does not confirm it.
+earlier loopback modal test does not confirm it. Those historical GUI runs do
+not verify the combined issue #3 runtime. No VS Code binary was launched or
+probed for the combined staging checks recorded here; any new EDH run requires
+separately approved disposable HOME/XDG/data/extensions/runtime isolation.
+
+
+## Presentation boundaries
+
+- While a Find Panel search is still streaming, the final deterministic sort can
+  reorder rows that were already shown. Structural updates and native workbench
+  scrolling can also move the viewport; the public TreeView API does not provide
+  a precise viewport anchor. Status-only changes with unchanged action semantics
+  retain provider identities and use localized notifications, although a changed
+  ancestor can refresh its visible subtree. Stable logical occurrence IDs are
+  distinct from native action handles: request, occurrence revision or full
+  manifest binding changes renew those handles, refreshing existing file
+  parents. This renewal may also move native selection/scroll; neither a refresh
+  nor a requested TreeItem acknowledges that new pixels were painted.
+- Native row commands capture immutable descriptors and reject stale or expired
+  context arguments instead of rebinding by logical ID. Missing/duplicate result
+  IDs produce a diagnostic and no actionable tree. A whole-manifest token change
+  renews all row actions, even if only one file changed; its local CPU/retained
+  memory cost and test limits are in the
+  [issue #3 presentation report](testing/issue-3-scroll-order.md).
+- Current native row actions carry the immutable full-manifest descriptor into
+  actual backend admission. Missing toolbar binding opens a genuine frozen
+  read-only review, not Edit Search; stale supplied bindings refuse without
+  adopting new targets. Programmatic/provider tests do not prove frontend
+  context-handle receipt, delayed painting or physical user approval.
+- Across a same-generation modal update, the first visible occurrence and its
+  relative row offset are retained when that occurrence remains present. A new
+  search generation or pending query, mask, or scope change still resets the
+  list; scrolling does not request another search or results page.

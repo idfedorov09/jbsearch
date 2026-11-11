@@ -236,6 +236,13 @@
           "maximum": 300000,
           "description": "Search deadline in milliseconds, including regular expression execution."
         },
+        "jbsearch.replace.prepareTimeoutMs": {
+          "type": "number",
+          "default": 60000,
+          "minimum": 100,
+          "maximum": 300000,
+          "description": "Total deadline in milliseconds for preparing a replacement, excluding the independent scope-search deadline."
+        },
         "jbsearch.search.respectExcludes": {
           "type": "boolean",
           "default": true,
@@ -380,6 +387,11 @@
           "command": "jbsearch.results.replace",
           "when": "view == jbsearch.results && viewItem =~ /^jbsearch\\.match\\./ && jbsearch.results.isReplace",
           "group": "find@2"
+        },
+        {
+          "command": "jbsearch.results.replaceAll",
+          "when": "view == jbsearch.results && viewItem =~ /^jbsearch\\.match\\./ && jbsearch.results.isReplace",
+          "group": "find@3"
         }
       ]
     }

@@ -3,8 +3,9 @@
 // Results live in a native Panel. Open source files in the active editor group
 // without splitting the workbench or moving existing tabs.
 class FindPreview {
-  constructor(vscode) {
+  constructor(vscode, { openDocument = uri => vscode.workspace.openTextDocument(uri) } = {}) {
     this.v = vscode;
+    this.openDocument = openDocument;
     this.editor = undefined;
     this.revision = 0;
     this.queue = Promise.resolve();
@@ -40,16 +41,24 @@ class FindPreview {
    * uses the existing search model's { uri, id, range: { start, end } } shape.
    * Call with preserveFocus:false for an explicit action to edit the source.
    */
-  show(result, matches = [], { preserveFocus = true } = {}) {
+  show(result, matches = [], { preserveFocus = true, signal, current = () => true } = {}) {
+    this.openAbort?.abort();
+    const abort = this.openAbort = new AbortController();
+    const openingSignal = signal ? AbortSignal.any([signal, abort.signal]) : abort.signal;
     const revision = ++this.revision;
     const column = this.v.window.tabGroups.activeTabGroup?.viewColumn || this.v.ViewColumn.Active;
     const request = { result, matches, column };
     this.request = request;
     const operation = this.queue.catch(() => {}).then(async () => {
-      if (this.disposed || revision !== this.revision || !result) return undefined;
+      if (this.disposed || revision !== this.revision || openingSignal.aborted || !current() || !result) return undefined;
       const uri = typeof result.uri === 'string' ? this.v.Uri.parse(result.uri) : result.uri;
-      const document = await this.v.workspace.openTextDocument(uri);
-      if (this.disposed || revision !== this.revision) return undefined;
+      let document;
+      try { document = await this.openDocument(uri, { signal: openingSignal }); }
+      catch (error) {
+        if (openingSignal.aborted) return undefined;
+        throw error;
+      }
+      if (this.disposed || openingSignal.aborted || document.isClosed || !current() || revision !== this.revision) return undefined;
       const range = this.range(document, request.result);
       const caret = new this.v.Range(
         range.start.line, range.start.character, range.start.line, range.start.character
@@ -60,7 +69,7 @@ class FindPreview {
         preserveFocus,
         selection: caret
       });
-      if (this.disposed || revision !== this.revision) return undefined;
+      if (this.disposed || openingSignal.aborted || document.isClosed || !current() || revision !== this.revision) return undefined;
       if (this.editor && this.editor !== editor) this.clearDecorations(this.editor);
       this.editor = editor;
       this.update(request.result, request.matches);
@@ -107,6 +116,7 @@ class FindPreview {
   }
 
   clear() {
+    this.openAbort?.abort();
     ++this.revision;
     this.request = undefined;
     if (this.editor) this.clearDecorations(this.editor);
