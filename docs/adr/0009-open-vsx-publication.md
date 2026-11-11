@@ -1,5 +1,8 @@
 # ADR 0009: Manual Open VSX publication with a trusted-publishing transition
 
+> ADR 0015 records the later, explicitly authorized beta-push exception. The
+> stable publication routes described here remain unchanged.
+
 - Status: Accepted
 - Date: 2026-11-08
 

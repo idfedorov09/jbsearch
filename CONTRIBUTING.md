@@ -14,14 +14,20 @@ actually ran. Ordinary development pull requests should target `dev`.
 
 ## Branches: dev as the trunk
 
-The project uses only two long-lived branches:
+The project uses `dev` as the ordinary development trunk and `master` as the
+stable branch. The explicitly authorized `beta` branch is a publication channel,
+not a second development trunk:
 
-- `dev` is the single trunk for ordinary development. Make small, verifiable
-  changes directly on this branch in short iterations.
-- `master` is the stable branch. Transfer ready, verified history from `dev`
-  only when separately agreed.
+- `dev`: make small, verifiable ordinary changes in short iterations.
+- `master`: transfer ready, verified history from `dev` only when separately agreed.
+- `beta`: receive authorized changes only through a reviewed `dev` → `beta`
+  pull request; do not commit or push changes directly to `beta`. Link the pull
+  request and its issue without auto-closing the issue. Merging the reviewed PR
+  produces a beta push that can publish to both registries after checks.
 
-There are no feature or release branches; this is not Git Flow. Check
+The publication workflow reacts to beta pushes but does not itself prove their
+pull-request provenance; repository process and branch restrictions must enforce
+that rule. This is not Git Flow and does not introduce feature branches. Check
 `git status` and the current branch before working. Preserve other people's
 uncommitted changes. If `master` and `dev` have diverged and a safe transfer is
 unclear, stop and discuss synchronization without silently rewriting history.
@@ -153,10 +159,11 @@ nor authorize implementation by themselves.
 Use SemVer for release versions: patch for fixes, minor for compatible new
 features, and major for incompatible changes. F5 testing does not require a
 version bump. Version changes, commits, push, transfers to `master`, and
-publication require separate agreement. Once the prepared workflow is activated,
-a push to `master` with a new version can automatically publish it; account for
-that effect when agreeing to push. Access setup, branch restrictions, and
-validation are covered in the [publishing guide](docs/marketplace-publishing.md).
-Open VSX uses a separate manually dispatched workflow and Environment; its
-bootstrap token and trusted-publishing transition are described in the
-[Open VSX publishing guide](docs/open-vsx-publishing.md).
+publication require separate agreement. Marketplace retains its `master` push
+and manual stable routes; Open VSX stable publication remains manually dispatched
+from `master`. A `beta` push can publish a pre-release to both registries using
+the same extension ID; `dev` pushes and manual `beta` dispatch do not publish.
+Use a distinct numeric version and account for that effect when agreeing to push.
+Access, environment restrictions, and verification are described in the
+[Marketplace](docs/marketplace-publishing.md) and
+[Open VSX](docs/open-vsx-publishing.md) guides.

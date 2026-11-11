@@ -1,5 +1,8 @@
 # Proposal
 
+> Historical stable-publication design. The explicit beta exception is recorded
+> in `add-beta-publication`; the stable routes described here remain unchanged.
+
 ## Why
 
 JB Search has a prepared VS Code Marketplace workflow but no GitHub Actions

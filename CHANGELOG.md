@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.3.3 — pre-release
+
+### Changed
+
+- Keep completed Find Panel results as a stable snapshot through source events;
+  new matches appear after an explicit Rerun Search.
+- Track match identity across supported edits and fail closed on stale, ambiguous,
+  pending, or unverified actions rather than silently adopting a different match.
+- Bind replacement actions to the reviewed result snapshot. Replace All performs
+  a fresh full-scope preflight and refuses when the approved plan differs.
+- Preserve result presentation where supported and retain explicit limits on
+  native TreeView handle delivery, selection, and scroll behavior.
+
+The extension ID is unchanged and the bundled client remains at 0.1.0. Automated
+Linux checks are not Windows, WSL, macOS, physical Remote, or native-editor
+acceptance; those checks remain open. See the [pre-release notes](https://github.com/idfedorov09/jbsearch/blob/beta/docs/releases/v0.3.3-beta.md).
+
 ## 0.3.2 — 2026-11-09
 
 ### Fixed

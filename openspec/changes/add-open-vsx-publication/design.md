@@ -1,5 +1,8 @@
 # Design
 
+> Historical stable-publication design. The explicit beta exception is recorded
+> in `add-beta-publication`; the stable routes described here remain unchanged.
+
 ## Context
 
 The namespace is owned, but Open VSX requires an active published extension

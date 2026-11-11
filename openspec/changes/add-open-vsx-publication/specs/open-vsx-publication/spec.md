@@ -9,16 +9,17 @@ extension package to Open VSX without enabling automatic releases.
 
 ### Requirement: Manual stable-branch publication
 
-The Open VSX publication workflow SHALL run only on manual dispatch, and its
-jobs SHALL be restricted to `master` in `idfedorov09/jbsearch`.
+Stable Open VSX publication SHALL run only on manual dispatch from `master` in
+`idfedorov09/jbsearch`. Beta pushes are specified separately in
+`add-beta-publication`.
 
 #### Scenario: Push or pull request
 - **WHEN** a commit is pushed or a pull request is opened
-- **THEN** the Open VSX publication workflow does not start
+- **THEN** stable Open VSX publication does not start
 
 #### Scenario: Dispatch from another ref or repository
 - **WHEN** the workflow is dispatched from another ref or repository
-- **THEN** neither validation nor a publication job executes
+- **THEN** no stable publication job executes
 
 ### Requirement: Validation and verified package
 

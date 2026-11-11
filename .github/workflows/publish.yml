@@ -2,7 +2,7 @@ name: Publish VS Code Extension
 
 on:
   push:
-    branches: [master]
+    branches: [master, beta]
   workflow_dispatch:
 
 concurrency:
@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   check:
-    if: github.repository == 'idfedorov09/jbsearch' && github.ref == 'refs/heads/master'
+    if: github.repository == 'idfedorov09/jbsearch' && ((github.ref == 'refs/heads/master' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')) || (github.ref == 'refs/heads/beta' && github.event_name == 'push' && github.event.deleted == false && github.event.forced == false))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -28,10 +28,27 @@ jobs:
       - run: npm run check
       - run: npm test
       - run: npm run spec:check
-      - run: npm run package
+      - name: Set beta build timestamp
+        if: github.ref == 'refs/heads/beta'
+        run: |
+          set -euo pipefail
+          epoch="$(git show -s --format=%ct "$GITHUB_SHA")"
+          case "$epoch" in
+            ''|*[!0-9]*)
+              printf '%s\n' '::error::Commit timestamp must be nonempty and numeric.' >&2
+              exit 1
+              ;;
+          esac
+          printf 'SOURCE_DATE_EPOCH=%s\n' "$epoch" >> "$GITHUB_ENV"
+      - name: Build stable package
+        if: github.ref == 'refs/heads/master'
+        run: npm run package
+      - name: Build pre-release package
+        if: github.ref == 'refs/heads/beta'
+        run: npm run package:pre-release
 
   publish:
-    if: github.repository == 'idfedorov09/jbsearch' && github.ref == 'refs/heads/master'
+    if: github.repository == 'idfedorov09/jbsearch' && ((github.ref == 'refs/heads/master' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')) || (github.ref == 'refs/heads/beta' && github.event_name == 'push' && github.event.deleted == false && github.event.forced == false))
     needs: check
     runs-on: ubuntu-latest
     environment: marketplace
@@ -47,6 +64,30 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --ignore-scripts
-      - run: npm run package
-      - name: Publish new version
+      - name: Set beta build timestamp
+        if: github.ref == 'refs/heads/beta'
+        run: |
+          set -euo pipefail
+          epoch="$(git show -s --format=%ct "$GITHUB_SHA")"
+          case "$epoch" in
+            ''|*[!0-9]*)
+              printf '%s\n' '::error::Commit timestamp must be nonempty and numeric.' >&2
+              exit 1
+              ;;
+          esac
+          printf 'SOURCE_DATE_EPOCH=%s\n' "$epoch" >> "$GITHUB_ENV"
+      - name: Build stable package
+        if: github.ref == 'refs/heads/master'
+        run: npm run package
+      - name: Build pre-release package
+        if: github.ref == 'refs/heads/beta'
+        run: npm run package:pre-release
+      - name: Publish new stable version
+        if: github.ref == 'refs/heads/master'
         run: ./node_modules/.bin/vsce publish --oidc --skip-duplicate --packagePath ./*.vsix
+      - name: Publish and verify pre-release
+        if: github.ref == 'refs/heads/beta'
+        run: |
+          package="jbsearch-$(node -p 'require("./package.json").version').vsix"
+          ./node_modules/.bin/vsce publish --oidc --pre-release --skip-duplicate --packagePath "$package"
+          node scripts/verify-published-beta.js marketplace "$package"

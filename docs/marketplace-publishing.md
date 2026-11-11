@@ -1,85 +1,76 @@
 # Publishing JB Search to VS Code Marketplace
 
-The repository includes a prepared `.github/workflows/publish.yml`. Its presence
-in the working tree or `dev` does not itself activate releases: GitHub Actions
-uses committed files, while trust and restrictions are configured separately.
+The existing `.github/workflows/publish.yml` uses Marketplace Trusted Publishing
+for the single extension ID `idfedorov09.jbsearch`. Committing a workflow does
+not itself verify the external policy, a successful release, or editor behavior.
 
-## One-time user setup
+## Branches and authorization
 
-Configure the restricted environment first, then publisher trust. You need GitHub
-repository owner permissions and access to Marketplace publisher `idfedorov09`.
+- A `master` push or manual `master` dispatch follows the existing **stable**
+  route after validation. A new version on a `master` push can publish publicly.
+- A non-deletion, non-force `beta` push follows the **pre-release** route after
+  validation. Manual `beta` dispatch does not publish. A `dev` push, pull
+  request, tag, and foreign repository do not publish either route.
+- The `beta` branch is an explicitly authorized publication channel, not an
+  ordinary development branch. All changes must reach it through a reviewed
+  `dev` → `beta` pull request, linked to the relevant issue without automatically
+  closing it; do not commit or push directly to `beta`. PR checks run before merge.
+  Publishing and transferring to `master` require applicable authorization.
 
-### 1. Restrict the GitHub Environment
+A prerelease uses the same extension ID and a distinct numeric `major.minor.patch`
+version. Marketplace does not accept SemVer suffixes such as `-beta.1`. A later
+stable version must have a different and higher number; VS Code can update an
+opted-in prerelease user to a numerically higher stable version. See
+[Microsoft's prerelease guidance](https://code.visualstudio.com/api/working-with-extensions/publishing-extension#pre-release-extensions).
 
-1. On GitHub, open `idfedorov09/jbsearch` → **Settings** → **Environments** →
-   **New environment**. Create `marketplace`.
-2. Under **Deployment branches and tags**, choose **Selected branches and tags**.
-3. Select **Add deployment branch or tag rule**, choose **Branch**, enter
-   `master`, and save. Confirm there are no other allowing rules.
-4. Do not add required reviewers if releases should be fully automatic.
-   Environment secrets are not needed for OIDC.
+## Protect the GitHub Environment and publisher trust
 
-Checking `master` in YAML alone is insufficient: an untrusted branch can contain
-its own version of that file. Configure the Environment restriction **before**
-granting the workflow Marketplace trust. GitHub can automatically create a
-missing Environment without protection, so a pre-created, verified rule matters.
+In repository **Settings → Environments → marketplace**, use **Selected branches
+and tags** and permit the exact branch names `master` and `beta`; do not allow
+other branches or tags. Review branch write restrictions: a contributor able to
+modify an allowed branch's workflow can use its publishing authority. YAML `if`
+conditions are not a security boundary. The publication workflow itself does
+not prove that a beta push came from a pull request; enforce that separately.
+Confirm the Environment exists and is protected before granting trust; GitHub
+can otherwise create it without the intended restrictions.
 
-### 2. Configure Marketplace trust
+The Marketplace trusted-publisher policy must identify repository owner
+`idfedorov09`, repository `jbsearch`, workflow `publish.yml`, and Environment
+`marketplace`. The publishing job alone receives `id-token: write`; a stored PAT
+is not needed. Do not substitute another publisher on an access failure.
 
-1. Sign into the [publisher dashboard](https://marketplace.visualstudio.com/manage)
-   with an account authorized for `idfedorov09`.
-2. Select publisher **idfedorov09** → **Trusted Publishing** → **Create**.
-3. Enter:
+## Package and verify
 
-   | Field | Value |
-   | --- | --- |
-   | Policy name | For example, `jbsearch-publish` |
-   | Repository owner | `idfedorov09` |
-   | Repository | `jbsearch` |
-   | Workflow | `publish.yml` |
-   | Environment | `marketplace` |
+Both routes run install, code checks, tests, strict OpenSpec validation, and
+packaging before publication. The separate publishing runner rebuilds and checks
+its own main VSIX, including its nested UI client and runtime resources. Stable
+packaging uses `npm run package`. The beta route sets `SOURCE_DATE_EPOCH` from
+the triggering commit before running `npm run package:pre-release`; this builds
+the outer VSIX with the pre-release marker, checks its contents and identity,
+and verifies the marker before passing the finished file to `vsce`. A failed
+commit lookup or an empty or nonnumeric timestamp stops the job before packaging.
 
-4. Save the policy. Names must match GitHub and the workflow file.
-   A personal token, GitHub Secret `VSCE_PAT`, and Azure DevOps PAT are not needed.
+The beta job uses the prebuilt file and verifies the registry's exact ID,
+version, pre-release marker, and SHA-256 after publication or a duplicate skip.
+A `--skip-duplicate` result alone does not establish that the existing version
+contains the intended bytes. Bounded retries account for propagation. A mismatch
+or unavailable response fails the job, and publication may already have
+occurred; investigate the immutable artifact and run before retrying. Do not
+replace, unpublish, force, or change publisher as a recovery shortcut. Bytewise
+reproducibility assumes the same source, pinned tools, and clean build inputs.
 
-If publisher access or the required settings are unavailable, stop and resolve
-permissions; do not silently create another publisher.
+The stable route retains its previous duplicate-skip behavior and does not gain
+a new stable publishing trigger. Neither route creates commits, tags, or releases.
 
-## Release process
+## External checks
 
-Once the workflow is in `master` and both settings above exist, a push to `master`
-runs validation and, on success, publishes the version from `package.json`.
-The publication job uses a separate runner: after `npm ci --ignore-scripts`, it
-runs `npm run package`. That command builds the nested client VSIX, packages the
-main extension, and checks package contents with `scripts/verify-package.js`,
-including the client component and runtime resources. The verified VSIX is passed
-to `vsce publish` through `--packagePath ./*.vsix`; publication does not repackage
-sources. The validation job's build is not automatically transferred between
-runners. The clean publication runner has one main VSIX in the root; the client
-package is in `bundled/`.
+After an authorized publication, separately record the Actions run and commit,
+exact registry version/channel/hash, and whether the intended stable version
+remains available. Real VS Code installation, native rendering, and each platform
+require their own recorded checks; a registry listing or CI success is not a
+substitute. Stopping future releases requires a separately authorized workflow or
+trust-policy change.
 
-Manual GitHub Actions dispatch is also restricted to `master`. An existing
-version is skipped: it **does not update** that version's contents. For a new
-release, first update `package.json` and the matching `package-lock.json`.
-The workflow creates neither commits nor tags.
-
-**After trust is activated, pushing a new version to `master` can automatically
-publish it publicly.** Before transferring, confirm that sources, description,
-and supported platforms are ready; explicitly agree on the transfer and
-publication. CI builds the package, so no manual VSIX upload is needed.
-Local workflow and packaging checks do not confirm trust setup or a successful
-real release; record those outcomes separately after authorized publication.
-
-## Checks after the separately authorized first release
-
-- [ ] GitHub Actions validation and publication jobs passed for the intended commit/version.
-- [ ] The `idfedorov09.jbsearch` listing is available and its description matches the package.
-- [ ] The extension installs from Marketplace and starts in clean VS Code.
-- [ ] Manual Find/Replace and platform checks are recorded separately in the
-  [testing matrix](testing/find-replace.md).
-
-To stop future releases, the user can disable the workflow or revoke its trust
-policy. These external actions are not performed automatically.
-
-Sources: [Microsoft Trusted Publishing guide](https://code.visualstudio.com/api/working-with-extensions/publishing-extension#publish-with-github-actions-and-trusted-publishing),
-[GitHub Environment configuration](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments).
+Sources: [Microsoft Trusted Publishing](https://code.visualstudio.com/api/working-with-extensions/publishing-extension#publish-with-github-actions-and-trusted-publishing),
+[GitHub Environment restrictions](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments#deployment-branches-and-tags),
+and [ADR 0015](adr/0015-beta-push-publication.md).

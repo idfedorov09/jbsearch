@@ -1,103 +1,88 @@
 # Publishing JB Search to Open VSX
 
-The repository contains a separate, manually dispatched
-`.github/workflows/publish-open-vsx.yml`. It prepares an Open VSX release; it
-does not publish by itself and does not change the Microsoft Marketplace
-workflow. GitHub must receive the workflow and the user must configure the
-required external access before a real publication can run.
+The existing `.github/workflows/publish-open-vsx.yml` publishes the same
+`idfedorov09.jbsearch` ID used by Marketplace. Its stable and prerelease routes
+are deliberately different:
 
-## Protect the GitHub Environment first
+- **Stable:** manually dispatch on `master` and explicitly select `token` or
+  `trusted`. A `master` push does not automatically publish to Open VSX.
+- **Pre-release:** a non-deletion, non-force `beta` push uses the explicitly
+  selected token route after validation. Manual `beta` dispatch, `dev` pushes,
+  pull requests, tags, and foreign repositories do not publish a beta.
 
-1. In the `idfedorov09/jbsearch` repository, open **Settings → Environments →
-   New environment**, and create `open-vsx`.
-2. Under **Deployment branches and tags**, choose **Selected branches and
-   tags**, add a **Branch** rule for `master`, and confirm there are no other
-   allowing rules. Add required reviewers if the repository plan supports them
-   and an additional approval is desired.
-3. Verify the restriction before storing a token or granting trusted publisher
-   access. An `if` condition in a workflow is not a security boundary: a
-   different branch could contain a modified workflow. GitHub can also create
-   a missing Environment automatically without the intended protections.
+A beta push is a public action after the external access rules are configured.
+All changes must reach `beta` via a reviewed `dev` → `beta` pull request linked
+to the relevant issue without automatically closing it. Do not make or push
+direct beta commits; review sources, version, limitations, checks, and release
+authorization before merging. The workflow reacts to beta pushes but does not
+itself prove pull-request provenance; enforce that rule separately.
+Neither route creates a commit, tag, or GitHub release.
 
-## Prepare the first Action release
+## Protect the Environment
 
-Open VSX trusted publishing requires an existing active version of the extension.
-For the first Action release, use an Open VSX personal access token:
+In **Settings → Environments → open-vsx**, restrict deployment to the exact
+branch names `master` and `beta`. Do not use wildcard or unrestricted rules.
+The Environment must exist and be protected before storing a secret or granting
+trusted publisher access. A workflow guard is not a security boundary for a
+modified file on an allowed branch: protect branch write access separately.
+The beta token job reads only the Environment secret `OVSX_PAT` and has no
+`id-token: write`; a missing token fails without a fallback. Never put the token
+in source, command arguments, logs, screenshots, or issue comments.
 
-1. Sign in to Open VSX, sign its Publisher Agreement, and obtain ownership of
-   the `idfedorov09` namespace. The namespace owner and extension publisher must
-   match the values in `package.json`.
-2. In Open VSX **Settings → Access Tokens**, generate a token with a recognizable
-   description such as `JB Search GitHub Actions bootstrap`. Copy it immediately;
-   Open VSX displays it only once. Never put it in source, issue comments, chat,
-   command arguments, logs, or screenshots.
-3. In GitHub **Settings → Environments → open-vsx → Environment secrets**, add
-   `OVSX_PAT` with that token as its value. This is an Open VSX token, not a
-   GitHub or Microsoft Marketplace token. Do not store it as a repository-wide
-   secret for this workflow.
-4. Separately authorize and complete the required Git operations. A workflow
-   must exist on GitHub's default branch before it can be manually dispatched.
-   This repository uses `master` as its stable/default branch, and both the
-   workflow and Environment restrict publication to `master`.
-5. Only when the intended commit and version are approved for **public
-   publication**, open **Actions → Publish to Open VSX → Run workflow**, select
-   `master`, choose authentication **token**, and start the run. Missing
-   `OVSX_PAT` fails the token job; it does not fall back to another credential.
+## Package and publication checks
 
-The validation job runs `npm ci --ignore-scripts`, `npm run check`, `npm test`,
-`npm run spec:check`, and `npm run package`. The selected publication job runs
-on a separate runner, installs from the lockfile, and rebuilds and verifies the
-package before passing the main VSIX to `ovsx`. `npm run package` prepares and
-checks the nested client VSIX and runtime resources. Only the selected job can
-publish; the other authentication job is skipped.
+Each route validates, prepares the nested client, builds the main VSIX and checks
+its contents on the publishing runner. The beta route first fixes
+`SOURCE_DATE_EPOCH` to the triggering commit timestamp, then builds the outer
+package with `vsce package --pre-release` and verifies its ID, numeric version,
+and pre-release XML marker. A failed commit lookup or an empty or nonnumeric
+timestamp stops the job before packaging. `ovsx` ignores `--pre-release` for an already
+packaged VSIX, so adding the flag at upload time cannot repair an unmarked file.
 
-The version comes from `package.json` on the chosen `master` commit. A duplicate
-version is an error, not an update or silent replacement. The workflow does not
-change the version, create commits or tags, or create a GitHub release. Release
-runs share a concurrency group; GitHub can replace an already pending run with
-a newer pending run, while an in-progress run is not canceled.
+The token routes run the pinned `ovsx` CLI through a process-local HTTP/HTTPS
+credential guard. The CLI can otherwise fall back to sending a token in the URL
+query when its registry-version request fails. The guard accepts only the
+expected request form, the fixed `https://open-vsx.org` origin, and the safe
+size-limit query; it rejects token/userinfo URLs, cross-origin redirects, and
+unknown forms before sending. CLI messages are suppressed because registry
+responses can echo credentials. An outage or protocol change can therefore
+produce a generic failure: investigate without logging the token and do not
+bypass the guard. Synthetic-token local tests are not proof of a real upload.
+The `master` trusted job remains separate and does not read `OVSX_PAT`. It is
+unchanged by this beta work and is not covered by the token-route guard; the
+pinned CLI's version-failure URL fallback can also affect an exchanged temporary
+publishing token. Do not infer that this separate route was hardened or tested.
 
-## Switch to Trusted Publishing
+The beta job verifies the exact public version, `preRelease` flag, and VSIX
+SHA-256 after publication or a duplicate skip. A skipped duplicate alone is not
+success. Bounded retries address propagation; on mismatch or timeout the job
+fails even though the upload may have occurred. Preserve the artifact and run
+record and investigate instead of unpublishing, overwriting, or using a different
+publisher. Stable token/trusted jobs retain their prior duplicate-error behavior.
 
-After the first version is **active** in Open VSX:
+## Registry `latest` and version ordering
 
-1. Open Open VSX **Settings → Trusted Publishers** and register a GitHub
-   publisher for extension `jbsearch` in namespace `idfedorov09`:
+Use a distinct numeric version, not a SemVer prerelease suffix, so the same
+package also meets Marketplace requirements. A later stable version must be
+different and higher. Open VSX's unversioned `latest` can resolve to a higher
+pre-release even while an earlier stable version remains available by its exact
+version. Do not infer every editor's update behavior from the registry alias;
+test each claimed client separately.
 
-   | Field | Value |
-   | --- | --- |
-   | Organization or User name | `idfedorov09` |
-   | Repository name | `jbsearch` |
-   | Workflow filename | `publish-open-vsx.yml` |
-   | Environment name | `open-vsx` |
+## Access and follow-up
 
-2. Confirm that GitHub's `open-vsx` Environment remains restricted to `master`.
-   The Open VSX registration identifies the workflow and Environment, but is
-   not itself a branch restriction.
-3. Delete the `OVSX_PAT` Environment secret and revoke the bootstrap token in
-   Open VSX. If bootstrap authentication is needed again, create a new token
-   deliberately rather than keeping an unused token indefinitely.
-4. For an approved **new** version, run the workflow with authentication
-   **trusted**. This job receives a short-lived OIDC token and does not read
-   `OVSX_PAT`. An OIDC or trust failure is reported; it does not fall back to a
-   PAT or publish by another route.
+Open VSX trusted publishing requires an active extension and a registration for
+this repository, `publish-open-vsx.yml`, and `open-vsx` Environment. Once trust
+is registered, `master` manual runs can explicitly select `trusted`; a failure
+never silently falls back to a token. The beta route intentionally uses the
+protected token until a separately authorized change selects another route.
 
-## External checks after separately authorized publication
+Record successful Actions runs, commit, exact beta and stable registry metadata,
+artifact hashes, and any partial failure after an authorized publication. Test
+installation and Find/Replace in each claimed editor/platform separately; a
+mock registry, listing, or local package is not a real-editor acceptance.
 
-- [ ] The expected manual run completed successfully for the intended commit
-  and authentication mode.
-- [ ] `idfedorov09.jbsearch` is active in Open VSX and its metadata is correct.
-- [ ] Installation and relevant Find/Replace behavior were exercised in each
-  claimed editor/platform; results are recorded separately from local checks.
-- [ ] Once trusted publishing is configured, the bootstrap secret was deleted
-  and its Open VSX token was revoked.
-
-No compatibility with Open VSX clients is established by a successful package
-build, mock-registry test, or listing alone.
-
-## References
-
-- [Open VSX: Publishing Extensions](https://github.com/eclipse-openvsx/openvsx/wiki/Publishing-Extensions)
-- [Open VSX: Trusted Publishing](https://github.com/eclipse-openvsx/openvsx/wiki/Trusted-Publishing)
-- [GitHub: Managing environments](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments)
-- [GitHub: Manually running a workflow](https://docs.github.com/en/actions/managing-workflow-runs-and-deployments/managing-workflow-runs/manually-running-a-workflow)
+Sources: [Open VSX Publishing Extensions](https://github.com/eclipse-openvsx/openvsx/wiki/Publishing-Extensions),
+[Open VSX Trusted Publishing](https://github.com/eclipse-openvsx/openvsx/wiki/Trusted-Publishing),
+[GitHub deployment rules](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments#deployment-branches-and-tags),
+and [ADR 0015](adr/0015-beta-push-publication.md).

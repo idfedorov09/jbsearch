@@ -9,9 +9,10 @@ source with restricted access to VS Code Marketplace.
 
 ### Requirement: Publication from the stable branch
 
-The release process SHALL use only a `master` commit from the
-`idfedorov09/jbsearch` repository and shall not publish from other branches or
-pull requests.
+The stable release process SHALL use only a `master` commit from the
+`idfedorov09/jbsearch` repository and shall not publish stable releases from
+other branches or pull requests. Beta publication is specified separately in
+`add-beta-publication`.
 
 #### Scenario: Push to master
 - **WHEN** a new commit is pushed to `master` in the allowed repository
@@ -20,7 +21,7 @@ pull requests.
 
 #### Scenario: Changes in another branch
 - **WHEN** changes are pushed to another branch or a pull request is opened
-- **THEN** the publication process does not run
+- **THEN** the stable publication process does not run
 
 ### Requirement: Validation before publication
 
@@ -47,7 +48,8 @@ shall not modify repository files, commits, or Git tags.
 ### Requirement: Trusted authorization
 
 The process SHALL use temporary OIDC credentials with a trusted workflow and a
-GitHub Environment restricted to the `master` branch, without storing a PAT.
+GitHub Environment restricted to the `master` and explicitly authorized `beta`
+branches, without storing a PAT.
 
 #### Scenario: Trust configured
 - **WHEN** the restricted environment and publisher policy are configured for the workflow

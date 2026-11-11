@@ -2,7 +2,7 @@
   "name": "jbsearch",
   "displayName": "JB Search — JetBrains-style Find & Replace",
   "description": "JetBrains-style Find & Replace for VS Code.",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "publisher": "idfedorov09",
   "icon": "media/icon.png",
   "license": "MIT",
@@ -403,7 +403,8 @@
     "prepare:client": "node scripts/package-client.js",
     "package": "npm run prepare:client && vsce package && node scripts/verify-package.js",
     "openspec": "openspec",
-    "spec:check": "openspec validate --all --strict --no-interactive"
+    "spec:check": "openspec validate --all --strict --no-interactive",
+    "package:pre-release": "npm run prepare:client && vsce package --pre-release && node scripts/verify-package.js && node scripts/verify-release-channel.js pre-release"
   },
   "devDependencies": {
     "@fission-ai/openspec": "1.16.0",
