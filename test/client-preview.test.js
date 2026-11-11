@@ -6,6 +6,7 @@ const path = require('node:path');
 const os = require('node:os');
 const { ClientPreviewBridge, RESOURCE_COMMAND, deadline } = require('../src/client-preview');
 const { PreviewProvider } = require('../src/preview');
+const { textDocument } = require('./text-document');
 function fixture(resources) {
   const commands = new Map([[RESOURCE_COMMAND, async () => resources]]);
   const calls = [];
@@ -164,7 +165,8 @@ test('preview tokenizes client-only grammar with client theme without reading cl
   const provider = new PreviewProvider(f.v, {});
   t.after(() => provider.dispose());
   const result = { id: 'one', range: { start: { line: 0, character: 0 }, end: { line: 0, character: 6 } } };
-  const output = await provider.render({ uri: { toString: () => 'file:///server/fixture.bl' }, fileName: '/server/fixture.bl', languageId: 'fixture', version: 1, getText: () => 'return 42;' }, result, [result]);
+  const output = await provider.render(textDocument({ toString: () => 'file:///server/fixture.bl' }, 'return 42;',
+    { fileName: '/server/fixture.bl', languageId: 'fixture' }), result, [result]);
   assert.equal(output.note, '');
   assert.equal(output.lines[0].tokens[0].color, '#FF7B72');
   assert.deepEqual(output.lines[0].highlights, [{ start: 0, end: 6, selected: true }]);

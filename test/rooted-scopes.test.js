@@ -8,6 +8,10 @@ const { fileURLToPath, pathToFileURL } = require('node:url');
 const test = require('node:test');
 const { SearchController } = require('../src/controller');
 const { SearchEngine } = require('../src/search');
+const { trackDocumentChanges } = require('../src/find-results');
+const { approvalFor } = require('../src/replace-approval');
+const { knownProvenance } = require('../src/replace-preflight');
+const { textDocument } = require('./text-document');
 const { zipFixture } = require('./zip-fixture');
 
 function uriFor(file) {
@@ -47,7 +51,7 @@ async function fixture(t) {
     include: ['src/**'], exclude: ['**/vendor/**', '**/generated/**']
   }] };
   const searchSettings = new Map();
-  const edits = [];
+  const edits = [], documents = new Map();
   const engine = new SearchEngine();
   t.after(() => engine.dispose());
   const controller = Object.create(SearchController.prototype);
@@ -75,8 +79,9 @@ async function fixture(t) {
         } };
       },
       async openTextDocument(uri) {
-        const text = await fs.readFile(uri.fsPath, 'utf8');
-        return { uri, fileName: uri.fsPath, version: 1, eol: 1, isDirty: false, getText: () => text };
+        if (!documents.has(uri.toString())) documents.set(uri.toString(),
+          textDocument(uri, await fs.readFile(uri.fsPath, 'utf8')));
+        return documents.get(uri.toString());
       },
       async applyEdit(edit) { edits.push(edit.entries); return true; }
     }
@@ -99,12 +104,42 @@ async function fixture(t) {
 }
 
 function dirty(file, text) {
-  return { uri: uriFor(file), fileName: file, isDirty: true, isClosed: false,
-    version: 4, languageId: 'javascript', getText: () => text };
+  return textDocument(uriFor(file), text, { isDirty: true, version: 4, languageId: 'javascript' });
 }
 
 function resultNames(output) {
   return [...new Set(output.results.map(result => `${result.rootName}/${result.relativePath}`))].sort();
+}
+
+async function revalidatedDiskFixture(t) {
+  const f = await fixture(t);
+  await f.controller.search(f.session);
+  const row = f.session.results.find(result => result.source === 'disk');
+  assert.ok(row);
+  f.session.results = [row];
+  const uri = uriFor(row.uri), text = await fs.readFile(uri.fsPath, 'utf8');
+  const document = { uri, fileName: uri.fsPath, text, version: 1, eol: 1,
+    isDirty: false, isClosed: false, getText() { return this.text; },
+    positionAt(offset) { const lines = this.text.slice(0, offset).split('\n');
+      return { line: lines.length - 1, character: lines.at(-1).length }; },
+    offsetAt(position) { const lines = this.text.split('\n');
+      return lines.slice(0, position.line).reduce((sum, line) => sum + line.length + 1, 0) + position.character; }
+  };
+  f.controller.v.workspace.openTextDocument = async () => document;
+  const validate = async () => {
+    f.controller.queueValidation(f.session, row.uri, 0);
+    const entry = f.session.validations.get(row.uri);
+    clearTimeout(entry.timer);
+    await f.controller.validateDocument(f.session, row.uri, entry);
+  };
+  await validate();
+  return { f, document, row, validate };
+}
+
+function replaceOne(f) {
+  const row = f.session.results[0];
+  return f.controller.replace(f.session, false, { id: row.id, generation: f.session.generation,
+    actionBinding: approvalFor(f.session).binding, resultRevision: row.resultRevision ?? 0 });
 }
 
 test('scope contribution accepts an optional root and the README example is valid JSON', async () => {
@@ -176,6 +211,7 @@ test('real worker limits rooted searches and preserves includes, excludes, ignor
   f.session.options.include = 'src/**';
   f.session.options.respectExcludes = false;
   const rooted = await f.engine.search(await f.controller.request(f.session));
+  assert.ok(rooted.results.every(knownProvenance), 'worker provides metadata for both disk and dirty matches');
   assert.deepEqual(resultNames(rooted), [
     'API Alias/src/dirty.js', 'API Alias/src/ignored.js',
     'API Alias/src/main.js', 'API Alias/src/nested/child.js'
@@ -193,6 +229,31 @@ test('real worker limits rooted searches and preserves includes, excludes, ignor
   assert.ok(resultNames(legacy).includes('Web/src/main.js'));
   assert.ok(resultNames(legacy).includes('Web/src/dirty.js'));
   assert.ok(resultNames(legacy).includes('API Alias/src/main.js'));
+});
+
+test('real worker supplies replacement metadata in each supported filesystem scope', async t => {
+  const f = await fixture(t);
+  const document = dirty(path.join(f.api, 'src/dirty.js'), 'needle from buffer');
+  f.controller.v.workspace.textDocuments = [document];
+  const input = new f.controller.v.TabInputText();
+  input.uri = document.uri;
+  f.controller.v.window.tabGroups.all = [{ tabs: [{ input }] }];
+  f.controller.v.workspace.openTextDocument = async () => document;
+  for (const scope of [
+    { kind: 'workspace' },
+    { kind: 'folder', rootPath: f.api },
+    { kind: 'directory', directory: path.join(f.api, 'src') },
+    { kind: 'custom', name: 'API sources' },
+    { kind: 'openEditors' }
+  ]) {
+    f.session.scope = scope;
+    const result = await f.engine.search(await f.controller.request(f.session));
+    assert.equal(result.truncated, false, scope.kind);
+    assert.ok(result.results.length, scope.kind);
+    assert.ok(result.results.every(knownProvenance), scope.kind);
+    assert.ok(result.results.some(match => match.source === 'snapshot' &&
+      match.documentVersion === document.version), scope.kind);
+  }
 });
 
 test('rooted parent and child use the existing Folder policy in either root order', async t => {
@@ -255,7 +316,7 @@ test('replacement blocks stale rooted snapshots before opening documents', async
     originalRoots.forEach((root, index) => { root.name = originalNames[index]; root.uri = originalUris[index]; });
     f.controller.v.workspace.workspaceFolders = originalRoots;
     mutate();
-    await assert.rejects(() => f.controller.replace(f.session, true, { generation: f.session.generation }), /Rerun Search/);
+    await assert.rejects(() => f.controller.replace(f.session, true, { generation: f.session.generation, actionBinding: approvalFor(f.session)?.binding }), /Rerun Search/);
     assert.equal(opens, 0);
     assert.equal(f.edits.length, 0);
   }
@@ -273,7 +334,7 @@ test('replacement rechecks the root after asynchronous document validation', asy
     await gate;
     return open(uri);
   };
-  const replacing = f.controller.replace(f.session, true, { generation: f.session.generation });
+  const replacing = f.controller.replace(f.session, true, { generation: f.session.generation, actionBinding: approvalFor(f.session)?.binding });
   await started;
   f.settings.scopes[0].root = 'Web';
   release();
@@ -289,13 +350,13 @@ test('adding a root to an existing all-roots snapshot requires a fresh search be
   assert.ok(f.session.results.some(result => result.rootName === 'Web'));
   assert.ok(f.session.results.some(result => result.rootName === 'API Alias'));
   f.settings.scopes[0].root = 'Web';
-  await assert.rejects(() => f.controller.replace(f.session, true, { generation: f.session.generation }), /Rerun Search/);
+  await assert.rejects(() => f.controller.replace(f.session, true, { generation: f.session.generation, actionBinding: approvalFor(f.session)?.binding }), /Rerun Search/);
   f.controller.resetSearch(f.session);
   await f.controller.search(f.session);
   assert.ok(f.session.results.length);
   assert.ok(f.session.results.every(result => result.rootName === 'Web'));
   f.controller.queueValidation = () => {};
-  await f.controller.replace(f.session, true, { generation: f.session.generation });
+  await f.controller.replace(f.session, true, { generation: f.session.generation, actionBinding: approvalFor(f.session)?.binding });
   assert.equal(f.edits.length, 1);
   assert.ok(f.edits[0].every(entry => entry.uri.fsPath.startsWith(`${f.web}${path.sep}`)));
 });
@@ -305,17 +366,96 @@ test('rooted replacement retains partial, pending, invalid and changed-document 
   await f.controller.search(f.session);
   assert.ok(f.session.results.length);
   f.session.partial = true;
-  await assert.rejects(() => f.controller.replace(f.session, true, { generation: f.session.generation }), /complete results/);
+  await assert.rejects(() => f.controller.replace(f.session, true, { generation: f.session.generation, actionBinding: approvalFor(f.session)?.binding }), /complete results/);
   f.session.partial = false;
   f.session.results[0].pending = true;
-  await assert.rejects(() => f.controller.replace(f.session, true, { generation: f.session.generation }), /INVALID|checked/);
+  await assert.rejects(() => f.controller.replace(f.session, true, { generation: f.session.generation, actionBinding: approvalFor(f.session)?.binding }), /INVALID|checked/);
   f.session.results[0].pending = false;
   f.session.results[0].invalid = true;
-  await assert.rejects(() => f.controller.replace(f.session, true, { generation: f.session.generation }), /INVALID|checked/);
+  await assert.rejects(() => f.controller.replace(f.session, true, { generation: f.session.generation, actionBinding: approvalFor(f.session)?.binding }), /INVALID|checked/);
   f.session.results[0].invalid = false;
   await fs.writeFile(f.session.results[0].fsPath, 'changed since searching');
-  await assert.rejects(() => f.controller.replace(f.session, true, { generation: f.session.generation }), /changed/);
+  await assert.rejects(() => f.controller.replace(f.session, true, { generation: f.session.generation, actionBinding: approvalFor(f.session)?.binding }), /changed/);
   assert.equal(f.edits.length, 0);
+});
+
+test('a new matching file requires rerun and never replaces an unseen occurrence', async t => {
+  const f = await fixture(t);
+  await f.controller.search(f.session);
+  const shown = f.session.results;
+  const ids = shown.map(result => result.id);
+  await fs.writeFile(path.join(f.api, 'src/new.js'), 'needle new file');
+  await assert.rejects(() => f.controller.replace(f.session, true, { generation: f.session.generation, actionBinding: approvalFor(f.session)?.binding }), /results changed.*Rerun Search/);
+  assert.equal(f.edits.length, 0);
+  assert.equal(f.session.results, shown);
+  assert.deepEqual(f.session.results.map(result => result.id), ids);
+});
+
+test('Replace All rejects a preflight whose second root enumerator is killed',
+  { skip: process.platform === 'win32' }, async t => {
+    const f = await fixture(t);
+    const first = path.join(f.base, 'first'), second = path.join(f.base, 'second');
+    await fs.mkdir(first);
+    await fs.mkdir(second);
+    await fs.writeFile(path.join(first, 'one.txt'), 'needle');
+    f.controller.v.workspace.workspaceFolders = [
+      { name: 'first', uri: uriFor(first) }, { name: 'second', uri: uriFor(second) }
+    ];
+    f.session.scope = { kind: 'workspace' };
+    await f.controller.search(f.session);
+    assert.equal(f.session.results.length, 1);
+    const shown = f.session.results;
+    await fs.writeFile(path.join(second, 'new.txt'), 'needle');
+    const enumerator = path.join(f.base, 'fake-rg');
+    await fs.writeFile(enumerator, `#!${process.execPath}\n` +
+      `if (process.cwd() === ${JSON.stringify(first)}) process.stdout.write('one.txt\\0');\n` +
+      `else process.kill(process.pid, 'SIGTERM');\n`, { mode: 0o755 });
+    const failedEngine = new SearchEngine({ rgPath: enumerator });
+    t.after(() => failedEngine.dispose());
+    f.controller.engine = failedEngine;
+    const check = await failedEngine.search(await f.controller.request(f.session));
+    assert.equal(check.results.length, 1, 'the first root was scanned before the failure');
+    assert.equal(check.truncated, true);
+    assert.equal(check.stats.cancelled, false);
+    assert.equal(check.stats.timedOut, false);
+    assert.equal(check.stats.blockingSkippedFiles, 1);
+    assert.equal(check.stats.skippedDetails[0].kind, 'enumeration');
+    assert.equal(check.stats.skippedDetails[0].path, second);
+    assert.match(check.stats.errors[0].message, /SIGTERM/);
+    await assert.rejects(() => f.controller.replace(f.session, true,
+      { generation: f.session.generation, actionBinding: approvalFor(f.session)?.binding }), /incomplete.*Rerun Search/);
+    assert.equal(f.edits.length, 0);
+    assert.equal(f.session.results, shown);
+  });
+
+test('a changed unmatched dirty buffer is detected even if no event is delivered', async t => {
+  const f = await fixture(t);
+  const file = path.join(f.api, 'src/dirty.js');
+  const buffer = textDocument(uriFor(file), 'no occurrences', { isDirty: true, version: 4, languageId: 'javascript' });
+  f.controller.v.workspace.textDocuments = [buffer];
+  await f.controller.search(f.session);
+  let entered, release;
+  const started = new Promise(resolve => { entered = resolve; });
+  const gate = new Promise(resolve => { release = resolve; });
+  const open = f.controller.v.workspace.openTextDocument;
+  f.controller.v.workspace.openTextDocument = async uri => { entered(); await gate; return open(uri); };
+  const replacing = f.controller.replace(f.session, true, { generation: f.session.generation, actionBinding: approvalFor(f.session)?.binding });
+  await started;
+  buffer.text = 'still no occurrences';
+  buffer.version++;
+  release();
+  await assert.rejects(replacing, /open documents changed.*Rerun Search/);
+  assert.equal(f.edits.length, 0);
+});
+
+test('named scope filter changes require rerun even when the root binding is unchanged', async t => {
+  const f = await fixture(t);
+  await f.controller.search(f.session);
+  const shown = f.session.results;
+  f.settings.scopes[0].exclude = [...f.settings.scopes[0].exclude, '**/unused/**'];
+  await assert.rejects(() => f.controller.replace(f.session, true, { generation: f.session.generation, actionBinding: approvalFor(f.session)?.binding }), /scope or filters changed.*Rerun Search/);
+  assert.equal(f.edits.length, 0);
+  assert.equal(f.session.results, shown);
 });
 
 test('binary files do not block one unsaved workspace replacement and remain untouched', async t => {
@@ -338,8 +478,7 @@ test('binary files do not block one unsaved workspace replacement and remain unt
   const documents = new Map();
   for (const uri of new Set(f.session.results.map(result => result.uri))) {
     const parsed = uriFor(uri), original = await fs.readFile(parsed.fsPath, 'utf8');
-    const document = { uri: parsed, fileName: parsed.fsPath, version: 1, eol: 1, isDirty: false,
-      text: original, getText() { return this.text; } };
+    const document = textDocument(parsed, original);
     documents.set(uri, { document, original });
   }
   f.controller.v.workspace.openTextDocument = async uri => documents.get(uri.toString()).document;
@@ -356,7 +495,7 @@ test('binary files do not block one unsaved workspace replacement and remain unt
     return true;
   };
   f.controller.queueValidation = () => {};
-  await f.controller.replace(f.session, true, { generation: f.session.generation });
+  await f.controller.replace(f.session, true, { generation: f.session.generation, actionBinding: approvalFor(f.session)?.binding });
   assert.equal(editsApplied, 1, 'all replacements are submitted as one workspace edit');
   for (const { document, original } of documents.values()) {
     assert.equal(document.text, original.replace('needle', 'replacement'));
@@ -366,4 +505,250 @@ test('binary files do not block one unsaved workspace replacement and remain unt
   assert.deepEqual(await fs.readFile(archivePath), archive);
   assert.deepEqual(await fs.readFile(binaryPath), binary);
   assert.deepEqual(await fs.readFile(pdfPath), pdf);
+});
+
+test('disk-origin baseline survives revalidation and catches delayed external disk changes', async t => {
+  const { f, document, row } = await revalidatedDiskFixture(t);
+  const current = f.session.results[0];
+  assert.equal(current.source, 'snapshot');
+  assert.equal(current.diskBaseline.origin, 'disk');
+  assert.equal(current.documentVersion, document.version);
+  await fs.writeFile(row.fsPath, `${document.text} external change`);
+  await assert.rejects(() => replaceOne(f), /changed on disk/);
+  assert.equal(f.edits.length, 0);
+});
+
+
+test('disk-origin revalidation allows a known dirty buffer while the disk baseline is intact', async t => {
+  const { f, document, validate } = await revalidatedDiskFixture(t);
+  document.text = `prefix ${document.text}`;
+  document.version++;
+  document.isDirty = true;
+  f.session.results = trackDocumentChanges(f.session.results, { document, contentChanges: [
+    { rangeOffset: 0, rangeLength: 0, text: 'prefix ' }
+  ] });
+  await validate();
+  const current = f.session.results[0];
+  assert.equal(current.source, 'snapshot');
+  assert.equal(current.trackedDocumentVersion, document.version);
+  assert.ok(!current.invalid && !current.identityUnknown);
+  f.controller.queueValidation = () => {};
+  await replaceOne(f);
+  assert.equal(f.edits.length, 1);
+});
+
+
+test('disk-origin Undo/Redo remains replaceable while its original disk baseline is intact', async t => {
+  const { f, document, validate } = await revalidatedDiskFixture(t);
+  const apply = async (change, reason) => {
+    document.text = document.text.slice(0, change.rangeOffset) + change.text +
+      document.text.slice(change.rangeOffset + change.rangeLength);
+    document.version++;
+    document.isDirty = true;
+    f.session.results = trackDocumentChanges(f.session.results, { document, contentChanges: [change], reason });
+    await validate();
+  };
+  await apply({ rangeOffset: 0, rangeLength: 0, text: 'prefix ' });
+  await apply({ rangeOffset: 0, rangeLength: 7, text: '' }, 1);
+  await apply({ rangeOffset: 0, rangeLength: 0, text: 'prefix ' }, 2);
+  assert.ok(!f.session.results[0].invalid && !f.session.results[0].identityUnknown);
+  f.controller.queueValidation = () => {};
+  await replaceOne(f);
+  assert.equal(f.edits.length, 1);
+});
+
+
+test('a changed disk baseline after an unobserved Save fails closed', async t => {
+  const { f, document, row, validate } = await revalidatedDiskFixture(t);
+  document.text = `prefix ${document.text}`;
+  document.version++;
+  document.isDirty = true;
+  f.session.results = trackDocumentChanges(f.session.results, { document, contentChanges: [
+    { rangeOffset: 0, rangeLength: 0, text: 'prefix ' }
+  ] });
+  await validate();
+  await fs.writeFile(row.fsPath, document.text);
+  document.isDirty = false;
+  await assert.rejects(() => replaceOne(f), /changed on disk/);
+  assert.equal(f.edits.length, 0);
+});
+
+
+test('a locally observed clean Save lazily rebases the independent disk baseline before replacing', async t => {
+  const { f, document, row, validate } = await revalidatedDiskFixture(t);
+  document.encoding = 'utf8';
+  document.text = `prefix ${document.text}`;
+  document.version++;
+  document.isDirty = true;
+  f.session.results = trackDocumentChanges(f.session.results, { document, contentChanges: [
+    { rangeOffset: 0, rangeLength: 0, text: 'prefix ' }
+  ] });
+  await validate();
+  const baseline = f.session.results[0].diskBaseline;
+  await fs.writeFile(`${row.fsPath}.new`, document.text);
+  await fs.rename(`${row.fsPath}.new`, row.fsPath);
+  document.isDirty = false;
+  f.controller.documentLifecycleChanged(document, 'save');
+  await validate();
+  assert.deepEqual(f.session.results[0].diskBaseline, baseline, 'Save does not eagerly read or rebase');
+  f.controller.queueValidation = () => {};
+  await replaceOne(f);
+  assert.equal(f.edits.length, 1);
+  assert.equal(f.session.results[0].diskBaseline.byteHash, baseline.byteHash, 'the approved source baseline remains immutable; a verified rebase is operation-local');
+  assert.equal(f.session.results[0].documentVersion, document.version);
+});
+
+
+test('initial dirty production snapshots replace against an independent disk baseline without equating texts', async t => {
+  const f = await fixture(t);
+  const file = path.join(f.api, 'src/dirty.js');
+  const document = dirty(file, 'unsaved needle');
+  f.controller.v.workspace.textDocuments = [document];
+  f.controller.v.workspace.openTextDocument = async () => document;
+  await f.controller.search(f.session);
+  f.session.results = f.session.results.filter(row => row.uri === document.uri.toString());
+  assert.equal(f.session.results.length, 1);
+  assert.ok(f.session.results[0].diskBaseline);
+  f.controller.queueValidation = () => {};
+  await replaceOne(f);
+  assert.equal(f.edits.length, 1);
+  assert.equal(await fs.readFile(file, 'utf8'), 'old content');
+});
+
+
+test('Open Editors request never reads a clean cached buffer or materializes an oversized dirty buffer', async t => {
+  const f = await fixture(t);
+  f.session.scope = { kind: 'openEditors' };
+  const cleanUri = uriFor(path.join(f.api, 'src/main.js'));
+  const hugeUri = uriFor(path.join(f.api, 'src/dirty.js'));
+  f.controller.v.TabInputText = class { constructor(uri) { this.uri = uri; } };
+  f.controller.v.window.tabGroups.all = [{ tabs: [cleanUri, hugeUri].map(uri => ({ input: new f.controller.v.TabInputText(uri) })) }];
+  const clean = { uri: cleanUri, fileName: cleanUri.fsPath, version: 1, isDirty: false,
+    encoding: 'utf8', getText() { assert.fail('clean cached text is not disk authority'); } };
+  const huge = { uri: hugeUri, fileName: hugeUri.fsPath, version: 1, isDirty: true,
+    positionAt: () => ({ line: 0, character: 1000000000 }), offsetAt: position => position.character,
+    getText() { assert.fail('huge dirty text must not be materialized'); } };
+  f.controller.v.workspace.openTextDocument = async uri => uri.toString() === cleanUri.toString() ? clean : huge;
+  const request = await f.controller.request(f.session);
+  assert.equal(request.documents[0].text, undefined);
+  assert.match(request.documents[1].snapshotUnavailable, /size limit/);
+  const output = await f.engine.search(request);
+  assert.equal(output.truncated, true);
+  assert.ok(output.results.some(row => row.uri === cleanUri.toString()));
+});
+
+
+test('a disk change while another file opens is caught by the final baseline check', async t => {
+  const f = await fixture(t);
+  await f.controller.search(f.session);
+  const first = f.session.results[0];
+  const second = f.session.results.find(result => result.uri !== first.uri);
+  assert.ok(second);
+  const open = f.controller.v.workspace.openTextDocument;
+  const documents = new Map();
+  for (const row of f.session.results) documents.set(row.uri, await open(uriFor(row.uri)));
+  let calls = 0;
+  f.controller.v.workspace.openTextDocument = async uri => {
+    if (++calls === 2) await fs.writeFile(first.fsPath, 'external change after first check');
+    return documents.get(uri.toString());
+  };
+  await assert.rejects(() => f.controller.replace(f.session, true, { generation: f.session.generation, actionBinding: approvalFor(f.session).binding }), /changed on disk/);
+  assert.equal(f.edits.length, 0);
+});
+
+
+test('a document version change during disk verification cannot reach applyEdit', async t => {
+  const { f, document } = await revalidatedDiskFixture(t);
+  const originalOpen = fs.open;
+  let enter, release;
+  const entered = new Promise(resolve => { enter = resolve; });
+  const gate = new Promise(resolve => { release = resolve; });
+  fs.open = async (...args) => { enter(); await gate; return originalOpen(...args); };
+  t.after(() => { fs.open = originalOpen; release(); });
+  const pending = replaceOne(f);
+  await entered;
+  document.version++;
+  release();
+  await assert.rejects(pending, /changed.*(?:before replacement|baseline was checked)/);
+  assert.equal(f.edits.length, 0);
+});
+
+
+test('a stalled lstat times out, unlocks replacement and cannot apply late', async t => {
+  const { f } = await revalidatedDiskFixture(t);
+  const configuration = f.controller.configuration;
+  f.controller.configuration = () => ({ get: (key, fallback) => key === 'replace.prepareTimeoutMs'
+    ? 100 : configuration().get(key, fallback) });
+  const original = fs.lstat;
+  let enter, release;
+  const entered = new Promise(resolve => { enter = resolve; });
+  const gate = new Promise(resolve => { release = resolve; });
+  fs.lstat = (...args) => { enter(); return gate.then(() => original(...args)); };
+  t.after(() => { fs.lstat = original; release(); });
+  const pending = replaceOne(f);
+  await entered;
+  await assert.rejects(pending, /timed out.*No edit was submitted/);
+  assert.equal(f.session.replacing, false);
+  assert.equal(f.edits.length, 0);
+  fs.lstat = original;
+  release();
+  await new Promise(resolve => setTimeout(resolve, 20));
+  assert.equal(f.edits.length, 0);
+});
+
+
+test('a late disk open after cancellation closes its descriptor and never applies', async t => {
+  const { f } = await revalidatedDiskFixture(t);
+  const original = fs.open;
+  let enter, release, closed;
+  const entered = new Promise(resolve => { enter = resolve; });
+  const gate = new Promise(resolve => { release = resolve; });
+  const cleanup = new Promise(resolve => { closed = resolve; });
+  fs.open = async (...args) => {
+    enter();
+    await gate;
+    const handle = await original(...args), close = handle.close.bind(handle);
+    handle.close = async () => { try { return await close(); } finally { closed(); } };
+    return handle;
+  };
+  t.after(() => { fs.open = original; release(); });
+  const pending = replaceOne(f);
+  await entered;
+  f.session.replacementAbort.abort(new Error('Replacement preparation was cancelled.'));
+  await assert.rejects(pending, /cancelled|stopped/);
+  assert.equal(f.session.replacing, false);
+  assert.equal(f.edits.length, 0);
+  fs.open = original;
+  release();
+  await cleanup;
+  assert.equal(f.edits.length, 0);
+});
+
+
+test('disposing during a disk read aborts preparation and cleans up after the read returns', async t => {
+  const { f } = await revalidatedDiskFixture(t);
+  const original = fs.open;
+  let enter, release, closed;
+  const entered = new Promise(resolve => { enter = resolve; });
+  const gate = new Promise(resolve => { release = resolve; });
+  const cleanup = new Promise(resolve => { closed = resolve; });
+  fs.open = async (...args) => {
+    const handle = await original(...args), read = handle.read.bind(handle), close = handle.close.bind(handle);
+    handle.read = async (...readArgs) => { enter(); await gate; return read(...readArgs); };
+    handle.close = async () => { try { return await close(); } finally { closed(); } };
+    return handle;
+  };
+  t.after(() => { fs.open = original; release(); });
+  f.controller.preview = { dispose() {} };
+  f.controller.findTree = { dispose() {} };
+  const pending = replaceOne(f);
+  await entered;
+  f.controller.dispose();
+  await assert.rejects(pending, /cancelled|stopped/);
+  assert.equal(f.session.replacing, false);
+  assert.equal(f.edits.length, 0);
+  fs.open = original;
+  release();
+  await cleanup;
+  assert.equal(f.edits.length, 0);
 });

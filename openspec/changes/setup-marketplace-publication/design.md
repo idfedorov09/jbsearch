@@ -1,5 +1,8 @@
 # Design
 
+> Historical stable-publication design. The explicit beta exception is recorded
+> in `add-beta-publication`; the stable routes described here remain unchanged.
+
 ## Context
 
 The repository has a separate validation workflow for `dev`, `master`, and pull

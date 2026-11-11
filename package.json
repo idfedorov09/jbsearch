@@ -2,7 +2,7 @@
   "name": "jbsearch",
   "displayName": "JB Search — JetBrains-style Find & Replace",
   "description": "JetBrains-style Find & Replace for VS Code.",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "publisher": "idfedorov09",
   "icon": "media/icon.png",
   "license": "MIT",
@@ -236,6 +236,13 @@
           "maximum": 300000,
           "description": "Search deadline in milliseconds, including regular expression execution."
         },
+        "jbsearch.replace.prepareTimeoutMs": {
+          "type": "number",
+          "default": 60000,
+          "minimum": 100,
+          "maximum": 300000,
+          "description": "Total deadline in milliseconds for preparing a replacement, excluding the independent scope-search deadline."
+        },
         "jbsearch.search.respectExcludes": {
           "type": "boolean",
           "default": true,
@@ -380,6 +387,11 @@
           "command": "jbsearch.results.replace",
           "when": "view == jbsearch.results && viewItem =~ /^jbsearch\\.match\\./ && jbsearch.results.isReplace",
           "group": "find@2"
+        },
+        {
+          "command": "jbsearch.results.replaceAll",
+          "when": "view == jbsearch.results && viewItem =~ /^jbsearch\\.match\\./ && jbsearch.results.isReplace",
+          "group": "find@3"
         }
       ]
     }
@@ -391,7 +403,8 @@
     "prepare:client": "node scripts/package-client.js",
     "package": "npm run prepare:client && vsce package && node scripts/verify-package.js",
     "openspec": "openspec",
-    "spec:check": "openspec validate --all --strict --no-interactive"
+    "spec:check": "openspec validate --all --strict --no-interactive",
+    "package:pre-release": "npm run prepare:client && vsce package --pre-release && node scripts/verify-package.js && node scripts/verify-release-channel.js pre-release"
   },
   "devDependencies": {
     "@fission-ai/openspec": "1.16.0",

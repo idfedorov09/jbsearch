@@ -13,6 +13,15 @@ function preserveCase(value, original) {
     return value[0]?.toLocaleUpperCase() + value.slice(1) || '';
   return value;
 }
+function replacementText(match, options) {
+  let replacement = replacementForMatch(options.replacement, match, options.regex);
+  if (options.preserveCase) replacement = preserveCase(replacement, match.matchText);
+  return replacement;
+}
+function replacementMeaning(matches, options) {
+  return matches.map(match => ({ uri: match.uri, range: match.range,
+    replacement: replacementText(match, options), eolPolicy: 'target-document' }));
+}
 function planReplacements(matches, documents, options) {
   const plans = [];
   const grouped = new Map();
@@ -41,8 +50,7 @@ function planReplacements(matches, documents, options) {
           'Search results are stale or overlap. Refresh the results before replacing.'
         );
       previousEnd = match.offset + Math.max(1, match.length);
-      let replacement = replacementForMatch(options.replacement, match, options.regex);
-      if (options.preserveCase) replacement = preserveCase(replacement, match.matchText);
+      let replacement = replacementText(match, options);
       // Match the target document's established line ending.
       replacement = replacement.replace(/\r?\n/g, document.eol === '\r\n' ? '\r\n' : '\n');
       plans.push({ uri, range: match.range, replacement });
@@ -50,4 +58,4 @@ function planReplacements(matches, documents, options) {
   }
   return plans;
 }
-module.exports = { preserveCase, planReplacements };
+module.exports = { preserveCase, planReplacements, replacementMeaning };

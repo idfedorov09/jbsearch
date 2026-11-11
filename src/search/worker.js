@@ -3,6 +3,8 @@
 const fs = require('node:fs/promises');
 const { constants: fsConstants } = require('node:fs');
 const { createHash } = require('node:crypto');
+const { contentHash: hashText } = require('../content-hash');
+const { readStableDiskBaseline, losslessDecoder, supportedEncodings } = require('../disk-baseline');
 const path = require('node:path');
 const { pathToFileURL, fileURLToPath } = require('node:url');
 const { spawn } = require('node:child_process');
@@ -34,6 +36,7 @@ let batch = [];
 const maxBytes = request.maxFileSizeMiB * 1024 * 1024;
 const seen = new Set();
 const snapshots = new Map();
+const cleanDocuments = new Map();
 // TextDocument.getText() excludes the encoding BOM; strip UTF-8 BOMs here too so
 // disk positions agree with VS Code and a later dirty snapshot of the same file.
 const decoder = new TextDecoder('utf-8', { fatal: true });
@@ -75,7 +78,9 @@ function documentPath(document) {
 
 for (const document of request.documents) {
   const filePath = documentPath(document);
-  if (filePath && (document.isDirty !== false || request.scope?.kind === 'openEditors'))
+  if (filePath && document.isDirty === false) cleanDocuments.set(path.resolve(filePath), document);
+  if (filePath && (document.isDirty !== false ||
+      (request.scope?.kind === 'openEditors' && request.sourcePolicy !== 'disk-clean-buffers-dirty')))
     snapshots.set(path.resolve(filePath), document);
 }
 
@@ -119,6 +124,12 @@ function rootFor(filePath) {
     .sort((a, b) => b.path.length - a.path.length)[0];
 }
 
+function scopeRootFor(filePath) {
+  if (request.scope?.kind === 'folder')
+    return roots.find(root => insideScope(filePath, root) && isPathWithin(filePath, root.path));
+  return rootFor(filePath);
+}
+
 function insideScope(filePath, root) {
   const scope = request.scope || { kind: 'workspace' };
   if (scope.kind === 'openEditors') return true;
@@ -156,7 +167,7 @@ async function scanText(text, metadata) {
   }
   stats.filesScanned += 1;
   let fileMatched = false;
-  const contentHash = createHash('sha256').update(text).digest('hex');
+  const contentHash = hashText(text);
   for (const match of iterateMatches(text, request, { ...metadata, contentHash })) {
     if (cancelled) break;
     // One extra match distinguishes an exact total from a truncated result set.
@@ -194,8 +205,9 @@ async function conditionalExcluded(filePath, root) {
     if (!isPathWithin(sibling, root.path)) continue;
     try {
       if ((await fs.stat(sibling)).isFile()) return true;
-    } catch {
-      /* Missing sibling. */
+    } catch (error) {
+      if (error.code !== 'ENOENT' && error.code !== 'ENOTDIR') throw error;
+      /* Missing sibling. Other failures leave the exclusion uncertain. */
     }
   }
   return false;
@@ -212,6 +224,23 @@ async function scanDocument(document, root, filePath) {
     (await conditionalExcluded(filePath, root))
   )
     return;
+  if (document.snapshotUnavailable) {
+    skip(/size limit/.test(document.snapshotUnavailable) ? 'tooLarge' : 'unreadable', filePath,
+      { root, metadata: document, error: new Error(document.snapshotUnavailable) });
+    return;
+  }
+  let diskBaseline, diskBaselineUnavailable;
+  if (filePath && request.sourcePolicy === 'disk-clean-buffers-dirty') {
+    try {
+      // Dirty buffer authority and disk overwrite protection are independent.
+      // Do not compare the dirty text with the backing file's bytes.
+      diskBaseline = Object.freeze({ ...await readStableDiskBaseline({ fsPath: filePath },
+        { maxBytes, linkPolicy: 'identity-validated' }), uri: document.uri || pathToFileURL(filePath).toString() });
+    } catch (error) {
+      diskBaselineUnavailable = `Cannot verify the source disk baseline: ${error.message}`;
+      skip(/size limit/.test(error.message) ? 'tooLarge' : 'unreadable', filePath, { root, error });
+    }
+  }
   await scanText(String(document.text || ''), {
     uri: document.uri || pathToFileURL(filePath).toString(),
     fsPath: filePath,
@@ -222,20 +251,28 @@ async function scanDocument(document, root, filePath) {
     version: document.version,
     documentVersion: document.version,
     languageId: document.languageId,
-    source: 'snapshot'
+    source: 'snapshot',
+    ...(diskBaseline ? { diskBaseline } : {}),
+    ...(diskBaselineUnavailable ? { diskBaselineUnavailable,
+      invalid: true, unavailable: true, invalidReason: diskBaselineUnavailable } : {})
   });
 }
 
-async function scanDisk(filePath, root) {
+async function scanDisk(filePath, root, cleanDocument = cleanDocuments.get(filePath)) {
   if (cancelled || limit || seen.has(filePath)) return;
   seen.add(filePath);
-  const relativePath = path.relative(root.path, filePath).replace(/\\/g, '/');
+  const relativePath = root ? path.relative(root.path, filePath).replace(/\\/g, '/') :
+    cleanDocument?.displayName || path.basename(filePath);
   if (
     !insideScope(filePath, root) ||
     !acceptsFile(relativePath, request, root) ||
     (await conditionalExcluded(filePath, root))
   )
     return;
+  if (cleanDocument?.encoding && !supportedEncodings.has(cleanDocument.encoding)) {
+    skip('encoding', filePath, { root });
+    return;
+  }
   const snapshot = snapshots.get(filePath);
   if (snapshot) {
     await scanDocument(snapshot, root, filePath);
@@ -245,7 +282,7 @@ async function scanDisk(filePath, root) {
     // rg does not follow symlinks. lstat also covers replacement of an enumerated
     // regular file with a symlink before it is read.
     const info = await fs.lstat(filePath);
-    if (!info.isFile()) return;
+    if (!info.isFile()) throw new Error('An enumerated file changed type before it was searched.');
     const handle = await fs.open(filePath, fsConstants.O_RDONLY | (fsConstants.O_NOFOLLOW || 0));
     try {
       const sameFile = (a, b) => b.isFile() && a.dev === b.dev && a.ino === b.ino &&
@@ -271,7 +308,8 @@ async function scanDisk(filePath, root) {
         probeLength += bytesRead;
       }
       const prefix = classifyBytes(probe);
-      if (prefix.kind !== 'unknown') {
+      const explicitWide = ['utf16le', 'utf16be'].includes(cleanDocument?.encoding);
+      if (prefix.kind !== 'unknown' && !(explicitWide && prefix.kind === 'encoding')) {
         await assertUnchanged();
         skip(prefix.kind === 'binary' ? 'binary' : 'encoding', filePath, {
           root, blocking: prefix.kind !== 'binary', format: prefix.format
@@ -294,7 +332,7 @@ async function scanDisk(filePath, root) {
       await assertUnchanged();
       const bytes = buffer.subarray(0, count);
       const classification = classifyBytes(bytes);
-      if (classification.kind !== 'unknown') {
+      if (classification.kind !== 'unknown' && !(explicitWide && classification.kind === 'encoding')) {
         skip(classification.kind === 'binary' ? 'binary' : 'encoding', filePath, {
           root, blocking: classification.kind !== 'binary', format: classification.format
         });
@@ -302,27 +340,61 @@ async function scanDisk(filePath, root) {
       }
       let text;
       try {
-        text = decoder.decode(bytes);
+        const utf8Bom = bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf;
+        const utf32Bom = (bytes[0] === 0xff && bytes[1] === 0xfe && bytes[2] === 0 && bytes[3] === 0) ||
+          (bytes[0] === 0 && bytes[1] === 0 && bytes[2] === 0xfe && bytes[3] === 0xff);
+        if (explicitWide && (utf8Bom || utf32Bom ||
+            (cleanDocument.encoding === 'utf16le' && bytes[0] === 0xfe && bytes[1] === 0xff) ||
+            (cleanDocument.encoding === 'utf16be' && bytes[0] === 0xff && bytes[1] === 0xfe)))
+          throw new Error('The disk BOM conflicts with the document encoding.');
+        text = (explicitWide ? losslessDecoder(cleanDocument.encoding) : decoder).decode(bytes);
       } catch {
         skip('encoding', filePath, { root });
         return;
       }
+      const diskByteHash = createHash('sha256').update(bytes).digest('hex');
+      const diskBaseline = { origin: 'disk', uri: pathToFileURL(filePath).toString(), mtimeMs: opened.mtimeMs, fileSize: opened.size,
+        ctimeMs: opened.ctimeMs, dev: opened.dev, ino: opened.ino, byteHash: diskByteHash,
+        linkPolicy: fsConstants.O_NOFOLLOW ? 'no-follow' : 'identity-validated' };
       await scanText(text, {
         uri: pathToFileURL(filePath).toString(),
         fsPath: filePath,
         relativePath,
         label: path.basename(relativePath),
-        rootName: root.name,
-        rootPath: root.path,
+        rootName: root?.name || '',
+        rootPath: root?.path || '',
         source: 'disk',
         mtimeMs: opened.mtimeMs,
-        fileSize: opened.size
+        fileSize: opened.size,
+        diskCtimeMs: opened.ctimeMs,
+        diskDevice: opened.dev,
+        diskInode: opened.ino,
+        diskByteHash,
+        diskLinkPolicy: diskBaseline.linkPolicy,
+        diskBaseline
       });
     } finally {
       await handle.close();
     }
   } catch (error) {
     skip('unreadable', filePath, { root, error });
+  }
+}
+
+// An unsaved file buffer can outlive its disk entry. When ignore rules are in
+// use, enumeration alone cannot decide whether that absent path is eligible.
+// Never report such a potentially in-scope input as a complete search.
+async function checkUnenumeratedDocument(document, root, filePath) {
+  if (!filePath || !root || (request.scope?.kind !== 'openEditors' && document.isDirty === false)) return;
+  const resolved = path.resolve(filePath);
+  if (seen.has(resolved) || !insideScope(resolved, root)) return;
+  const relativePath = path.relative(root.path, resolved).replace(/\\/g, '/');
+  if (!acceptsFile(relativePath, request, root) || await conditionalExcluded(resolved, root)) return;
+  try {
+    await fs.lstat(resolved);
+    // Existing but not enumerated files remain subject to ripgrep's ignores.
+  } catch (error) {
+    skip('unreadable', resolved, { root, error });
   }
 }
 
@@ -370,7 +442,7 @@ async function enumerate(root, visit) {
   child = process;
   if (process.pid) parentPort.postMessage({ type: 'child', pid: process.pid, alive: true });
   const closed = new Promise((resolve) => {
-    process.once('close', (code) => resolve({ code }));
+    process.once('close', (code, signal) => resolve({ code, signal }));
     process.once('error', (error) => resolve({ error }));
   });
   let stderr = '';
@@ -395,11 +467,13 @@ async function enumerate(root, visit) {
       pending = Buffer.from(pending.subarray(offset));
       if (cancelled || limit) break;
     }
-    const { code, error } = await closed;
+    const { code, signal, error } = await closed;
     if (error) throw error;
-    if (code > 1 && !cancelled && !limit) {
+    if (!cancelled && !limit && (signal || (code !== 0 && code !== 1) || pending.length || stderr.trim())) {
       skip('unreadable', root.path, {
-        root, kind: 'enumeration', error: new Error(stderr.trim() || `ripgrep exited with code ${code}`)
+        root, kind: 'enumeration', error: new Error(stderr.trim() ||
+          (signal ? `ripgrep terminated by ${signal}` : pending.length
+            ? 'ripgrep returned a partial file name' : `ripgrep exited with code ${code}`))
       });
     }
   } finally {
@@ -430,12 +504,16 @@ async function main() {
         request.respectExcludes !== false &&
         rgPath &&
         !eligible.has(path.resolve(filePath))
-      )
+      ) {
+        await checkUnenumeratedDocument(document, root, filePath);
         continue;
+      }
       const identity = document.uri || filePath;
       if (seen.has(identity)) continue;
       seen.add(identity);
-      await scanDocument(document, root, filePath);
+      if (filePath && document.isDirty === false && request.sourcePolicy === 'disk-clean-buffers-dirty')
+        await scanDisk(filePath, root, document);
+      else await scanDocument(document, root, filePath);
     }
   } else {
     for (const root of roots) {
@@ -449,6 +527,13 @@ async function main() {
         if (request.scope?.kind !== 'folder' && rootFor(filePath) !== root) return;
         return scanDisk(filePath, root);
       });
+    }
+    if (!cancelled && !limit) {
+      for (const document of request.documents) {
+        const filePath = documentPath(document);
+        const root = filePath ? scopeRootFor(filePath) : undefined;
+        await checkUnenumeratedDocument(document, root, filePath);
+      }
     }
   }
   flush();

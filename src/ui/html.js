@@ -12,10 +12,11 @@ function getHtml(webview, extensionUri, vscode) {
 <section id="filters" hidden><label><input type="checkbox" id="respectExcludes" checked>Use ignore files and exclusions</label><label>Include<input id="include" placeholder="src/**;test/**" aria-label="Include patterns"></label><label>Exclude<input id="exclude" placeholder="**/generated/**" aria-label="Exclude patterns"></label></section>
 <div id="message" role="status" hidden></div>
 <div id="diagnostics" role="status" hidden></div>
+<div id="rerunNotice" role="status" hidden><span id="rerunMessage"></span> <button id="rerunSearch">Rerun Search</button></div>
 <section id="results" role="listbox" aria-label="Search results" tabindex="0"><div id="resultRows"></div><div id="empty" class="empty">Type to search in your project</div></section>
 <div id="splitter" role="separator" aria-label="Resize results and preview" aria-orientation="horizontal" tabindex="0"></div>
 <section class="preview"><div class="preview-header"><strong id="previewName">Preview</strong><span id="previewPath" class="muted"></span><span id="previewNote" class="muted"></span></div><div id="code" tabindex="0" aria-label="Code preview"><div class="empty">Select a result to preview its code</div></div></section>
-<footer><label class="new-tab"><input id="newTab" type="checkbox">Keep as a new search</label><span class="footer-spacer"></span><span id="shortcut" class="muted">⌘↵</span><button id="openTab">Open in Find Panel</button><button id="replaceAll" hidden>Replace All</button><button id="replace" class="primary" hidden>Replace</button></footer>
+<footer><label id="newTabLabel" class="new-tab"><input id="newTab" type="checkbox">Keep as a new search</label><span class="footer-spacer"></span><span id="shortcut" class="muted">⌘↵</span><button id="openTab">Open in Find Panel</button><button id="replaceAll" hidden>Replace All</button><button id="replace" class="primary" hidden>Replace</button></footer>
 </main><script nonce="${nonce}" src="${asset('search.js')}"></script></body></html>`;
 }
 module.exports = { getHtml };

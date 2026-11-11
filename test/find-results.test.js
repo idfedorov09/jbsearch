@@ -2,13 +2,14 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { createHash } = require('node:crypto');
+const { contentHash } = require('../src/content-hash');
 const { iterateMatches } = require('../src/search');
 const {
   sortResults,
   trackDocumentChanges,
   reconcileDocumentResults,
-  markDocumentUnavailable
+  markDocumentUnavailable,
+  markDocumentIdentityUnknown
 } = require('../src/find-results');
 
 const uri = 'file:///workspace/src/example.bl';
@@ -31,6 +32,10 @@ function documentFor(text, version = 1, target = uri) {
       let line = 0;
       while (line + 1 < lines.length && lines[line + 1].start <= offset) line += 1;
       return { line, character: Math.min(offset, lines[line].end) - lines[line].start };
+    },
+    offsetAt(position) {
+      const line = lines[Math.max(0, Math.min(position.line, lines.length - 1))];
+      return Math.min(line.end, line.start + Math.max(0, position.character));
     }
   };
 }
@@ -46,7 +51,7 @@ function matches(text, query = 'cat', metadata = {}, request = {}) {
         relativePath: 'src/example.bl',
         label: 'example.bl',
         documentVersion: 1,
-        contentHash: createHash('sha256').update(text).digest('hex'),
+        contentHash: contentHash(text),
         ...metadata
       }
     )
@@ -153,11 +158,13 @@ test('deleted occurrences retain tombstones and survive deleting surrounding tex
   assert.deepEqual(coordinates(tracked), [[0, 0]]);
   assert.equal(tracked[0].invalid, true);
   const undo = edit('', [{ rangeOffset: 0, rangeLength: 0, text }], 3);
+  undo.reason = 1;
   tracked = trackDocumentChanges(tracked, undo);
   tracked = reconcileDocumentResults(tracked, uri, matches(text), undo.document);
   assert.deepEqual(coordinates(tracked), [[7, 3]]);
   assert.equal(tracked[0].invalid, false);
   const redo = edit(text, [{ rangeOffset: 0, rangeLength: text.length, text: '' }], 4);
+  redo.reason = 2;
   tracked = trackDocumentChanges(tracked, redo);
   tracked = reconcileDocumentResults(tracked, uri, [], redo.document);
   assert.deepEqual(coordinates(tracked), [[0, 0]]);
@@ -222,7 +229,7 @@ test('multiline ranges, CRLF and Unicode keep UTF-16 editor positions', () => {
   assert.equal(moved[0].range.start.character, 2);
 });
 
-test('zero-width occurrences keep their anchors and are restored after deleting their line', () => {
+test('zero-width insertions at an anchor stay unverified despite a fresh match', () => {
   const text = 'a\nb';
   const query = '(?=b)';
   const original = matches(text, query, {}, { regex: true });
@@ -231,7 +238,8 @@ test('zero-width occurrences keep their anchors and are restored after deleting 
   assert.deepEqual(coordinates(tracked), [[4, 0]]);
   assert.equal(tracked[0].range.start.character, 2);
   tracked = reconcileDocumentResults(tracked, uri, matches(insertion.document.getText(), query, {}, { regex: true }), insertion.document);
-  assert.equal(tracked[0].invalid, false);
+  assert.equal(tracked[0].invalid, true);
+  assert.equal(tracked[0].identityUnknown, true);
   const removal = edit(insertion.document.getText(), [{ rangeOffset: 0, rangeLength: 5, text: '' }], 3);
   tracked = trackDocumentChanges(tracked, removal);
   tracked = reconcileDocumentResults(tracked, uri, [], removal.document);
@@ -240,6 +248,72 @@ test('zero-width occurrences keep their anchors and are restored after deleting 
   tracked = trackDocumentChanges(tracked, undo);
   assert.deepEqual(coordinates(tracked), [[4, 0]]);
   assert.equal(tracked[0].id, original[0].id);
+});
+
+test('zero-width lookbehind and lookahead do not adopt a match created at the anchor', () => {
+  for (const [query, inserted] of [['(?<=a)', 'a'], ['(?=b)', 'b']]) {
+    const text = 'ab';
+    const original = matches(text, query, {}, { regex: true });
+    const event = edit(text, [{ rangeOffset: 1, rangeLength: 0, text: inserted }]);
+    let tracked = trackDocumentChanges(original, event);
+    tracked = reconcileDocumentResults(tracked, uri,
+      matches(event.document.getText(), query, {}, { regex: true }), event.document);
+    assert.equal(tracked[0].id, original[0].id);
+    assert.equal(tracked[0].identityUnknown, true);
+    assert.equal(tracked[0].invalid, true);
+
+    const undo = edit(event.document.getText(), [{ rangeOffset: 1, rangeLength: 1, text: '' }], 3);
+    undo.reason = 1;
+    tracked = trackDocumentChanges(tracked, undo);
+    tracked = reconcileDocumentResults(tracked, uri, original, undo.document);
+    assert.equal(tracked[0].identityUnknown, false);
+    assert.equal(tracked[0].invalid, false);
+    const redo = edit(text, [{ rangeOffset: 1, rangeLength: 0, text: inserted }], 4);
+    redo.reason = 2;
+    tracked = trackDocumentChanges(tracked, redo);
+    tracked = reconcileDocumentResults(tracked, uri,
+      matches(redo.document.getText(), query, {}, { regex: true }), redo.document);
+    assert.equal(tracked[0].identityUnknown, true);
+    assert.equal(tracked[0].invalid, true);
+  }
+});
+
+test('a deletion ending at a zero-width anchor makes identity unknown', () => {
+  const original = matches('ab', '(?<=a)', {}, { regex: true });
+  const event = edit('ab', [{ rangeOffset: 0, rangeLength: 1, text: 'a' }]);
+  const tracked = trackDocumentChanges(original, event);
+  assert.equal(tracked[0].identityUnknown, true);
+});
+
+test('a huge batch of edit deltas fails closed without quadratic host work', () => {
+  const atLimit = matches('cat '.repeat(1000));
+  const changes = Array.from({ length: 1000 }, (_, i) =>
+    ({ rangeOffset: 4 * i + 3, rangeLength: 0, text: '!' }));
+  const exact = trackDocumentChanges(atLimit, {
+    contentChanges: changes, document: documentFor('cat! '.repeat(1000), 2)
+  });
+  assert.ok(exact.every(result => !result.identityUnknown && result.pending),
+    'exactly one million row/change pairs still use normal tracking');
+  const original = matches('cat '.repeat(1001));
+  const event = { contentChanges: changes, document: {
+    uri: { toString: () => uri }, version: 2,
+    getText() { assert.fail('The bounded fallback must not read or map the whole document'); }
+  } };
+  const tracked = trackDocumentChanges(original, event);
+  assert.equal(tracked.length, original.length);
+  assert.deepEqual(tracked.map(result => result.id), original.map(result => result.id));
+  assert.ok(tracked.every(result => result.identityUnknown && result.invalid));
+});
+
+test('UTF-16 hashes distinguish unpaired surrogate code units', () => {
+  for (const [first, second] of [['\ud800 cat', '\ud801 cat'], ['\udc00 cat', '\udc01 cat']]) {
+    assert.notEqual(contentHash(first), contentHash(second));
+    assert.notEqual(contentHash(first), contentHash('\ufffd cat'));
+    const original = matches(first);
+    const updated = reconcileDocumentResults(original, uri, matches(second), documentFor(second));
+    assert.equal(updated[0].identityUnknown, true);
+    assert.equal(updated[0].invalid, true);
+  }
 });
 
 test('validation updates captures and snapshots without changing tree provenance or adding new rows', () => {
@@ -277,7 +351,8 @@ test('one fresh occurrence cannot silently validate several collapsed original r
   const tracked = trackDocumentChanges(original, event);
   assert.deepEqual(coordinates(tracked), [[0, 3], [0, 3]]);
   const reconciled = reconcileDocumentResults(tracked, uri, matches('cat'), event.document);
-  assert.deepEqual(reconciled.map((result) => result.invalid), [false, true]);
+  assert.deepEqual(reconciled.map((result) => result.invalid), [true, true]);
+  assert.deepEqual(reconciled.map((result) => result.identityUnknown), [true, true]);
   assert.deepEqual(reconciled.map((result) => result.id), original.map((result) => result.id));
 });
 
@@ -292,7 +367,7 @@ test('unrelated edits still require worker validation for contextual expressions
   assert.equal(reconciled[0].invalid, true);
 });
 
-test('unavailable documents keep invalid rows and can recover once the file returns', () => {
+test('unavailable documents retain unknown identity even when the file returns', () => {
   const original = sortResults(matches('cat'));
   const other = matches('cat', 'cat', { uri: otherUri })[0];
   const missing = markDocumentUnavailable([...original, other], uri);
@@ -304,12 +379,12 @@ test('unavailable documents keep invalid rows and can recover once the file retu
   assert.equal(missing[0].id, original[0].id);
   assert.equal(missing[1], other);
   const restored = reconcileDocumentResults(missing, uri, matches('cat'), documentFor('cat', 3));
-  assert.equal(restored[0].invalid, false);
-  assert.equal(restored[0].unavailable, false);
-  assert.equal(restored[0].invalidReason, undefined);
+  assert.equal(restored[0].invalid, true);
+  assert.equal(restored[0].identityUnknown, true);
+  assert.equal(restored[0].unavailable, true);
 });
 
-test('combined Undo restores an earlier complete document state after several edits', () => {
+test('combined edits do not restore an unproven identity from a matching document hash', () => {
   const text = 'prefix cat middle cat suffix';
   const original = sortResults(matches(text));
   const first = edit(text, [{ rangeOffset: 0, rangeLength: 14, text: 'new ' }]);
@@ -322,9 +397,94 @@ test('combined Undo restores an earlier complete document state after several ed
   const undo = edit(third.document.getText(), [{ rangeOffset: 0, rangeLength: third.document.getText().length, text }], 5);
   tracked = trackDocumentChanges(tracked, undo);
   tracked = reconcileDocumentResults(tracked, uri, matches(text), undo.document);
-  assert.deepEqual(coordinates(tracked), coordinates(original));
-  assert.ok(tracked.every((result) => !result.invalid));
+  assert.ok(tracked.every(result => result.offset >= 0 && result.offset + result.length <= text.length));
+  assert.ok(tracked.some((result) => result.identityUnknown && result.invalid));
   assert.deepEqual(tracked.map((result) => result.id), original.map((result) => result.id));
+});
+
+test('external duplicate at an old offset never restores unknown identity', () => {
+  const old = matches('catX');
+  const changed = 'cat catX';
+  const marked = markDocumentIdentityUnknown(old, uri);
+  const reconciled = reconcileDocumentResults(marked, uri, matches(changed), documentFor(changed, 2));
+  assert.equal(reconciled[0].id, old[0].id);
+  assert.equal(reconciled[0].offset, 0);
+  assert.equal(reconciled[0].invalid, true);
+  assert.equal(reconciled[0].identityUnknown, true);
+  const directlyReconciled = reconcileDocumentResults(old, uri, matches(changed), documentFor(changed, 2));
+  assert.equal(directlyReconciled[0].identityUnknown, true, 'changed content without a delta is untrusted');
+});
+
+test('a new document version without a tracked delta is not proven by equal text', () => {
+  const original = matches('cat');
+  const reconciled = reconcileDocumentResults(original, uri, matches('cat'), documentFor('cat', 2));
+  assert.equal(reconciled[0].identityUnknown, true);
+  assert.equal(reconciled[0].invalid, true);
+});
+
+test('worker reconciliation fails closed without a document hash or version', () => {
+  const original = matches('cat');
+  const missingHash = [{ ...original[0], contentHash: undefined }];
+  const noHash = reconcileDocumentResults(missingHash, uri, matches('cat'), documentFor('cat'));
+  assert.equal(noHash[0].identityUnknown, true);
+  assert.equal(noHash[0].invalid, true);
+  const noVersion = reconcileDocumentResults(original, uri, matches('cat'),
+    { ...documentFor('cat'), version: undefined });
+  assert.equal(noVersion[0].identityUnknown, true);
+  assert.equal(noVersion[0].invalid, true);
+});
+
+test('a missing or skipped document version makes the first edit untrackable', () => {
+  const disk = matches('catX', 'cat', { documentVersion: undefined, source: 'disk' });
+  const first = edit('catX', [{ rangeOffset: 4, rangeLength: 0, text: '!' }], 2);
+  const unbound = trackDocumentChanges(disk, first);
+  assert.equal(unbound[0].identityUnknown, true);
+  assert.equal(unbound[0].identityUnknownCause, 'external');
+  const versioned = matches('catX');
+  const skipped = edit('catX', [{ rangeOffset: 4, rangeLength: 0, text: '!' }], 3);
+  assert.equal(trackDocumentChanges(versioned, skipped)[0].identityUnknown, true);
+});
+
+test('multiple changes which jointly destroy an occurrence are ambiguous', () => {
+  const original = matches('cat');
+  const event = edit('cat', [
+    { rangeOffset: 0, rangeLength: 1, text: 'b' },
+    { rangeOffset: 1, rangeLength: 2, text: 'og' }
+  ]);
+  const tracked = trackDocumentChanges(original, event);
+  assert.equal(tracked[0].identityUnknown, true);
+  assert.equal(tracked[0].id, original[0].id);
+});
+
+test('deleting through a zero-width anchor invalidates its identity', () => {
+  const original = matches('abc', '(?=b)', {}, { regex: true });
+  const event = edit('abc', [{ rangeOffset: 0, rangeLength: 2, text: '' }]);
+  const tracked = trackDocumentChanges(original, event);
+  assert.equal(tracked[0].identityUnknown, true);
+  assert.equal(tracked[0].invalid, true);
+});
+
+test('deleting one occurrence does not make its surviving neighbour unknown', () => {
+  const old = sortResults(matches('catcat'));
+  const event = edit('catcat', [{ rangeOffset: 0, rangeLength: 3, text: '' }]);
+  const updated = reconcileDocumentResults(trackDocumentChanges(old, event), uri, matches('cat'), event.document);
+  assert.equal(updated[0].identityUnknown, true);
+  assert.equal(updated[0].invalid, true);
+  assert.equal(updated[1].identityUnknown, undefined);
+  assert.equal(updated[1].invalid, false);
+  assert.deepEqual(updated.map(row => row.id), old.map(row => row.id));
+});
+
+test('manual recreation and untrusted Undo cannot revive a destroyed occurrence', () => {
+  const old = matches('cat');
+  const deletion = edit('cat', [{ rangeOffset: 0, rangeLength: 3, text: '' }]);
+  let tracked = trackDocumentChanges(old, deletion);
+  tracked = reconcileDocumentResults(tracked, uri, [], deletion.document);
+  const recreation = edit('', [{ rangeOffset: 0, rangeLength: 0, text: 'cat' }], 3);
+  tracked = trackDocumentChanges(tracked, recreation);
+  tracked = reconcileDocumentResults(tracked, uri, matches('cat'), recreation.document);
+  assert.equal(tracked[0].identityUnknown, true);
+  assert.equal(tracked[0].invalid, true);
 });
 
 test('coordinate histories do not leak into webview JSON and initial state survives the cache bound', () => {

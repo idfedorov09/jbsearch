@@ -2,9 +2,9 @@ name: Check
 
 on:
   push:
-    branches: [master, dev]
+    branches: [master, dev, beta]
   pull_request:
-    branches: [master, dev]
+    branches: [master, dev, beta]
   workflow_dispatch:
 
 permissions:
@@ -25,4 +25,19 @@ jobs:
       - run: npm run check
       - run: npm test
       - run: npm run spec:check
+      - name: Set beta PR build timestamp
+        if: github.event_name == 'pull_request' && github.base_ref == 'beta'
+        run: |
+          set -euo pipefail
+          epoch="$(git show -s --format=%ct "$GITHUB_SHA")"
+          case "$epoch" in
+            ''|*[!0-9]*)
+              printf '%s\n' '::error::Commit timestamp must be nonempty and numeric.' >&2
+              exit 1
+              ;;
+          esac
+          printf 'SOURCE_DATE_EPOCH=%s\n' "$epoch" >> "$GITHUB_ENV"
       - run: npm run package
+      - name: Check beta pre-release package
+        if: github.event_name == 'pull_request' && github.base_ref == 'beta'
+        run: npm run package:pre-release
