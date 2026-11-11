@@ -2,7 +2,9 @@
 
 Date: **November 12, 2026** (Europe/Moscow). These are local preparation checks,
 not publication or real-editor acceptance. The pre-release candidate uses outer
-extension `idfedorov09.jbsearch` 0.3.3 and the bundled client 0.1.0.
+extension `idfedorov09.jbsearch` 0.4.0 and the bundled client 0.1.0. The earlier
+unpublished `0.3.3` draft was renumbered under the
+[versioning policy](../versioning.md); no published package was replaced.
 
 ## Local checks
 
@@ -13,10 +15,15 @@ Environment: Linux x64, Node **22.23.2**, npm **12.0.2**, installed pinned
 | --- | --- |
 | `npm run check` | Passed |
 | `npm test` | 871 passed; 0 failed, skipped, or cancelled |
-| `npm run spec:check` | 34 passed; 0 failed |
+| `npm run spec:check` | 35 passed; 0 failed |
 | `npm run package` | Passed; 90 main and 31 nested-client entries verified |
 | `npm run package:pre-release` | Passed; 90 main and 31 nested entries verified; one true outer prerelease marker |
 | `git diff --check` | Passed |
+
+These commands were rerun on the final `0.4.0` version/policy tree, after the
+earlier CI-preparation draft passed 871 tests and 34 spec validations. The lock
+change is limited to the root numeric version; runtime dependencies, `src/`,
+`media/`, and `client/` are unchanged by the version/policy revision.
 
 The stable-channel and pre-release packages were built locally for verification
 only and are not release evidence. The local prerelease build used the then-HEAD
@@ -24,7 +31,8 @@ commit timestamp for `SOURCE_DATE_EPOCH`; the eventual beta commit will have its
 own timestamp. The locally reused nested client was checked for the expected ID,
 version, and absence of a prerelease marker.
 
-Two separate clean-like temporary directories reused the same installed pinned
+For the earlier unpublished `0.3.3` draft, two separate clean-like temporary
+directories reused the same installed pinned
 dependencies and fixed `SOURCE_DATE_EPOCH=1700000000`. Their full pre-release
 packages matched byte-for-byte (SHA-256
 `d6bfe9717ba8912c073600dea61221c707edd163de6e0cc155dd771cd08436c1`), and their
@@ -59,7 +67,8 @@ The unchanged stable trusted Open VSX route is not covered by the token guard.
 An external v4 native-check attempt stopped before its runner started because of
 a supervisor ownership-monitoring error; cleanup was verified and no survivors
 were reported. This establishes neither native acceptance nor a product failure;
-a repaired external attempt remains pending. Windows, WSL, macOS, and physical
+a repaired external attempt remains blocked by external receipt-validation
+review findings, not a product result. Windows, WSL, macOS, and physical
 Remote acceptance of issue #3 remain open. CI execution, both public registry results, installation behavior, and the
 reporter's feedback must be recorded separately when actually observed. The
 source integration record is [issue-3-dev-beta-validation.md](issue-3-dev-beta-validation.md).

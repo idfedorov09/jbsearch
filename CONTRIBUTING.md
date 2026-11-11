@@ -156,12 +156,12 @@ behavior and boundaries before development, and completed checks and known
 limitations afterward. Plans and task lists neither prove a feature exists
 nor authorize implementation by themselves.
 
-Use SemVer for release versions: patch for fixes, minor for compatible new
-features, and major for incompatible changes. F5 testing does not require a
-version bump. Version changes, commits, push, transfers to `master`, and
-publication require separate agreement. Marketplace retains its `master` push
-and manual stable routes; Open VSX stable publication remains manually dispatched
-from `master`. A `beta` push can publish a pre-release to both registries using
+Use the [versioning policy](docs/versioning.md) for patch/minor/major decisions,
+including `0.x`, mixed batches, the first `1.x` compatibility commitment, and
+channel ordering. F5 testing does not require a version bump. Version changes,
+commits, push, transfers to `master`, and publication require separate agreement.
+Marketplace retains its `master` push and manual stable routes; Open VSX stable
+publication remains manually dispatched from `master`. A `beta` push can publish a pre-release to both registries using
 the same extension ID; `dev` pushes and manual `beta` dispatch do not publish.
 Use a distinct numeric version and account for that effect when agreeing to push.
 Access, environment restrictions, and verification are described in the

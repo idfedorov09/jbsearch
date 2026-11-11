@@ -1,6 +1,12 @@
 # Changelog
 
-## 0.3.3 — pre-release
+## 0.4.0 — pre-release
+
+### Added
+
+- Configure replacement preparation with `jbsearch.replace.prepareTimeoutMs`.
+- Rerun a stale search from the modal and invoke Replace All from a match's
+  context menu.
 
 ### Changed
 
@@ -15,7 +21,7 @@
 
 The extension ID is unchanged and the bundled client remains at 0.1.0. Automated
 Linux checks are not Windows, WSL, macOS, physical Remote, or native-editor
-acceptance; those checks remain open. See the [pre-release notes](https://github.com/idfedorov09/jbsearch/blob/beta/docs/releases/v0.3.3-beta.md).
+acceptance; those checks remain open. See the [pre-release notes](https://github.com/idfedorov09/jbsearch/blob/beta/docs/releases/v0.4.0-beta.md).
 
 ## 0.3.2 — 2026-11-09
 

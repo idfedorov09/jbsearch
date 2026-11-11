@@ -57,8 +57,14 @@ release. Generated VSIX files remain ignored and are not committed.
 
 ## Isolated application check
 
-Pending the corrected external adapter's independent compatibility review and
-an exact-source-bound, normal-sandbox-only one-attempt execution. No ordinary
+The corrected v4 external adapter passed independent compatibility review, but
+its exact-source-bound, normal-sandbox-only attempt stopped before the runner
+started because of a supervisor receipt/ownership-monitoring error. Cleanup and
+unchanged source were verified. Review of the v5 supervisor repair then found
+pending-receipt mutation and already-exited identity admission defects. Another
+application attempt remains blocked pending repair and independent review;
+neither attempt preparation nor these findings establish product success or
+failure. No ordinary
 VS Code profile, environment, extension installation or user document may be
 used. A failed sandbox/prerequisite check must be recorded as an environment
 limitation, not replaced with an unapproved `--no-sandbox` application launch.

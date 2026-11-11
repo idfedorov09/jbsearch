@@ -89,6 +89,8 @@ and verify the actual project state instead of making assumptions.
   Do not infer macOS/Windows or physical Remote SSH support from Linux runs.
   Do not present an untested platform or unfinished item as complete; icon work,
   publication, and external actions require a separate request.
+- Use [docs/versioning.md](docs/versioning.md) for release bump, `0.x`,
+  compatibility, and channel decisions. It does not authorize a release.
 - Before finishing, run the relevant `npm run check` and `npm test`; use
   `npm run package` to verify packaging. Record real VS Code manual checks
   separately; never claim they ran when they did not.
