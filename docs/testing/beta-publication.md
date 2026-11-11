@@ -67,8 +67,14 @@ The unchanged stable trusted Open VSX route is not covered by the token guard.
 An external v4 native-check attempt stopped before its runner started because of
 a supervisor ownership-monitoring error; cleanup was verified and no survivors
 were reported. This establishes neither native acceptance nor a product failure;
-a repaired external attempt remains blocked by external receipt-validation
-review findings, not a product result. Windows, WSL, macOS, and physical
+the later v6 repair passed independent review. Its separately approved normal-
+sandbox attempt verified the private display/bus, but Electron exited 133 before
+the runner because the SUID `chrome-sandbox` helper was not configured correctly.
+Both readiness receipts, cleanup, unchanged source, and absence of all six known
+PID/start identities were checked. No extension activation or real edit was established;
+there was no privileged-helper change or `--no-sandbox` retry. This is an
+environment limitation, not native acceptance or a product failure.
+Windows, WSL, macOS, and physical
 Remote acceptance of issue #3 remain open. CI execution, both public registry results, installation behavior, and the
 reporter's feedback must be recorded separately when actually observed. The
 source integration record is [issue-3-dev-beta-validation.md](issue-3-dev-beta-validation.md).

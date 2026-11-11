@@ -61,10 +61,24 @@ The corrected v4 external adapter passed independent compatibility review, but
 its exact-source-bound, normal-sandbox-only attempt stopped before the runner
 started because of a supervisor receipt/ownership-monitoring error. Cleanup and
 unchanged source were verified. Review of the v5 supervisor repair then found
-pending-receipt mutation and already-exited identity admission defects. Another
-application attempt remains blocked pending repair and independent review;
-neither attempt preparation nor these findings establish product success or
-failure. No ordinary
+pending-receipt mutation and already-exited identity admission defects. Both were
+repaired in v6 and independently re-reviewed. A fresh one-attempt approval bound
+v6 to the unchanged complete frozen staging inventory and pinned VS Code 1.144.1
+(commit `261c84cb1eddf11235f9e2c921425e9663fbe556`). The staging manifest remains
+0.3.2 with the integrated runtime code; this was not an installed 0.4.0 VSIX test.
+
+The actual v6 attempt verified private Xvfb and D-Bus readiness, then Electron
+exited 133 before the runner because its SUID `chrome-sandbox` helper was not
+configured correctly. `runner-started` and `suite-finished` were absent. Cleanup
+and unchanged source were verified, and an independent read-only audit found
+none of the six exact known PID/start identities alive. No extension activation,
+real `WorkspaceEdit`, scenario outcome or native acceptance is established.
+The approval remains consumed; neither the lifecycle pack nor another app
+attempt was run. No privileged sandbox helper change, binary substitution, or
+`--no-sandbox` retry was performed. The environment failure is not a product
+success or failure, and beta publication does not close this acceptance gap.
+
+No ordinary
 VS Code profile, environment, extension installation or user document may be
 used. A failed sandbox/prerequisite check must be recorded as an environment
 limitation, not replaced with an unapproved `--no-sandbox` application launch.
