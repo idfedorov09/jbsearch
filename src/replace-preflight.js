@@ -1,7 +1,7 @@
 'use strict';
 
 const { contentHash } = require('./content-hash');
-const { isDeepStrictEqual } = require('node:util');
+const { isDeepStrictEqual, types } = require('node:util');
 const path = require('node:path');
 const { fileURLToPath } = require('node:url');
 const { isPathWithin, acceptsFile } = require('./search/matcher');
@@ -111,10 +111,61 @@ function sameOccurrences(oldResults, freshResults, canonicalUri = value => value
 }
 
 function samePlans(oldPlans, freshPlans) {
-  const normalized = plans => plans.map(plan => stable(plan)).sort((a, b) => {
-    const left = JSON.stringify(a), right = JSON.stringify(b);
-    return left < right ? -1 : left > right ? 1 : 0;
-  });
+  const normalized = plans => {
+    // Cache the ordering key, not the plan or the equality decision. Computing
+    // it lazily preserves Array#sort's treatment of undefined and sparse rows.
+    const values = plans.map(plan => stable(plan));
+    const visiting = new WeakSet();
+    const plainData = value => {
+      if (typeof value === 'function' || typeof value === 'symbol' || typeof value === 'bigint') return false;
+      if (!value || typeof value !== 'object') return true;
+      if (types.isProxy(value) || visiting.has(value)) return false;
+      visiting.add(value);
+      try {
+        // Looking up toJSON directly can itself execute a stateful getter, even
+        // on a prototype. Detect serializers without invoking them and leave
+        // the original comparator to perform all observable accesses.
+        for (let current = value; current; current = Object.getPrototypeOf(current)) {
+          if (types.isProxy(current)) return false;
+          const serializer = Object.getOwnPropertyDescriptor(current, 'toJSON');
+          if (serializer) {
+            if (!Object.hasOwn(serializer, 'value') || typeof serializer.value === 'function') return false;
+            break;
+          }
+        }
+        // stable() normally produces data properties. If a customized array map
+        // or object constructor produced accessors, avoid evaluating them here.
+        for (const key of Object.keys(value)) {
+          const descriptor = Object.getOwnPropertyDescriptor(value, key);
+          if (!descriptor || !Object.hasOwn(descriptor, 'value') || !plainData(descriptor.value)) return false;
+        }
+        // JSON.stringify reads inherited array indices at holes, which can be
+        // stateful. Do not cache such arrays, including the outer sort input.
+        if (Array.isArray(value)) {
+          for (let index = 0; index < value.length; index++) {
+            const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
+            if (!descriptor || !descriptor.enumerable || !Object.hasOwn(descriptor, 'value')) return false;
+          }
+        }
+        return true;
+      } finally { visiting.delete(value); }
+    };
+    let cacheable = Array.isArray(values) && !types.isProxy(values) && values.length > 1;
+    for (let index = 0; cacheable && index < values.length; index++) {
+      const descriptor = Object.getOwnPropertyDescriptor(values, String(index));
+      if (!descriptor || !Object.hasOwn(descriptor, 'value') || !plainData(descriptor.value)) cacheable = false;
+    }
+    const keys = new Map();
+    const key = plan => {
+      if (!cacheable) return JSON.stringify(plan);
+      if (!keys.has(plan)) keys.set(plan, JSON.stringify(plan));
+      return keys.get(plan);
+    };
+    return values.sort((a, b) => {
+      const left = key(a), right = key(b);
+      return left < right ? -1 : left > right ? 1 : 0;
+    });
+  };
   return isDeepStrictEqual(normalized(oldPlans), normalized(freshPlans));
 }
 

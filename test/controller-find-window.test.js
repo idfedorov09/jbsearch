@@ -2783,6 +2783,8 @@ test('streaming Find results retain arrival order until the deterministic comple
   const f = fixture(t, { search: async (_request, { onBatch }) => {
     onBatch([z]);
     onBatch([a]);
+    // Allow the bounded intermediate delivery before completing the worker.
+    await new Promise(resolve => setTimeout(resolve, 60));
     return output([z, a]);
   }, dispose() {} });
   const s = f.session();
