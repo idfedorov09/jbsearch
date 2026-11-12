@@ -59,7 +59,8 @@ Node 22.23.2 and npm 12.0.2. They do not replace the manual checklist above.
 | Stable and marked pre-release packaging | Both passed; main 0.4.1, client 0.1.0, 90 main and 31 nested-client entries; both channel checks passed |
 | Diff and metadata checks | Passed; only the three main package/lock version fields changed; client and dependencies unchanged |
 | Independent core review | Passed within scope; 426 focused tests, 35 replacement/scope tests, and 5,000 deterministic diagnostic-parity cases passed |
-| Independent final documentation/metadata review and GitHub PR checks | PENDING |
+| Independent final documentation/metadata review | Passed within scope; corrected packaged beta links and dated preparation status were independently rechecked in both rebuilt VSIX files |
+| GitHub checks | Tracked separately by exact head in [PR #5](https://github.com/idfedorov09/jbsearch/pull/5); local validation is not a claim that a future head has passed CI |
 
 Runtime hashes were unchanged through local checks. Production changes are
 limited to the diagnostic formatter, controller summary lifecycle, and modal
@@ -74,3 +75,12 @@ future beta-merge build is claimed. GitHub checks and any later publication must
 identify their own commit and artifacts. Local command logs, package reports,
 and review evidence are retained outside the repository under
 `/home/codex/jbsearch-overnight-2026-11-12/follow-up-0.4.1/`.
+
+## Follow-up PR
+
+[PR #5](https://github.com/idfedorov09/jbsearch/pull/5) was created from `dev` to
+`beta` for this 0.4.1 correction. Its `Refs #3` reference produces a reverse
+cross-reference in issue #3 without an automatic-closing directive; the issue
+was verified open with no reporter comments added. The PR remains open for a
+separate merge/publication decision. No direct beta push, stable/master change,
+tag, or GitHub release was made during preparation.

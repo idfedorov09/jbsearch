@@ -14,7 +14,7 @@
 ## 3. Integration verification
 
 - [x] 3.1 Run code checks, the full Node suite, strict OpenSpec validation, stable and marked pre-release packaging, and diff checks; record their actual results.
-- [ ] 3.2 Obtain independent review of the final change, resolve confirmed findings, and prepare an issue-linked dev-to-beta PR without merging or publishing.
+- [x] 3.2 Obtain independent review of the final change, resolve confirmed findings, and prepare an issue-linked dev-to-beta PR without merging or publishing.
 
 ## Workflow follow-up
 
