@@ -445,20 +445,96 @@ test('a failed preflight offers rerun without hiding the existing result list', 
   assert.equal(ui.elements.get('rerunSearch').hidden, true);
 });
 
-test('diagnostics render file paths as text and do not block complete searches', () => {
+test('modal diagnostics show only the summary and do not block complete searches', () => {
   const ui = harness();
-  const diagnostics = '1 binary file excluded from text search.\n/workspace/<script>.png — binary file excluded';
-  ui.deliver({ ...ui.snapshot, diagnostics });
+  const diagnosticsSummary = '1 binary file excluded from text search; contents are not searched or replaced.';
+  const diagnostics = `${diagnosticsSummary}\n/workspace/<script>.png — binary file excluded\n5 additional paths are not shown.`;
+  ui.deliver({ ...ui.snapshot, diagnostics, diagnosticsSummary });
   const element = ui.elements.get('diagnostics');
   assert.equal(element.hidden, false);
-  assert.equal(element.textContent, diagnostics);
-  assert.deepEqual(element.children, [], 'paths must not be interpreted as HTML');
+  assert.equal(element.textContent, diagnosticsSummary);
+  assert.doesNotMatch(element.textContent, /workspace|<script>|additional paths/);
   assert.equal(ui.elements.get('replaceAll').disabled, false);
-  ui.deliver({ ...ui.snapshot, diagnostics, partial: true });
-  assert.equal(ui.elements.get('replaceAll').disabled, true);
-  ui.deliver({ ...ui.snapshot, diagnostics: '' });
-  assert.equal(element.hidden, true);
+  ui.click('replaceAll');
+  assert.equal(ui.messages.at(-1).type, 'replaceAll');
 });
+
+test('modal diagnostics have no detailed fallback when the summary is absent or empty', () => {
+  const ui = harness();
+  const diagnostics = '/workspace/template.docx — ZIP container excluded';
+  for (const diagnosticsSummary of [undefined, '']) {
+    ui.deliver({ ...ui.snapshot, diagnostics, diagnosticsSummary });
+    assert.equal(ui.elements.get('diagnostics').hidden, true);
+    assert.equal(ui.elements.get('diagnostics').textContent, '');
+  }
+});
+
+test('modal summaries remain plain text', () => {
+  const ui = harness();
+  const diagnosticsSummary = '<img src=x onerror=alert(1)> & incomplete inputs';
+  ui.deliver({ ...ui.snapshot, diagnosticsSummary });
+  const element = ui.elements.get('diagnostics');
+  assert.equal(element.hidden, false);
+  assert.equal(element.textContent, diagnosticsSummary);
+  assert.deepEqual(element.children, [], 'summary text must not be interpreted as HTML');
+});
+
+test('compact diagnostics preserve incomplete-search guards, general messages and Rerun', () => {
+  const ui = harness();
+  const diagnosticsSummary = '1 file could not be searched; results are incomplete.';
+  const diagnostics = `${diagnosticsSummary}\n/workspace/large.txt — exceeds the text file size limit`;
+  const current = { ...ui.snapshot, diagnostics, diagnosticsSummary, partial: true, needsRerun: true };
+  ui.deliver({ ...current, notice: 'Result limit reached. Narrow the search before Replace All.' });
+  assert.match(ui.elements.get('message').textContent, /Result limit reached/);
+  assert.equal(ui.elements.get('diagnostics').textContent, diagnosticsSummary);
+  assert.equal(ui.elements.get('diagnostics').hidden, false);
+  assert.equal(ui.elements.get('replaceAll').disabled, true);
+  ui.click('replaceAll');
+  assert.equal(ui.messages.some(message => message.type === 'replaceAll'), false);
+  ui.deliver({ ...current, error: 'The search results changed. Rerun Search before replacing.' });
+  assert.match(ui.elements.get('message').textContent, /search results changed/);
+  assert.equal(ui.elements.get('message').className, 'error');
+  assert.equal(ui.elements.get('rerunSearch').hidden, false);
+  assert.equal(ui.elements.get('rerunSearch').disabled, false);
+  assert.equal(ui.elements.get('diagnostics').textContent, diagnosticsSummary);
+  ui.click('rerunSearch');
+  assert.equal(ui.messages.at(-1).type, 'refresh');
+});
+
+for (const field of ['query', 'mask', 'include', 'exclude', 'caseSensitive', 'maskEnabled', 'scope', 'clear']) {
+  test(`pending ${field} search edits immediately clear the old modal summary`, () => {
+    const ui = harness();
+    const diagnosticsSummary = '2 binary files excluded from text search; contents are not searched or replaced.';
+    const current = { ...ui.snapshot, diagnostics: `${diagnosticsSummary}\n/workspace/old.bin — binary file excluded`, diagnosticsSummary };
+    ui.deliver(current);
+    assert.equal(ui.elements.get('diagnostics').hidden, false);
+    if (['caseSensitive', 'clear'].includes(field)) ui.click(field);
+    else if (field === 'maskEnabled') ui.elements.get(field).dispatchEvent({ type: 'change' });
+    else if (field === 'scope') ui.scopes.find(button => button.dataset.scope === 'openEditors').onclick();
+    else ui.input(field, field === 'query' ? 'next query' : '*.js');
+    const diagnostics = ui.elements.get('diagnostics');
+    assert.equal(diagnostics.hidden, true);
+    assert.equal(diagnostics.textContent, '');
+    ui.deliver(current);
+    assert.equal(diagnostics.hidden, true, 'an unacknowledged host echo cannot restore an old summary');
+    assert.equal(diagnostics.textContent, '');
+    ui.deliver({ ...ui.snapshot, generation: 2, patchAcks: { 'test-client': 1 }, diagnosticsSummary: '' });
+    assert.equal(diagnostics.hidden, true);
+  });
+}
+
+for (const field of ['replacement', 'preserveCase']) {
+  test(`pending ${field} edits retain diagnostics for the unchanged search`, () => {
+    const ui = harness();
+    const diagnosticsSummary = '1 binary file excluded from text search; contents are not searched or replaced.';
+    ui.deliver({ ...ui.snapshot, diagnosticsSummary });
+    if (field === 'replacement') ui.input(field, 'new replacement');
+    else ui.click(field);
+    assert.equal(ui.elements.get('diagnostics').hidden, false);
+    assert.equal(ui.elements.get('diagnostics').textContent, diagnosticsSummary);
+    assert.equal(ui.elements.get('replaceAll').disabled, true, 'pending acknowledgement still guards replacement');
+  });
+}
 
 test('compact virtualized results stay navigable at the end of a long list', () => {
   const ui = harness();

@@ -35,6 +35,7 @@ function abortable(promise, signal) {
 }
 const MAX_INVALIDATIONS = 512;
 const MAX_VALIDATIONS = 4;
+const STREAMING_UPDATE_DELAY_MS = 50;
 // Includes debounce timers, the controller FIFO and running validation callers
 // across every saved session. Physical host requests have their own shared cap.
 const MAX_VALIDATION_BACKLOG = 512;
@@ -223,6 +224,7 @@ class SearchController {
       error: '',
       notice: '',
       diagnostics: '',
+      diagnosticsSummary: '',
       needsRerun: false,
       patchAcks: new Map(),
       previewRevision: 0
@@ -338,6 +340,10 @@ class SearchController {
       target.draftId = session.id;
     }
     this.currentId = session.id;
+    // Retire an approval as soon as the mode changes, before opening or
+    // presenting a modal can await. A rapid Replace -> Find -> Replace must
+    // not resurrect a token from the earlier Replace presentation.
+    if (session.mode !== mode) session.replaceApproval = undefined;
     session.mode = mode;
     const active = this.v.window.activeTextEditor;
     if (!session.query && active && !active.selection.isEmpty) {
@@ -458,6 +464,7 @@ class SearchController {
       // resurrect a modal just because native focus might also close one.
       if (!session.panels.size && transfer?.source === session && transfer.closingSource) return;
       if (!session.panels.size) {
+        this.cancelStreamingUpdate(session);
         session.lifetimeRevision = (session.lifetimeRevision || 0) + 1;
         this.cancelTransfer(session, { closed: true });
       }
@@ -1037,6 +1044,7 @@ class SearchController {
         ? [session.notice, 'Results may be out of date. Use Rerun Search.'].filter(Boolean).join(' ')
         : session.notice,
       diagnostics: session.diagnostics || '',
+      diagnosticsSummary: session.diagnosticsSummary || '',
       replacing: Boolean(session.replacing),
       needsRerun: Boolean(session.needsRerun),
       scopeStale: Boolean(session.scopeStale),
@@ -1047,6 +1055,9 @@ class SearchController {
     };
   }
   notify(session) {
+    // Any immediate notification already contains every accepted result, so a
+    // pending streaming-only update would be redundant.
+    this.cancelStreamingUpdate(session);
     if (this.disposed || (this.sessions && this.sessions.get(session.id) !== session)) return;
     const message = { type: 'state', state: this.snapshot(session) };
     if (session.layout === 'findWindow') {
@@ -1057,8 +1068,47 @@ class SearchController {
       void panel.webview.postMessage(message);
     }
   }
+  cancelStreamingUpdate(session, expected) {
+    const pending = session.streamingUpdate;
+    if (!pending || (expected && pending !== expected)) return;
+    session.streamingUpdate = undefined;
+    clearTimeout(pending.timer);
+    pending.abort.signal.removeEventListener('abort', pending.onAbort);
+  }
+  queueStreamingUpdate(session, generation, lifetime, abort, onError) {
+    // A transfer has its own provisional owners and rollback path. Preserve
+    // immediate delivery there rather than letting a timer cross the handoff.
+    if (session.transferOperation) {
+      this.notify(session);
+      return;
+    }
+    const current = session.streamingUpdate;
+    if (current && current.abort === abort && current.generation === generation &&
+        current.lifetime === lifetime) return;
+    this.cancelStreamingUpdate(session);
+    const pending = { abort, generation, lifetime };
+    pending.onAbort = () => this.cancelStreamingUpdate(session, pending);
+    session.streamingUpdate = pending;
+    abort.signal.addEventListener('abort', pending.onAbort, { once: true });
+    if (abort.signal.aborted) {
+      this.cancelStreamingUpdate(session, pending);
+      return;
+    }
+    pending.timer = setTimeout(() => {
+      if (session.streamingUpdate !== pending) return;
+      this.cancelStreamingUpdate(session, pending);
+      if (this.disposed || this.sessions.get(session.id) !== session ||
+          session.generation !== generation || session.lifetimeRevision !== lifetime ||
+          session.abort !== abort || abort.signal.aborted || session.transferOperation) return;
+      // Unlike a worker callback, a timer runs outside SearchEngine's error
+      // boundary. Return failures to the owning search instead of throwing on
+      // the extension host's event loop.
+      try { this.notify(session); } catch (error) { onError(error); }
+    }, STREAMING_UPDATE_DELAY_MS);
+  }
   resetSearch(session) {
     if (session.reviewOnly) return;
+    this.cancelStreamingUpdate(session);
     this.cancelTransfer(session);
     this.cancelValidations(session);
     clearTimeout(session.timer);
@@ -1076,6 +1126,7 @@ class SearchController {
     session.error = '';
     session.notice = '';
     session.diagnostics = '';
+    session.diagnosticsSummary = '';
     session.partial = false;
     session.scopeStale = false;
     session.needsRerun = false;
@@ -1373,6 +1424,7 @@ class SearchController {
   async search(session) {
     if (session.reviewOnly || this.disposed || this.sessions.get(session.id) !== session) return;
     const generation = session.generation;
+    const lifetime = session.lifetimeRevision;
     if (!session.query) {
       session.searching = false;
       this.notify(session);
@@ -1380,7 +1432,11 @@ class SearchController {
     }
     const abort = new AbortController();
     session.abort = abort;
-    const live = () => this.sessions.get(session.id) === session && generation === session.generation && !abort.signal.aborted && !this.disposed;
+    const live = () => this.sessions.get(session.id) === session && generation === session.generation &&
+      lifetime === session.lifetimeRevision && session.abort === abort && !abort.signal.aborted && !this.disposed;
+    let deliveredBatch = false;
+    let rejectStreaming;
+    const streamingFailure = new Promise((_, reject) => { rejectStreaming = reject; });
     try {
       // Remember the initial membership while request() awaits document opens;
       // a close event may arrive after the tab has already disappeared.
@@ -1398,19 +1454,23 @@ class SearchController {
         ? (request.documents || []).map(document => this.v.Uri.parse(document.uri)) : undefined;
       session.observedOpenEditorUris ||= session.openEditorUris &&
         new Set(session.openEditorUris.map(uri => uri.toString()));
-      const output = await this.engine.search(request, {
+      const output = await Promise.race([this.engine.search(request, {
         signal: abort.signal,
         onBatch: (matches) => {
           if (!live()) return;
+          if (!matches.length) return;
           session.results.push(...this.invalidateInitialResults(session, matches));
           if (!session.selectedId && session.results.length) {
             session.selectedId = session.results[0].id;
             session.autoSelected = true;
             void this.selectAutomatic(session);
           }
-          this.notify(session);
+          if (!deliveredBatch) {
+            deliveredBatch = true;
+            this.notify(session);
+          } else this.queueStreamingUpdate(session, generation, lifetime, abort, rejectStreaming);
         }
-      });
+      }), streamingFailure]);
       if (!live()) return;
       const results = this.invalidateInitialResults(session, output.results);
       session.results = session.layout === 'findWindow' ? sortResults(results) : results;
@@ -1422,6 +1482,7 @@ class SearchController {
       if (session.searchScopeChanged) session.needsRerun = true;
       session.error = '';
       session.diagnostics = skipDiagnostics(output.stats);
+      session.diagnosticsSummary = skipDiagnostics(output.stats, { includeDetails: false });
       session.notice =
         output.reason === 'limit'
           ? 'Result limit reached. Narrow the search before Replace All.'
@@ -1437,6 +1498,7 @@ class SearchController {
       if (session.selectedId) void this.selectAutomatic(session);
     } catch (error) {
       if (live()) {
+        abort.abort();
         session.searching = false;
         if (['GATE_TIMEOUT', 'GATE_FULL'].includes(error.code)) {
           session.needsRerun = true;
@@ -1447,6 +1509,9 @@ class SearchController {
         session.selectedId = null;
         this.notify(session);
       }
+    } finally {
+      const pending = session.streamingUpdate;
+      if (pending?.abort === abort) this.cancelStreamingUpdate(session, pending);
     }
   }
   selectAutomatic(session) {
@@ -1799,9 +1864,16 @@ class SearchController {
     if (target?.replacing || target?.transferOperation)
       throw new Error('Wait for the saved search operation before opening Find Panel.');
     const window = target || (newTab ? this.create(source.mode, source) : source);
+    // A transfer takes ownership of the current accumulated results. Flush a
+    // pending source update first, then prevent timers from crossing owners.
+    if (source.streamingUpdate) {
+      this.cancelStreamingUpdate(source);
+      this.notify(source);
+    }
+    if (window !== source) this.cancelStreamingUpdate(window);
     const previous = Object.fromEntries([
       'mode', 'query', 'replacement', 'options', 'scope', 'results', 'selectedId',
-      'layout', 'uri', 'searching', 'partial', 'error', 'notice', 'diagnostics', 'namedScopeBinding',
+      'layout', 'uri', 'searching', 'partial', 'error', 'notice', 'diagnostics', 'diagnosticsSummary', 'namedScopeBinding',
       'searchRequestFingerprint', 'needsRerun', 'scopeStale', 'initialScopeChanged',
       'resultRevision', 'scopeEventRevision', 'effectiveScope', 'searchRoots',
       'openEditorUris', 'observedOpenEditorUris', 'scopePolicyChanged', 'searchScopeChanged',
@@ -1870,7 +1942,7 @@ class SearchController {
         searchScopeInvalidated: source.searchScopeInvalidated,
         results: source.results.map(result => ({ ...result })), selectedId: source.selectedId,
         searching: false, partial: source.partial, error: source.error, notice: source.notice,
-        diagnostics: source.diagnostics
+        diagnostics: source.diagnostics, diagnosticsSummary: source.diagnosticsSummary
       });
       // Completed document, eligible Save and accepted raw-observation proofs
       // are re-admitted, not copied as source-owner symbols or action tokens.
@@ -2028,6 +2100,7 @@ class SearchController {
     if (session.layout !== 'findWindow' || !this.sessions.has(session.id)) return;
     if (session.replacing) throw new Error('Wait for the replacement before closing this search.');
     session.lifetimeRevision = (session.lifetimeRevision || 0) + 1;
+    this.cancelStreamingUpdate(session);
     this.cancelTransfer(session, { closed: true });
     clearTimeout(session.timer);
     session.abort?.abort();
@@ -2038,6 +2111,7 @@ class SearchController {
     for (const panel of [...session.panels]) panel.dispose();
     const draft = this.sessions.get(session.draftId);
     if (draft) {
+      this.cancelStreamingUpdate(draft);
       for (const panel of [...draft.panels]) panel.dispose();
       this.sessions.delete(draft.id);
     }
@@ -2370,6 +2444,7 @@ class SearchController {
     this.disposed = true;
     for (const session of this.sessions.values()) {
       session.lifetimeRevision = (session.lifetimeRevision || 0) + 1;
+      this.cancelStreamingUpdate(session);
       this.cancelTransfer(session, { closed: true });
       clearTimeout(session.timer);
       session.abort?.abort();
