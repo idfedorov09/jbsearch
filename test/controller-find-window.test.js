@@ -718,7 +718,7 @@ test('confirming the gear draft updates the same Find tab, including replacement
   const draft = f.controller.sessions.get(f.controller.currentId);
   Object.assign(draft, { query: 'cat!', mode: 'replace', replacement: 'dog',
     scope: { kind: 'custom', name: 'Sources' }, results: f.matches('cat!'),
-    diagnostics: 'draft excluded archive' });
+    diagnostics: 'draft excluded archive', diagnosticsSummary: 'draft exclusion summary' });
   await f.controller.message(draft, { type: 'openTab' });
   assert.equal(f.controller.currentId, s.id);
   assert.equal(s.query, 'cat!');
@@ -733,21 +733,31 @@ test('confirming the gear draft updates the same Find tab, including replacement
   assert.equal(f.controller.findTree.state.mode, 'replace');
   assert.equal(s.diagnostics, 'draft excluded archive');
   assert.equal(f.controller.findTree.state.diagnostics, 'draft excluded archive');
+  assert.equal(s.diagnosticsSummary, 'draft exclusion summary');
+  assert.equal(f.controller.findTree.state.diagnosticsSummary, 'draft exclusion summary');
 });
 
 test('New Tab from a gear draft creates an independent Find snapshot', async t => {
   const f = fixture(t), s = f.session();
+  s.diagnostics = 'original details';
+  s.diagnosticsSummary = 'original summary';
   f.controller.schedule = () => {};
   await f.controller.message(s, { type: 'editSearch' });
   const draft = f.controller.sessions.get(f.controller.currentId);
   draft.query = 'cat!';
   draft.results = f.matches('cat!');
+  draft.diagnostics = 'draft details';
+  draft.diagnosticsSummary = 'draft summary';
   await f.controller.message(draft, { type: 'newTab' });
   const next = f.controller.sessions.get(f.controller.currentId);
   assert.notEqual(next.id, s.id);
   assert.equal(next.layout, 'findWindow');
   assert.equal(next.query, 'cat!');
   assert.equal(s.query, 'cat');
+  assert.equal(next.diagnostics, 'draft details');
+  assert.equal(next.diagnosticsSummary, 'draft summary');
+  assert.equal(s.diagnostics, 'original details');
+  assert.equal(s.diagnosticsSummary, 'original summary');
   next.options.mask = '*.bl';
   assert.equal(s.options.mask, '');
   assert.notEqual(next.results, s.results);
@@ -837,9 +847,11 @@ test('legacy Find editor resources migrate to the native panel without opening a
 
 test('transfer disposes the modal, retains its snapshot and does not open or split an editor', async t => {
   const f = fixture(t), s = f.controller.create();
+  assert.equal(s.diagnosticsSummary, '');
   s.query = 'cat';
   s.results = f.matches();
   s.diagnostics = 'excluded archive in original search';
+  s.diagnosticsSummary = 'original exclusion summary';
   s.selectedId = s.results[0].id;
   const source = f.panel(s, undefined);
   await f.controller.openFindWindow(s, false);
@@ -849,6 +861,7 @@ test('transfer disposes the modal, retains its snapshot and does not open or spl
   assert.equal(s.panels.size, 0);
   assert.equal(f.controller.findTree.activeId, s.id);
   assert.equal(f.controller.findTree.state.diagnostics, s.diagnostics);
+  assert.equal(f.controller.findTree.state.diagnosticsSummary, s.diagnosticsSummary);
   assert.equal(f.events.focus, 'results', 'modal disposal must not steal the final tree focus');
   assert.equal(f.previews.filter(item => item[0] === 'show').length, 0);
   assert.equal(f.commands.filter(command => command[0] === 'vscode.openWith' || command[0].includes('newGroup')).length, 0);
@@ -877,10 +890,12 @@ test('a failed transfer keeps the modal usable and does not leak an independent 
 test('rollback resumes pending validation of the saved search being edited', async t => {
   const f = fixture(t), target = f.session('cat', {}, 'replace');
   target.diagnostics = 'original archive details';
+  target.diagnosticsSummary = 'original archive summary';
   f.change([{ rangeOffset: 0, rangeLength: 1, text: 'b' }]);
   await f.controller.message(target, { type: 'editSearch' });
   const draft = f.controller.sessions.get(f.controller.currentId);
   draft.diagnostics = 'new draft archive details';
+  draft.diagnosticsSummary = 'new draft archive summary';
   const execute = f.v.commands.executeCommand;
   f.v.commands.executeCommand = async (...args) => {
     if (args[0] === 'jbsearch.results.focus') throw new Error('Open failed');
@@ -890,6 +905,9 @@ test('rollback resumes pending validation of the saved search being edited', asy
   assert.ok(target.results.every(result => result.pending));
   assert.equal(target.diagnostics, 'original archive details');
   assert.equal(draft.diagnostics, 'new draft archive details');
+  assert.equal(target.diagnosticsSummary, 'original archive summary');
+  assert.equal(draft.diagnosticsSummary, 'new draft archive summary');
+  assert.equal(f.controller.findTree.state.diagnosticsSummary, 'original archive summary');
   assert.equal(target.validations.size, 1, 'rollback must resume the cancelled checks');
   await f.validate(target);
   assert.deepEqual(target.results.map(result => Boolean(result.invalid)), [true, false]);

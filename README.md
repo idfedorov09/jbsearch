@@ -175,8 +175,10 @@ remove it, so the setting continues to control that binding.
   Unsupported encodings, unclassified oversized inputs, and inaccessible files
   make results incomplete. Binary detection uses content signatures and a NUL-byte
   heuristic, so arbitrary bytes cannot always be classified perfectly: a text
-  input can be mistaken for binary, and vice versa. Review the representative
-  paths and reasons in the diagnostics before replacing. Symlinks are not followed.
+  input can be mistaken for binary, and vice versa. The dialog shows aggregate
+  binary-exclusion and incomplete-input warnings, not individual skipped paths.
+  To review representative paths and reasons before replacing, use **Open in
+  Find Panel**; its bounded list is not exhaustive. Symlinks are not followed.
   Replace All requires complete results for eligible text; narrow the scope or
   adjust limits when a search is incomplete.
 - Saved searches live in memory and are cleared when the extension host restarts.

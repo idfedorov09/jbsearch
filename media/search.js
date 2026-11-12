@@ -327,6 +327,8 @@
       state.partial = false;
       state.error = '';
       state.notice = '';
+      state.diagnostics = '';
+      state.diagnosticsSummary = '';
       state.scopeStale = state.needsRerun = false;
     }
     for (const control of document.querySelectorAll('input, textarea, select, button'))
@@ -372,8 +374,8 @@
     $('message').hidden = !state.error && !state.notice;
     $('message').className = state.error ? 'error' : '';
     $('message').textContent = state.error || state.notice || '';
-    $('diagnostics').hidden = !state.diagnostics;
-    $('diagnostics').textContent = state.diagnostics || '';
+    $('diagnostics').hidden = !state.diagnosticsSummary;
+    $('diagnostics').textContent = state.diagnosticsSummary || '';
     const rerunNeeded = !state.reviewOnly && Boolean(state.scopeStale || state.needsRerun);
     $('rerunNotice').hidden = !rerunNeeded;
     $('rerunSearch').hidden = !rerunNeeded;

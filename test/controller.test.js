@@ -126,9 +126,13 @@ test('a superseded search cannot publish its late results or overwrite a new que
   s.generation++;
   s.query = 'new';
   s.results = [{ id: 'new' }];
+  s.diagnostics = 'new search details';
+  s.diagnosticsSummary = 'new search summary';
   finish({ results: [{ id: 'old' }], truncated: false, stats: { errors: [], skippedFiles: 0 } });
   await running;
   assert.deepEqual(s.results, [{ id: 'new' }]);
+  assert.equal(s.diagnostics, 'new search details');
+  assert.equal(s.diagnosticsSummary, 'new search summary');
 });
 test('replacement refuses partial results and a mismatched generation before opening files', async () => {
   const controller = stub({});
@@ -180,8 +184,19 @@ test('search reports excluded archives separately and retains bounded, plain-tex
   assert.match(s.diagnostics, /legacy\.txt — unsupported encoding/);
   assert.ok(s.diagnostics.includes('<script>\\u000aarchive.docx'));
   assert.equal(controller.snapshot(s).diagnostics, s.diagnostics);
+  assert.equal(s.diagnosticsSummary, '1 binary file excluded from text search; contents are not searched or replaced.\n1 file could not be searched; results are incomplete.');
+  assert.equal(controller.snapshot(s).diagnosticsSummary, s.diagnosticsSummary);
+  assert.doesNotMatch(s.diagnosticsSummary, /workspace|archive|legacy/);
   controller.resetSearch(s);
   assert.equal(s.diagnostics, '', 'a new generation must discard old paths');
+  assert.equal(s.diagnosticsSummary, '', 'a new generation must discard the old summary');
+  s.query = '';
+  s.diagnostics = 'old details';
+  s.diagnosticsSummary = 'old summary';
+  controller.resetSearch(s);
+  assert.equal(controller.snapshot(s).diagnosticsSummary, '', 'clearing the query clears its summary');
+  assert.equal(s.diagnostics, '');
+  assert.equal(s.searching, false);
 
   const overflow = skipDiagnostics({ skippedFiles: 25, excludedBinaryFiles: 25, blockingSkippedFiles: 0,
     skippedDetailsOmitted: 5,

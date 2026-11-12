@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.4.1 — pre-release preparation
+
+### Changed
+
+- Keep binary-exclusion and incomplete-input warnings compact in the search
+  dialog, without listing skipped paths, per-file reasons, or omitted paths.
+  Use **Open in Find Panel** to review the retained, bounded representative
+  paths and reasons before replacing.
+
+This is a presentation correction to published 0.4.0: no files are deleted, and
+search eligibility, completeness classification, and replacement safeguards are
+unchanged. Binary detection is still heuristic, and the bundled client remains
+at 0.1.0. See the [release notes](https://github.com/idfedorov09/jbsearch/blob/beta/docs/releases/v0.4.1-beta.md) and
+[pending native test checklist](https://github.com/idfedorov09/jbsearch/blob/beta/docs/testing/modal-diagnostic-summary.md).
+Publication had not occurred when this entry was prepared on November 12, 2026;
+check the registry and publication record for its later status.
+
 ## 0.4.0 — pre-release
 
 ### Added

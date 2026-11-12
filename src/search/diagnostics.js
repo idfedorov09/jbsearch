@@ -65,7 +65,7 @@ function completePreflight(output) {
     output.stats.errors.length === 0 && classifySkips(output.stats).blocking === 0);
 }
 
-function skipDiagnostics(stats = {}) {
+function skipDiagnostics(stats = {}, { includeDetails = true } = {}) {
   const counts = classifySkips(stats);
   if (!counts.total && counts.consistent) return '';
   const lines = [];
@@ -75,6 +75,7 @@ function skipDiagnostics(stats = {}) {
     lines.push(counts.consistent
       ? `${counts.blocking} ${counts.blocking === 1 ? 'file could' : 'files could'} not be searched; results are incomplete.`
       : 'Some skipped inputs could not be classified; results are incomplete.');
+  if (!includeDetails) return lines.join('\n');
   const details = Array.isArray(stats.skippedDetails) ? stats.skippedDetails.slice(0, 20) : [];
   for (const detail of details) {
     const reason = detail.kind === 'enumeration' ? 'directory enumeration failed'

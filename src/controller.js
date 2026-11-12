@@ -223,6 +223,7 @@ class SearchController {
       error: '',
       notice: '',
       diagnostics: '',
+      diagnosticsSummary: '',
       needsRerun: false,
       patchAcks: new Map(),
       previewRevision: 0
@@ -1037,6 +1038,7 @@ class SearchController {
         ? [session.notice, 'Results may be out of date. Use Rerun Search.'].filter(Boolean).join(' ')
         : session.notice,
       diagnostics: session.diagnostics || '',
+      diagnosticsSummary: session.diagnosticsSummary || '',
       replacing: Boolean(session.replacing),
       needsRerun: Boolean(session.needsRerun),
       scopeStale: Boolean(session.scopeStale),
@@ -1076,6 +1078,7 @@ class SearchController {
     session.error = '';
     session.notice = '';
     session.diagnostics = '';
+    session.diagnosticsSummary = '';
     session.partial = false;
     session.scopeStale = false;
     session.needsRerun = false;
@@ -1422,6 +1425,7 @@ class SearchController {
       if (session.searchScopeChanged) session.needsRerun = true;
       session.error = '';
       session.diagnostics = skipDiagnostics(output.stats);
+      session.diagnosticsSummary = skipDiagnostics(output.stats, { includeDetails: false });
       session.notice =
         output.reason === 'limit'
           ? 'Result limit reached. Narrow the search before Replace All.'
@@ -1801,7 +1805,7 @@ class SearchController {
     const window = target || (newTab ? this.create(source.mode, source) : source);
     const previous = Object.fromEntries([
       'mode', 'query', 'replacement', 'options', 'scope', 'results', 'selectedId',
-      'layout', 'uri', 'searching', 'partial', 'error', 'notice', 'diagnostics', 'namedScopeBinding',
+      'layout', 'uri', 'searching', 'partial', 'error', 'notice', 'diagnostics', 'diagnosticsSummary', 'namedScopeBinding',
       'searchRequestFingerprint', 'needsRerun', 'scopeStale', 'initialScopeChanged',
       'resultRevision', 'scopeEventRevision', 'effectiveScope', 'searchRoots',
       'openEditorUris', 'observedOpenEditorUris', 'scopePolicyChanged', 'searchScopeChanged',
@@ -1870,7 +1874,7 @@ class SearchController {
         searchScopeInvalidated: source.searchScopeInvalidated,
         results: source.results.map(result => ({ ...result })), selectedId: source.selectedId,
         searching: false, partial: source.partial, error: source.error, notice: source.notice,
-        diagnostics: source.diagnostics
+        diagnostics: source.diagnostics, diagnosticsSummary: source.diagnosticsSummary
       });
       // Completed document, eligible Save and accepted raw-observation proofs
       // are re-admitted, not copied as source-owner symbols or action tokens.
