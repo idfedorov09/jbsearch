@@ -36,8 +36,7 @@ jobs:
       - run: npm run check
       - run: npm test
       - run: npm run spec:check
-      - name: Set beta build timestamp
-        if: github.ref == 'refs/heads/beta'
+      - name: Set release build timestamp
         run: |
           set -euo pipefail
           epoch="$(git show -s --format=%ct "$GITHUB_SHA")"
@@ -48,12 +47,12 @@ jobs:
               ;;
           esac
           printf 'SOURCE_DATE_EPOCH=%s\n' "$epoch" >> "$GITHUB_ENV"
-      - name: Build stable package
+      - name: Build stable package matrix
         if: github.ref == 'refs/heads/master'
-        run: npm run package
-      - name: Build pre-release package
+        run: npm run package:matrix -- --out-dir "$RUNNER_TEMP/jbsearch-packages"
+      - name: Build pre-release package matrix
         if: github.ref == 'refs/heads/beta'
-        run: npm run package:pre-release
+        run: npm run package:matrix -- --pre-release --out-dir "$RUNNER_TEMP/jbsearch-packages"
 
   publish-token:
     if: github.repository == 'idfedorov09/jbsearch' && ((github.ref == 'refs/heads/master' && github.event_name == 'workflow_dispatch' && inputs.authentication == 'token') || (github.ref == 'refs/heads/beta' && github.event_name == 'push' && github.event.deleted == false && github.event.forced == false))
@@ -71,8 +70,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --ignore-scripts
-      - name: Set beta build timestamp
-        if: github.ref == 'refs/heads/beta'
+      - name: Set release build timestamp
         run: |
           set -euo pipefail
           epoch="$(git show -s --format=%ct "$GITHUB_SHA")"
@@ -83,13 +81,13 @@ jobs:
               ;;
           esac
           printf 'SOURCE_DATE_EPOCH=%s\n' "$epoch" >> "$GITHUB_ENV"
-      - name: Build stable package
+      - name: Build stable package matrix
         if: github.ref == 'refs/heads/master'
-        run: npm run package
-      - name: Build pre-release package
+        run: npm run package:matrix -- --out-dir "$RUNNER_TEMP/jbsearch-packages"
+      - name: Build pre-release package matrix
         if: github.ref == 'refs/heads/beta'
-        run: npm run package:pre-release
-      - name: Publish verified stable VSIX with bootstrap token
+        run: npm run package:matrix -- --pre-release --out-dir "$RUNNER_TEMP/jbsearch-packages"
+      - name: Publish and verify stable matrix with token
         if: github.ref == 'refs/heads/master'
         env:
           OVSX_PAT: ${{ secrets.OVSX_PAT }}
@@ -98,9 +96,8 @@ jobs:
             echo '::error::Configure OVSX_PAT in the protected open-vsx environment.'
             exit 1
           fi
-          package="jbsearch-$(node -p 'require("./package.json").version').vsix"
-          node scripts/publish-open-vsx.js "$package"
-      - name: Publish and verify pre-release with token
+          node scripts/publish-platforms.js open-vsx stable token "$RUNNER_TEMP/jbsearch-packages"
+      - name: Publish and verify pre-release matrix with token
         if: github.ref == 'refs/heads/beta'
         env:
           OVSX_PAT: ${{ secrets.OVSX_PAT }}
@@ -109,9 +106,7 @@ jobs:
             echo '::error::Configure OVSX_PAT in the protected open-vsx environment.'
             exit 1
           fi
-          package="jbsearch-$(node -p 'require("./package.json").version').vsix"
-          node scripts/publish-open-vsx.js "$package" --skip-duplicate
-          node scripts/verify-published-beta.js open-vsx "$package"
+          node scripts/publish-platforms.js open-vsx pre-release token "$RUNNER_TEMP/jbsearch-packages"
 
   publish-trusted:
     if: github.repository == 'idfedorov09/jbsearch' && github.ref == 'refs/heads/master' && github.event_name == 'workflow_dispatch' && inputs.authentication == 'trusted'
@@ -130,8 +125,18 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --ignore-scripts
-      - run: npm run package
-      - name: Publish verified VSIX with trusted publishing
+      - name: Set release build timestamp
         run: |
-          package="jbsearch-$(node -p 'require("./package.json").version').vsix"
-          ./node_modules/.bin/ovsx --registryUrl https://open-vsx.org publish "$package" --trusted-publishing
+          set -euo pipefail
+          epoch="$(git show -s --format=%ct "$GITHUB_SHA")"
+          case "$epoch" in
+            ''|*[!0-9]*)
+              printf '%s\n' '::error::Commit timestamp must be nonempty and numeric.' >&2
+              exit 1
+              ;;
+          esac
+          printf 'SOURCE_DATE_EPOCH=%s\n' "$epoch" >> "$GITHUB_ENV"
+      - name: Build stable package matrix
+        run: npm run package:matrix -- --out-dir "$RUNNER_TEMP/jbsearch-packages"
+      - name: Publish and verify stable matrix with trusted publishing
+        run: node scripts/publish-platforms.js open-vsx stable trusted "$RUNNER_TEMP/jbsearch-packages"

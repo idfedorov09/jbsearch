@@ -92,11 +92,15 @@ but it does not waive those first-stable gates.
   SemVer prerelease suffixes such as `-beta.1`. The beta route packages a
   **pre-release marker** independently of the numeric version; parity of the
   minor number does not determine the channel.
-- A published artifact is immutable for its extension ID and version. Never
-  replace or silently reuse that version for different contents; investigate a
-  duplicate or uncertain publication and issue a new version when appropriate.
-  An unpublished local draft is not a published artifact; verify both registries
-  before relying on that distinction.
+- A platform matrix is one logical release: its files share extension ID,
+  numeric version and channel, but have different targets and different bytes.
+  Treat each published ID/version/target artifact as immutable. Never replace it
+  or accept different contents as a duplicate; investigate a conflicting or
+  uncertain result. The universal fallback is its own target, not proof that
+  any platform target was published. For a future release, use a new higher
+  version under the separate release process rather than silently changing an
+  already published release. Verify both registries before concluding a local
+  draft was never published.
 - Beta and stable must use distinct numbers. For each new logical release, the
   project chooses a number higher than every version already published for that
   extension ID on either target registry, including the highest beta. Publishing

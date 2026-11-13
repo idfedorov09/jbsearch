@@ -28,8 +28,7 @@ jobs:
       - run: npm run check
       - run: npm test
       - run: npm run spec:check
-      - name: Set beta build timestamp
-        if: github.ref == 'refs/heads/beta'
+      - name: Set release build timestamp
         run: |
           set -euo pipefail
           epoch="$(git show -s --format=%ct "$GITHUB_SHA")"
@@ -40,12 +39,12 @@ jobs:
               ;;
           esac
           printf 'SOURCE_DATE_EPOCH=%s\n' "$epoch" >> "$GITHUB_ENV"
-      - name: Build stable package
+      - name: Build stable package matrix
         if: github.ref == 'refs/heads/master'
-        run: npm run package
-      - name: Build pre-release package
+        run: npm run package:matrix -- --out-dir "$RUNNER_TEMP/jbsearch-packages"
+      - name: Build pre-release package matrix
         if: github.ref == 'refs/heads/beta'
-        run: npm run package:pre-release
+        run: npm run package:matrix -- --pre-release --out-dir "$RUNNER_TEMP/jbsearch-packages"
 
   publish:
     if: github.repository == 'idfedorov09/jbsearch' && ((github.ref == 'refs/heads/master' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')) || (github.ref == 'refs/heads/beta' && github.event_name == 'push' && github.event.deleted == false && github.event.forced == false))
@@ -64,8 +63,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --ignore-scripts
-      - name: Set beta build timestamp
-        if: github.ref == 'refs/heads/beta'
+      - name: Set release build timestamp
         run: |
           set -euo pipefail
           epoch="$(git show -s --format=%ct "$GITHUB_SHA")"
@@ -76,18 +74,15 @@ jobs:
               ;;
           esac
           printf 'SOURCE_DATE_EPOCH=%s\n' "$epoch" >> "$GITHUB_ENV"
-      - name: Build stable package
+      - name: Build stable package matrix
         if: github.ref == 'refs/heads/master'
-        run: npm run package
-      - name: Build pre-release package
+        run: npm run package:matrix -- --out-dir "$RUNNER_TEMP/jbsearch-packages"
+      - name: Build pre-release package matrix
         if: github.ref == 'refs/heads/beta'
-        run: npm run package:pre-release
-      - name: Publish new stable version
+        run: npm run package:matrix -- --pre-release --out-dir "$RUNNER_TEMP/jbsearch-packages"
+      - name: Publish and verify stable matrix
         if: github.ref == 'refs/heads/master'
-        run: ./node_modules/.bin/vsce publish --oidc --skip-duplicate --packagePath ./*.vsix
-      - name: Publish and verify pre-release
+        run: node scripts/publish-platforms.js marketplace stable oidc "$RUNNER_TEMP/jbsearch-packages"
+      - name: Publish and verify pre-release matrix
         if: github.ref == 'refs/heads/beta'
-        run: |
-          package="jbsearch-$(node -p 'require("./package.json").version').vsix"
-          ./node_modules/.bin/vsce publish --oidc --pre-release --skip-duplicate --packagePath "$package"
-          node scripts/verify-published-beta.js marketplace "$package"
+        run: node scripts/publish-platforms.js marketplace pre-release oidc "$RUNNER_TEMP/jbsearch-packages"

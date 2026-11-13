@@ -2,6 +2,8 @@
 
 const path = require('node:path');
 const { installRequestGuard } = require('./guard-open-vsx-http');
+const { TARGETS, UNIVERSAL } = require('./package-targets');
+const { outputName } = require('./package-platforms');
 
 // Production always uses this origin. The test harness supplies loopback directly
 // to this exported function; no environment variable or CLI flag can change it.
@@ -9,10 +11,11 @@ function runCli({ registry = 'https://open-vsx.org', args = process.argv.slice(2
   const failure = 'Open VSX publication failed; details withheld to protect credentials.\n';
   try {
     const manifest = require('../package.json');
-    const expectedPackage = `${manifest.name}-${manifest.version}.vsix`;
+    const allowedPackages = new Set([`${manifest.name}-${manifest.version}.vsix`,
+      ...[UNIVERSAL, ...TARGETS].map(target => outputName(manifest, target))]);
     if (require('ovsx/package.json').version !== '1.3.0' || !process.env.OVSX_PAT ||
         args.length < 1 || args.length > 2 || args.some(arg => typeof arg !== 'string' || arg.includes(process.env.OVSX_PAT)) ||
-        path.basename(args[0]) !== expectedPackage ||
+        !allowedPackages.has(path.basename(args[0])) ||
         (args.length === 2 && args[1] !== '--skip-duplicate')) throw new Error('Invalid publication invocation');
     installRequestGuard({ origin: registry, allowLoopback, secret: process.env.OVSX_PAT });
     const entry = require.resolve('ovsx/bin/ovsx');

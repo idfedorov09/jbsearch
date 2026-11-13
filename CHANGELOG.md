@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.4.5 — pre-release preparation
+
+### Changed
+
+- Prepare the Marketplace and Open VSX publication routes to distribute six
+  platform-specific VSIX files for Windows, macOS, and Linux on x64 and ARM64,
+  with a universal fallback retaining the existing ripgrep binary inventory.
+- Verify each target's identity, version, release channel, and SHA-256 after
+  publication, and report partial or uncertain publication rather than treating
+  a skipped duplicate as proof of success.
+
+This is a distribution change relative to pre-release 0.4.4; search and
+replacement behavior, the extension ID, and the bundled client source and
+protocol are unchanged. Platform gallery publication and client selection still
+require their own checks. See the [pre-release notes](https://github.com/idfedorov09/jbsearch/blob/beta/docs/releases/v0.4.5-beta.md)
+for release and platform-testing boundaries.
+
 ## 0.4.4 — pre-release preparation
 
 ### Changed

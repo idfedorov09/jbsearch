@@ -10,7 +10,7 @@ const { test } = require('node:test');
 const root = path.join(__dirname, '..');
 const workflows = [
   { path: '.github/workflows/publish.yml', count: 2 },
-  { path: '.github/workflows/publish-open-vsx.yml', count: 2 },
+  { path: '.github/workflows/publish-open-vsx.yml', count: 3 },
   { path: '.github/workflows/test.yml', count: 1 },
 ];
 
@@ -18,7 +18,7 @@ const workflows = [
 // including its error handling, instead of a second copy of the algorithm.
 function timestampBlocks(filename) {
   const yaml = fs.readFileSync(path.join(root, filename), 'utf8');
-  const pattern = /^      - name: Set beta(?: PR)? build timestamp\s*\n        if: [^\n]+\n        run: \|\s*\n((?: {10}[^\n]*\n)+)/gm;
+  const pattern = /^      - name: Set (?:beta(?: PR)?|release) build timestamp\s*\n(?:        if: [^\n]+\n)?        run: \|\s*\n((?: {10}[^\n]*\n)+)/gm;
   return [...yaml.matchAll(pattern)].map(match => match[1].replace(/^ {10}/gm, ''));
 }
 

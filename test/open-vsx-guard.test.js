@@ -15,10 +15,10 @@ const manifest = require('../package.json');
 const runner = path.join(__dirname, 'helpers/guarded-ovsx-runner.js');
 const marker = 'synthetic-private-test-marker';
 
-async function fixture(t) {
+async function fixture(t, target) {
   const directory = await fsp.mkdtemp(path.join(os.tmpdir(), 'jbsearch-guarded-ovsx-'));
   t.after(() => fsp.rm(directory, { recursive: true, force: true }));
-  const filename = path.join(directory, `${manifest.name}-${manifest.version}.vsix`);
+  const filename = path.join(directory, `${manifest.name}-${manifest.version}${target ? `-${target}` : ""}.vsix`);
   const zip = new ZipFile();
   zip.addBuffer(Buffer.from(JSON.stringify({ publisher: manifest.publisher, name: manifest.name, version: manifest.version })), 'extension/package.json');
   zip.end(); await pipeline(zip.outputStream, fs.createWriteStream(filename));
@@ -81,6 +81,27 @@ test('modern registry uses the actual CLI with header-only PAT and exact VSIX by
   assert.ok(publish); assert.equal(publish.auth, `Bearer ${marker}`);
   assert.deepEqual(publish.body, await fsp.readFile(filename));
   assert.equal(registry.requests.some(request => request.tokenQuery), false);
+  assert.doesNotMatch(result.output, /synthetic-private-test-marker/);
+});
+
+for (const target of ['universal', 'win32-x64', 'win32-arm64', 'darwin-x64', 'darwin-arm64', 'linux-x64', 'linux-arm64']) {
+  test(`allowlisted ${target} filename keeps the CLI token guard`, async t => {
+    const filename = await fixture(t, target); const registry = await mockRegistry(t, 'modern');
+    const result = await runCli(registry.url, filename);
+    assert.equal(result.code, 0, result.output);
+    const publish = registry.requests.find(request => request.pathname === '/api/-/publish');
+    assert.ok(publish); assert.equal(publish.auth, `Bearer ${marker}`);
+    assert.deepEqual(publish.body, await fsp.readFile(filename));
+    assert.equal(registry.requests.some(request => request.tokenQuery), false);
+    assert.doesNotMatch(result.output, /synthetic-private-test-marker/);
+  });
+}
+
+test('unknown matrix filename is rejected before contacting the registry', async t => {
+  const filename = await fixture(t, 'linux-unknown'); const registry = await mockRegistry(t, 'modern');
+  const result = await runCli(registry.url, filename);
+  assert.notEqual(result.code, 0);
+  assert.equal(registry.requests.length, 0);
   assert.doesNotMatch(result.output, /synthetic-private-test-marker/);
 });
 
