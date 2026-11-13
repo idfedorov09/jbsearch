@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.4.7 — 2026-11-14
+
+### Changed
+
+- Distribute smaller platform-specific VSIX packages for Windows, macOS and
+  Linux on x64 and ARM64, alongside a universal fallback. The icon and
+  required runtime resources remain bundled.
+- Preflight all packages and verify each gallery's exact extension identity,
+  version, target, channel and SHA-256. Publication reports partial or
+  uncertain outcomes instead of accepting an unverified duplicate.
+- Allow bounded registry verification to overlap sequential platform uploads,
+  and expose safe process and retry timing for publication diagnostics.
+
+This stable release promotes the distribution changes from pre-releases 0.4.4,
+0.4.5 and 0.4.6. Search and replacement behavior, the extension ID and the
+bundled client source and protocol are unchanged. Local packaging and registry
+checks do not establish platform-specific client selection or native execution
+on untested systems. See the [release notes](docs/releases/v0.4.7.md).
+
 ## 0.4.6 — pre-release preparation
 
 ### Changed

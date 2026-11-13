@@ -1,6 +1,6 @@
 # ADR 0019: Overlap platform publication verification
 
-- Status: Accepted for local workflow implementation
+- Status: Accepted
 - Date: 2026-11-14
 - Extends: [ADR 0018](0018-platform-gallery-publication.md)
 

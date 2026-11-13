@@ -24,7 +24,7 @@ in full here.
 | [0016](0016-search-presentation-and-approval-cost.md) | Accepted | Coalesce result presentation and reduce approval costs without weakening replacement safety |
 | [0017](0017-platform-specific-packaging.md) | Accepted | Platform-specific VSIX builds and universal fallback without publication changes |
 | [0018](0018-platform-gallery-publication.md) | Accepted for local implementation | Verified platform matrix publication with partial-failure reporting |
-| [0019](0019-overlapping-publication-verification.md) | Accepted for local implementation | Overlap exact gallery verification without concurrent uploads |
+| [0019](0019-overlapping-publication-verification.md) | Accepted | Overlap exact gallery verification without concurrent uploads |
 
 Statuses: Proposed — under discussion; Accepted — adopted; Superseded — replaced
 by another ADR; Rejected — considered and rejected. Accepted does not mean the code

@@ -51,8 +51,9 @@ after every target is confirmed.
 
 Matrix uploads do not use `--skip-duplicate`: a duplicate or another failed or
 inconclusive upload blocks the next write until its exact record is confirmed.
-The new scheduling is locally tested but has not been timed in a real release;
-it may not speed up registry processing.
+The 0.4.6 beta loop ran in about 4 minutes 10 seconds versus about 17 minutes
+for the preceding 0.4.5 run. These individual observations do not guarantee
+future latency or imply that gallery processing itself was accelerated.
 
 The token routes run pinned `ovsx` through a process-local HTTP/HTTPS credential
 guard. The CLI can otherwise fall back to a token-bearing URL query when its

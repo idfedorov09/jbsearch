@@ -24,7 +24,23 @@ do not prove that gallery processing alone caused the delay. The overlap may
 reduce total time on a later release if checks dominate and registry processing
 permits it, but these offline tests cannot measure or guarantee such a gain.
 
-No publication, push, branch transfer, release, native-platform acceptance or
-Remote acceptance was performed for this change. A real measurement and release
-require separate authorization. Any real partial release must be investigated by
-exact registry identity, version, target, channel and digest before a retry.
+The original local checks above did not publish, push or test native-platform or
+Remote acceptance. Subsequently, a separately authorized beta release of 0.4.6
+was published through reviewed PR #10. GitHub Actions runs 43517394793
+(Marketplace) and 43517394815 (Open VSX) succeeded. All seven exact records in
+each registry were independently compared with the matching GitHub build
+artifacts, including pre-release channel and SHA-256.
+
+From the first publication message to confirmation of all seven targets, the
+0.4.6 run took 13 minutes 1 second on Marketplace and 4 minutes 10 seconds on
+Open VSX; the preceding 0.4.5 runs took about 45 minutes 10 seconds and 16 minutes
+58 seconds respectively. These single runs do not isolate the effect of the
+change from registry, network or other variability, and do not guarantee future
+latency. Process completion and verification are now separately logged; in the
+Marketplace 0.4.6 run, the universal process completed in 4.4 seconds and its
+verification took 3 minutes 52 seconds, including repeated checks and delays.
+
+Any real partial release must be investigated by exact registry identity,
+version, target, channel and digest before a separately authorized retry. No
+client-selection, native-platform or Remote acceptance is claimed by these
+publication checks.

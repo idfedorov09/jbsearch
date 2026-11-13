@@ -64,8 +64,10 @@ or inconclusive upload blocks the next write until the exact record is confirmed
 The pinned `vsce` CLI can report a cancellation with exit code zero, so the
 Marketplace publisher uses its public `publishVSIX` API in a child process and
 requires an explicit acknowledgement after the API resolves. A process exit
-alone never proves the final registry record. The new scheduling is locally
-tested, not yet measured on a real release; it may not make the gallery faster.
+alone never proves the final registry record. In the 0.4.6 beta, this loop ran
+in about 13 minutes versus about 45 minutes for the prior 0.4.5 run. These are
+individual observations, not a guarantee of future latency; the gallery controls
+its own processing.
 
 ### Partial failure and retry
 

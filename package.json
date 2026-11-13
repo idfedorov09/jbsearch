@@ -2,7 +2,7 @@
   "name": "jbsearch",
   "displayName": "JB Search — JetBrains-style Find & Replace",
   "description": "JetBrains-style Find & Replace for VS Code.",
-  "version": "0.4.6",
+  "version": "0.4.7",
   "publisher": "idfedorov09",
   "icon": "media/icon.png",
   "license": "MIT",
