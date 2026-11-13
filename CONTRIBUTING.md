@@ -69,6 +69,39 @@ npm run package
 The generated `.vsix` is an artifact, not source; keep it out of Git. Check
 package contents and functionality before distributing it.
 
+To build the seven-package matrix without publishing, use:
+
+```sh
+npm run package:matrix                       # stable metadata
+npm run package:matrix -- --pre-release       # pre-release metadata
+npm run package:matrix -- --target linux-x64 # one target only
+```
+
+Each invocation reports a newly created temporary output directory, the package
+paths, sizes, SHA-256 digests, and verification results. Use `--out-dir <dir>`
+to choose another directory other than the repository root. Existing artifacts are
+not overwritten. The matrix consists of `win32-x64`, `win32-arm64`,
+`darwin-x64`, `darwin-arm64`, `linux-x64`, `linux-arm64`, and a universal
+fallback. It retains the extension ID, source version, and bundled UI client.
+Neither these commands nor the separate GitHub Actions build matrix publish to
+either registry. The matrix is not a gate for the existing publication routes,
+which still use their existing universal artifact. Modifying those routes or
+publishing platform-specific packages requires separate authorization.
+
+Select the VSIX for the **workspace extension host**, not necessarily the local
+UI host: in Remote SSH, WSL, or a container that can be the remote environment.
+The bundled UI client remains platform-neutral. The dependency resolves its
+architecture using `npm_config_arch` when set, otherwise `process.arch`, so an
+override inconsistent with the workspace host's package can select a missing
+binary. Use the universal fallback where its existing binaries cover the host;
+it does not imply support for every environment. Do not rely on a local VSIX
+install rejecting the wrong target: in an isolated Linux test, VS Code 1.144.1
+accepted a Windows VSIX but its searches then failed because the Linux binary
+was missing. This observation does not establish gallery behavior. See
+[platform packaging validation](docs/testing/platform-packaging.md) for package
+contents, README image limitations, actual verification, and pending editor
+and Remote checks.
+
 ## Fast development cycle
 
 Sources are JavaScript/CommonJS and need no separate compilation. Open the

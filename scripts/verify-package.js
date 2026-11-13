@@ -3,6 +3,8 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { createRequire } = require('node:module');
+const { parseXmlManifest } = require('@vscode/vsce/out/xml');
+const { RIPGREP_PLATFORMS, UNIVERSAL, validateTarget, ripgrepPath } = require('./package-targets');
 // Use the ZIP reader already required by the packaging tool, including when npm
 // installs it beneath vsce instead of hoisting it to the root node_modules.
 const { fromBuffer } = createRequire(require.resolve('@vscode/vsce'))('yauzl');
@@ -20,17 +22,27 @@ async function readArchive(buffer) {
       if (files.has(entry.fileName)) return fail(new Error(`Duplicate VSIX entry: ${entry.fileName}`));
       const file = { size: entry.uncompressedSize, mode: entry.externalFileAttributes >>> 16 };
       files.set(entry.fileName, file);
-      if (!entry.fileName.endsWith('.json') && !entry.fileName.endsWith('.vsix') && !entry.fileName.endsWith('.png')) {
+      const capture = entry.fileName.endsWith('.json') || entry.fileName.endsWith('.vsix') ||
+        entry.fileName.endsWith('.png') || entry.fileName === 'extension/readme.md' ||
+        entry.fileName === 'extension.vsixmanifest';
+      const binary = entry.fileName.startsWith('extension/node_modules/@vscode/ripgrep-universal/bin/') &&
+        !entry.fileName.endsWith('/');
+      if (!capture && !binary) {
         archive.readEntry();
         return;
       }
       archive.openReadStream(entry, (error, stream) => {
         if (error) return fail(error);
         const chunks = [];
-        stream.on('data', chunk => chunks.push(chunk));
+        const hash = binary ? crypto.createHash('sha256') : undefined;
+        stream.on('data', chunk => {
+          if (capture) chunks.push(chunk);
+          hash?.update(chunk);
+        });
         stream.once('error', fail);
         stream.once('end', () => {
-          file.content = Buffer.concat(chunks);
+          if (capture) file.content = Buffer.concat(chunks);
+          if (hash) file.sha256 = hash.digest('hex');
           archive.readEntry();
         });
       });
@@ -49,9 +61,16 @@ function readJson(files, name) {
   return JSON.parse(requireFile(files, name).content.toString('utf8'));
 }
 
-function checkDependencies(files, manifest) {
+function checkDependencies(files, manifest, source) {
   const versions = {};
-  for (const [name, expected] of Object.entries(manifest.dependencies)) {
+  const expectedDependencies = source.dependencies || {};
+  const actualDependencies = manifest.dependencies || {};
+  const expectedNames = Object.keys(expectedDependencies).sort();
+  const actualNames = Object.keys(actualDependencies).sort();
+  if (JSON.stringify(expectedNames) !== JSON.stringify(actualNames) ||
+      expectedNames.some(name => expectedDependencies[name] !== actualDependencies[name]))
+    throw new Error('Packaged dependency declarations differ from the source manifest');
+  for (const [name, expected] of Object.entries(actualDependencies)) {
     const prefix = `extension/node_modules/${name}/`;
     const dependency = readJson(files, prefix + 'package.json');
     if (dependency.version !== expected) throw new Error(`Packaged ${name} must be ${expected}; found ${dependency.version}`);
@@ -61,8 +80,44 @@ function checkDependencies(files, manifest) {
   return versions;
 }
 
-async function verifyPackage(filename) {
-  const root = path.resolve(__dirname, '..');
+async function checkReadme(files, root) {
+  if ([...files.keys()].some(name => name.startsWith('extension/images/')))
+    throw new Error('Demonstration images must not be included in the VSIX');
+  const source = await fs.readFile(path.join(root, 'README.md'), 'utf8');
+  const packaged = requireFile(files, 'extension/readme.md').content.toString('utf8');
+  const references = [...source.matchAll(/!\[[^\]]*\]\((images\/[^\s)]+)(?:\s+[^)]*)?\)/g)].map(match => match[1]);
+  if (!references.length) throw new Error('Source README contains no demonstration image references');
+  const urls = [...packaged.matchAll(/!\[[^\]]*\]\((https:\/\/[^\s)]+)(?:\s+[^)]*)?\)/g)].map(match => match[1]);
+  for (const reference of references) {
+    await fs.access(path.join(root, reference));
+    if (!urls.some(value => {
+      try { return new URL(value).pathname.endsWith('/' + reference); } catch { return false; }
+    })) throw new Error(`Packaged README lacks an HTTPS reference to ${reference}`);
+  }
+}
+
+async function checkRipgrep(files, root, target) {
+  const platforms = target === UNIVERSAL ? RIPGREP_PLATFORMS : [target];
+  const expected = platforms.map(platform => `extension/${ripgrepPath(platform)}`);
+  const prefix = 'extension/node_modules/@vscode/ripgrep-universal/bin/';
+  const actual = [...files.keys()].filter(name => name.startsWith(prefix) && !name.endsWith('/'));
+  if (actual.length !== expected.length || actual.some(name => !expected.includes(name)))
+    throw new Error(`Packaged ripgrep inventory does not match ${target}`);
+  for (const platform of platforms) {
+    const relative = ripgrepPath(platform);
+    const executable = requireFile(files, `extension/${relative}`);
+    if (!platform.startsWith('win32-') && !(executable.mode & 0o111))
+      throw new Error(`Packaged ripgrep is not executable for ${platform}`);
+    const source = await fs.readFile(path.join(root, relative));
+    if (executable.sha256 !== crypto.createHash('sha256').update(source).digest('hex'))
+      throw new Error(`Packaged ripgrep differs from the installed dependency for ${platform}`);
+  }
+  return [...platforms];
+}
+
+async function verifyPackage(filename, options = {}) {
+  const root = path.resolve(options.root || path.join(__dirname, '..'));
+  const target = validateTarget(options.target ?? UNIVERSAL);
   const source = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8'));
   const clientSource = JSON.parse(await fs.readFile(path.join(root, 'client', 'package.json'), 'utf8'));
   const packagePath = path.resolve(filename || path.join(root, `${source.name}-${source.version}.vsix`));
@@ -72,6 +127,18 @@ async function verifyPackage(filename) {
   const expectedId = `${source.publisher}.${source.name}`;
   if (`${manifest.publisher}.${manifest.name}` !== expectedId || manifest.version !== source.version)
     throw new Error('Packaged main extension identity/version differs from package.json');
+  if (manifest.main !== source.main) throw new Error('Packaged entry point differs from package.json');
+  const xml = await parseXmlManifest(requireFile(files, 'extension.vsixmanifest').content.toString('utf8'));
+  const metadataNodes = xml.PackageManifest?.Metadata;
+  const identities = metadataNodes?.length === 1 ? metadataNodes[0].Identity : undefined;
+  if (!Array.isArray(identities) || identities.length !== 1)
+    throw new Error('VSIX must contain exactly one outer identity');
+  const identity = identities[0].$ || {};
+  if (identity.Publisher !== source.publisher || identity.Id !== source.name || identity.Version !== source.version)
+    throw new Error('Outer VSIX identity/version differs from package.json');
+  if ((target === UNIVERSAL && identity.TargetPlatform !== undefined) ||
+      (target !== UNIVERSAL && identity.TargetPlatform !== target))
+    throw new Error(`Outer VSIX target does not match ${target}`);
   if (!manifest.extensionKind.includes('workspace')) throw new Error('Main extension must run on the workspace host');
   if (typeof manifest.icon !== 'string' || manifest.icon !== source.icon || !manifest.icon.endsWith('.png'))
     throw new Error('Packaged extension icon differs from package.json');
@@ -98,13 +165,9 @@ async function verifyPackage(filename) {
     throw new Error('Packaged extension must contribute the native Find panel');
   for (const obsolete of ['src/ui/find-window.js', 'media/find-window.js', 'media/find-window.css'])
     if (files.has('extension/' + obsolete)) throw new Error(`Obsolete Find renderer is packaged: ${obsolete}`);
-  const dependencies = checkDependencies(files, manifest);
-  const rgPlatforms = ['linux-arm', 'linux-arm64', 'linux-ia32', 'linux-ppc64', 'linux-riscv64', 'linux-s390x', 'linux-x64', 'darwin-arm64', 'darwin-x64', 'win32-arm64', 'win32-ia32', 'win32-x64'];
-  for (const platform of rgPlatforms) {
-    const executable = requireFile(files, `extension/node_modules/@vscode/ripgrep-universal/bin/${platform}/rg${platform.startsWith('win32-') ? '.exe' : ''}`);
-    if (!platform.startsWith('win32-') && !(executable.mode & 0o111))
-      throw new Error(`Packaged ripgrep is not executable for ${platform}`);
-  }
+  await checkReadme(files, root);
+  const dependencies = checkDependencies(files, manifest, source);
+  const rgPlatforms = await checkRipgrep(files, root, target);
   const metadata = readJson(files, 'extension/bundled/client.json');
   const nestedBytes = requireFile(files, 'extension/bundled/jbsearch-client.vsix').content;
   if (!nestedBytes.equals(await fs.readFile(path.join(root, 'bundled', 'jbsearch-client.vsix'))))
@@ -114,13 +177,14 @@ async function verifyPackage(filename) {
   const clientId = `${client.publisher}.${client.name}`;
   if (clientId !== `${clientSource.publisher}.${clientSource.name}` || client.version !== clientSource.version)
     throw new Error('Packaged client extension identity/version differs from client/package.json');
+  if (client.main !== clientSource.main) throw new Error('Packaged client entry point differs from client/package.json');
   if (client.extensionKind.length !== 1 || client.extensionKind[0] !== 'ui')
     throw new Error('Bundled client extension must run on the UI host');
   if (metadata.protocol !== 1 || metadata.version !== client.version || metadata.build !== client.jbsearchClientBuild)
     throw new Error('Bundled client metadata does not match the nested VSIX');
   requireFile(clientFiles, 'extension/' + path.posix.normalize(client.main));
   requireFile(clientFiles, 'extension/resources.js');
-  const clientDependencies = checkDependencies(clientFiles, client);
+  const clientDependencies = checkDependencies(clientFiles, client, clientSource);
   return {
     checkedAt: new Date().toISOString(),
     package: path.basename(packagePath),
@@ -129,7 +193,7 @@ async function verifyPackage(filename) {
     main: {
       id: expectedId, version: manifest.version, files: files.size,
       icon: { path: manifest.icon, width: iconWidth, height: iconHeight, sha256: crypto.createHash('sha256').update(iconBytes).digest('hex') },
-      dependencies, ripgrepPlatforms: rgPlatforms
+      dependencies, target, ripgrepPlatforms: rgPlatforms
     },
     client: { id: clientId, version: client.version, build: metadata.build, size: nestedBytes.length, files: clientFiles.size, dependencies: clientDependencies },
     passed: true
@@ -137,8 +201,9 @@ async function verifyPackage(filename) {
 }
 
 if (require.main === module) {
-  verifyPackage(process.argv[2]).then(result => {
+  const [filename, target] = process.argv.slice(2);
+  verifyPackage(filename, { target }).then(result => {
     console.log(`Verified ${result.package}: ${result.main.files} entries, bundled ${result.client.id} (${result.client.files} entries), matching build and runtime resources.`);
   }).catch(error => { console.error(error.message); process.exitCode = 1; });
 }
-module.exports = { verifyPackage };
+module.exports = { verifyPackage, readArchive, checkReadme, checkRipgrep };
