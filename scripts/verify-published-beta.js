@@ -34,8 +34,15 @@ function marketplaceRecord(body, expected) {
 
 async function responseJson(fetcher, url, options) {
   const response = await fetcher(url, options);
-  if (!response.ok) throw new Error(`Registry returned HTTP ${response.status}`);
+  if (!response.ok) {
+    await cancelBody(response);
+    throw new Error(`Registry returned HTTP ${response.status}`);
+  }
   return response.json();
+}
+
+async function cancelBody(response) {
+  try { await response.body?.cancel(); } catch { /* An already closed stream needs no further action. */ }
 }
 
 // Public digest requests carry no credentials. Restrict redirects explicitly
@@ -45,6 +52,7 @@ async function digestResponse(fetcher, initial) {
   for (let redirects = 0; redirects <= 3; redirects++) {
     const response = await fetcher(url, { signal: AbortSignal.timeout(30000), redirect: 'manual' });
     if (response.status >= 300 && response.status < 400) {
+      await cancelBody(response);
       if (redirects === 3) throw new Error('Too many Open VSX digest redirects');
       let next;
       try { next = new URL(response.headers.get('location'), url); } catch { throw new Error('Invalid Open VSX digest redirect'); }
@@ -53,7 +61,10 @@ async function digestResponse(fetcher, initial) {
       url = next;
       continue;
     }
-    if (!response.ok) throw new Error(`Open VSX digest returned HTTP ${response.status}`);
+    if (!response.ok) {
+      await cancelBody(response);
+      throw new Error(`Open VSX digest returned HTTP ${response.status}`);
+    }
     return response.text();
   }
   throw new Error('Open VSX digest unavailable');
@@ -89,16 +100,61 @@ async function checkRegistry(registry, expected, fetcher = fetch) {
   if (!/^[0-9a-f]{64}$/.test(digest) || digest !== expected.sha256) throw new Error('Open VSX VSIX SHA-256 differs from the built package');
 }
 
+// Limit complete attempts, not just fetch's response headers. Each attempt has
+// at most one active request and includes body reads, cancellations and redirects.
+function createAttemptLimiter(limit = 3) {
+  if (!Number.isInteger(limit) || limit < 1) throw new Error('Invalid verification concurrency limit');
+  let active = 0;
+  const queue = [];
+  return async task => {
+    if (active < limit) active++;
+    else await new Promise(resolve => queue.push(resolve));
+    try { return await task(); }
+    finally {
+      if (queue.length) queue.shift()();
+      else active--;
+    }
+  };
+}
+
+// Never print third-party messages: even an HTTP failure may contain a secret.
+function verificationReason(error) {
+  if (error?.name === 'AbortError' || error?.name === 'TimeoutError') return 'timeout';
+  const message = typeof error?.message === 'string' ? error.message : '';
+  const http = /^(?:Registry|Open VSX digest) returned HTTP ([1-5][0-9]{2})$/.exec(message);
+  if (http) return `http-${http[1][0]}xx`;
+  if (/^Marketplace (?:extension identity|exact [a-z0-9-]+ version) missing or ambiguous$/.test(message)) return 'record-missing-or-ambiguous';
+  if (message === 'Marketplace version not validated') return 'record-not-validated';
+  if (/^Marketplace version is not marked (?:stable|pre-release)$/.test(message) ||
+      /^Open VSX exact [a-z0-9-]+ version, target or channel does not match (?:stable|pre-release)$/.test(message)) return 'record-mismatch';
+  if (/^(?:Marketplace|Open VSX) VSIX SHA-256 differs from the built package$/.test(message)) return 'digest-mismatch';
+  if (/^(?:Too many|Invalid|Unexpected) Open VSX digest redirects?$/.test(message) ||
+      message === 'Unexpected Open VSX digest URL') return 'digest-location-rejected';
+  return 'other';
+}
+
 async function verifyWithRetry(registry, expected, options = {}) {
   const attempts = options.attempts ?? 60;
   const wait = options.wait || options.delay || (ms => new Promise(resolve => setTimeout(resolve, ms)));
   const check = options.check || checkRegistry;
+  const limit = options.limiter || (task => task());
+  const log = options.log || (() => {});
+  const now = options.now || (() => performance.now());
+  const target = expectedTarget(expected);
+  const start = now();
+  log(`Verification started for ${registry} ${target}.`);
   for (let attempt = 1; attempt <= attempts; attempt++) {
-    try { await check(registry, expected); return; }
-    catch {
+    try {
+      await limit(() => check(registry, expected));
+      log(`Verification completed for ${registry} ${target} after ${attempt} attempt(s), ${(now() - start).toFixed(0)} ms elapsed.`);
+      return;
+    }
+    catch (error) {
+      log(`Verification ${registry} ${target} attempt ${attempt}/${attempts} failed: ${verificationReason(error)}.`);
       if (attempt < attempts) await wait(options.intervalMs ?? 10000);
     }
   }
+  log(`Verification exhausted for ${registry} ${target} after ${(now() - start).toFixed(0)} ms elapsed.`);
   throw new Error(`Registry verification failed after ${attempts} attempts; publishing may already have occurred: check the exact target and digest before retrying`);
 }
 
@@ -112,4 +168,4 @@ async function main() {
   console.log(`Verified ${registry}: ${expected.publisher}.${expected.name} ${expected.version}, universal, pre-release, sha256 ${expected.sha256}.`);
 }
 if (require.main === module) main().catch(error => { console.error(error.message); process.exitCode = 1; });
-module.exports = { marketplaceRecord, checkRegistry, verifyWithRetry, digestResponse };
+module.exports = { marketplaceRecord, checkRegistry, verifyWithRetry, digestResponse, createAttemptLimiter, verificationReason };

@@ -60,9 +60,9 @@ async function mockRegistry(t, mode) {
   return { url: `http://127.0.0.1:${server.address().port}`, requests };
 }
 
-function runCli(registry, filename) {
+function runCli(registry, filename, skipDuplicate = true) {
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [runner, registry, filename, '--skip-duplicate'], {
+    const child = spawn(process.execPath, [runner, registry, filename, ...(skipDuplicate ? ['--skip-duplicate'] : [])], {
       env: { PATH: process.env.PATH, HOME: os.tmpdir(), CI: 'true', OVSX_PAT: marker },
     });
     let output = '';
@@ -142,6 +142,24 @@ test('a duplicate CLI skip does not claim remote identity or hash verification',
   assert.equal(result.code, 0, result.output);
   assert.match(result.output, /verify the exact registry version separately/);
   assert.equal(registry.requests.some(request => request.tokenQuery), false);
+});
+
+test('without duplicate skipping the guarded CLI reports a duplicate as failure', async t => {
+  const filename = await fixture(t); const registry = await mockRegistry(t, 'duplicate');
+  const result = await runCli(registry.url, filename, false);
+  assert.notEqual(result.code, 0, result.output);
+  assert.equal(registry.requests.filter(request => request.pathname === '/api/-/publish').length, 1);
+  assert.doesNotMatch(result.output, /synthetic-private-test-marker|raw-url|\?token=/);
+});
+
+test('without duplicate skipping the guarded CLI still publishes using its token guard', async t => {
+  const filename = await fixture(t); const registry = await mockRegistry(t, 'modern');
+  const result = await runCli(registry.url, filename, false);
+  assert.equal(result.code, 0, result.output);
+  const request = registry.requests.find(item => item.pathname === '/api/-/publish');
+  assert.equal(request.auth, `Bearer ${marker}`);
+  assert.equal(registry.requests.some(item => item.tokenQuery), false);
+  assert.doesNotMatch(result.output, /synthetic-private-test-marker/);
 });
 
 test('CLI errors are sanitized even if registry error text echoes the credential', async t => {

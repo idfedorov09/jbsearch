@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.4.6 — pre-release preparation
+
+### Changed
+
+- Retain universal-first confirmation and sequential platform uploads while
+  allowing bounded, exact registry checks to overlap later uploads.
+- Distinguish publisher completion from registry verification, report safe
+  retry categories, and account for every target after a partial failure.
+- Require an explicit Marketplace publisher acknowledgement and resolve failed
+  or conflicting upload attempts through an exact record and digest check.
+
+This is a publication-workflow change relative to pre-release 0.4.5, without a
+change to search or replacement behavior. The actual time saving depends on the
+registries and has not been established by local tests. See the
+[pre-release notes](https://github.com/idfedorov09/jbsearch/blob/beta/docs/releases/v0.4.6-beta.md)
+for validation and remaining limits.
+
 ## 0.4.5 — pre-release preparation
 
 ### Changed
