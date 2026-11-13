@@ -40,13 +40,19 @@ Bytewise reproduction also depends on the same clean inputs,
 Node and pinned tools. `ovsx` ignores `--pre-release` for a prebuilt VSIX: the
 marker must already be present and checked in the archive.
 
-Each eligible route preflights all files, then publishes universal followed by
-the six target files sequentially. After each upload or duplicate skip, it
-checks the exact registry identity, version, target, channel and SHA-256.
-The Open VSX metadata request addresses the exact target, so a universal
-fallback cannot satisfy a platform check. Bounded retries allow for propagation;
-a duplicate skip is not proof of matching bytes. The prepared workflow does not
-itself prove that a matrix has been published or selected by any client.
+Each eligible route preflights all files, publishes universal and verifies its
+exact record, then uploads the six platform files sequentially. Exact checks
+for the platform files may overlap later uploads; at most three verification
+attempts are in flight, including response consumption, and a retry sleep does
+not occupy a slot. Every record must match the registry identity, version,
+target, channel and SHA-256. A universal fallback cannot satisfy a platform
+check. Bounded retries allow for propagation, and the matrix succeeds only
+after every target is confirmed.
+
+Matrix uploads do not use `--skip-duplicate`: a duplicate or another failed or
+inconclusive upload blocks the next write until its exact record is confirmed.
+The new scheduling is locally tested but has not been timed in a real release;
+it may not speed up registry processing.
 
 The token routes run pinned `ovsx` through a process-local HTTP/HTTPS credential
 guard. The CLI can otherwise fall back to a token-bearing URL query when its
@@ -63,9 +69,11 @@ hardened.
 
 ### Partial failure and retry
 
-The matrix is not atomic. A failed job may already have uploaded its uncertain
-target; earlier confirmed targets remain published. The run reports confirmed,
-uncertain and unattempted targets. Preserve the exact commit, package digests
+The matrix is not atomic. A failure discovered during a later upload cannot
+safely cancel it, and multiple targets may be uncertain. The run drains started
+checks and reports confirmed, uncertain and unattempted targets. Publisher
+completion and verification times are distinct; neither isolates registry-only
+processing. Preserve the exact commit, package digests
 and logs, inspect each target on both registries and allow for propagation before
 choosing a recovery. A retry must rebuild identical bytes and verify each
 duplicate's target, channel and hash. A mismatch or timeout is a failure, not

@@ -110,3 +110,84 @@ test('Open VSX follows only allowlisted digest redirects without credentials', a
     : { ok: true, json: async () => metadata };
   await assert.rejects(checkRegistry('open-vsx', expected, unsafe), /redirect/);
 });
+
+function deferred() {
+  let resolve;
+  const promise = new Promise(done => { resolve = done; });
+  return { promise, resolve };
+}
+const nextTurn = () => new Promise(resolve => setImmediate(resolve));
+
+test('attempt concurrency is bounded through slow response body consumption', async () => {
+  const { createAttemptLimiter } = require('../scripts/verify-published-beta');
+  const limit = createAttemptLimiter(2);
+  const gates = [deferred(), deferred(), deferred()];
+  let started = 0, active = 0, maxActive = 0;
+  const expected = { ...base, target: 'linux-x64', channel: 'pre-release' };
+  const fetcher = async () => {
+    const index = started++;
+    active++; maxActive = Math.max(active, maxActive);
+    return { ok: true, json: async () => {
+      await gates[index].promise;
+      active--;
+      return marketplace(expected);
+    } };
+  };
+  const promises = gates.map(() => limit(() => checkRegistry('marketplace', expected, fetcher)));
+  await nextTurn();
+  assert.equal(started, 2, 'headers alone must not release slots');
+  gates[0].resolve();
+  await nextTurn();
+  assert.equal(started, 3);
+  gates[1].resolve(); gates[2].resolve();
+  await Promise.all(promises);
+  assert.equal(maxActive, 2);
+  assert.throws(() => createAttemptLimiter(0));
+});
+
+test('redirect bodies are cancelled before the next request and before another attempt gets the slot', async () => {
+  const { createAttemptLimiter } = require('../scripts/verify-published-beta');
+  const limit = createAttemptLimiter(1), cancelled = deferred();
+  const expected = { ...base, target: 'linux-x64', channel: 'stable' };
+  const events = [];
+  const fetcher = async url => {
+    const request = String(url);
+    if (request.endsWith('/bucket/digest')) { events.push('digest'); return { ok: true, text: async () => expected.sha256 }; }
+    if (request.includes('/file/')) {
+      events.push('redirect');
+      return { status: 302, headers: { get: () => 'https://openvsx.eclipsecontent.org/bucket/digest' },
+        body: { cancel: async () => { events.push('cancel-start'); await cancelled.promise; events.push('cancel-end'); } } };
+    }
+    events.push('metadata'); return { ok: true, json: async () => openVSX(expected) };
+  };
+  const first = limit(() => checkRegistry('open-vsx', expected, fetcher));
+  const second = limit(async () => { events.push('second'); });
+  await nextTurn();
+  assert.deepEqual(events, ['metadata', 'redirect', 'cancel-start']);
+  cancelled.resolve();
+  await Promise.all([first, second]);
+  assert.deepEqual(events, ['metadata', 'redirect', 'cancel-start', 'cancel-end', 'digest', 'second']);
+});
+
+test('retry sleeps hold no request permit, and diagnostics use safe classifications', async () => {
+  const { createAttemptLimiter } = require('../scripts/verify-published-beta');
+  const limit = createAttemptLimiter(1), sleeping = deferred(), resume = deferred(), logs = [];
+  const expected = { ...base, target: 'linux-x64', channel: 'stable' };
+  let checks = 0, otherRan = false;
+  const first = verifyWithRetry('open-vsx', expected, { attempts: 2, limiter: limit, log: line => logs.push(line),
+    check: async () => { if (++checks === 1) throw new Error('sensitive token=secret'); },
+    delay: async () => { sleeping.resolve(); await resume.promise; } });
+  await sleeping.promise;
+  await limit(async () => { otherRan = true; });
+  assert.equal(otherRan, true);
+  resume.resolve(); await first;
+  assert.equal(checks, 2);
+  assert.match(logs.join('\n'), /attempt 1\/2 failed: other/);
+  assert.match(logs.join('\n'), /completed.*2 attempt\(s\).*ms elapsed/);
+  assert.doesNotMatch(logs.join('\n'), /secret|token=/);
+  const { verificationReason } = require('../scripts/verify-published-beta');
+  assert.equal(verificationReason(new Error('Registry returned HTTP 503')), 'http-5xx');
+  assert.equal(verificationReason(new Error('Registry returned HTTP 503 token=secret')), 'other');
+  assert.equal(verificationReason(new Error('Marketplace VSIX SHA-256 differs from the built package')), 'digest-mismatch');
+  assert.equal(verificationReason({ name: 'TimeoutError' }), 'timeout');
+});

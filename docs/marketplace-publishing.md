@@ -51,19 +51,30 @@ packaging. This assumes clean build inputs, identical pinned
 dependencies, Node and tooling; the timestamp alone cannot guarantee equality.
 
 For either channel, publication preflights every file and uses OIDC to publish
-universal first, then `win32-x64`, `win32-arm64`, `darwin-x64`, `darwin-arm64`,
-`linux-x64`, and `linux-arm64`. After each upload or duplicate skip, the job
-checks the exact Marketplace ID, version, target, channel, validated flag and
-SHA-256 against the local artifact. Bounded retries allow for propagation.
-Duplicate skip alone is not success; neither is a universal record evidence
-for a missing target. The locally changed workflow is not evidence that a
-matrix was actually published or selected by any client.
+universal first. It must verify that exact universal record before uploading
+`win32-x64`, `win32-arm64`, `darwin-x64`, `darwin-arm64`, `linux-x64`, and
+`linux-arm64`, one upload at a time. Their exact checks can overlap later
+uploads; the shared limit is three simultaneous verification attempts, including
+response consumption, and does not occupy a slot during retry delays. Every
+target must match the Marketplace ID, version, target, channel, validated flag
+and SHA-256 before the matrix succeeds. Bounded retries allow for propagation.
+
+Matrix uploads do not use `--skip-duplicate`: a duplicate or any other failed
+or inconclusive upload blocks the next write until the exact record is confirmed.
+The pinned `vsce` CLI can report a cancellation with exit code zero, so the
+Marketplace publisher uses its public `publishVSIX` API in a child process and
+requires an explicit acknowledgement after the API resolves. A process exit
+alone never proves the final registry record. The new scheduling is locally
+tested, not yet measured on a real release; it may not make the gallery faster.
 
 ### Partial failure and retry
 
 Publishing seven files is not atomic. A failed job may already have published
-the uncertain target and earlier confirmed targets. The log lists confirmed,
-uncertain and not-attempted targets. Preserve the commit, package digests and
+multiple uncertain targets as well as confirmed targets. A failure discovered
+during an upload cannot cancel it safely; started checks are drained and the
+log lists confirmed, uncertain and not-attempted targets. Publisher completion
+and verification times are separate; neither is a measurement of registry-only
+processing. Preserve the commit, package digests and
 run output, inspect each exact target in both registries, and allow for metadata
 propagation before deciding whether to retry. A retry must rebuild the same
 bytes and verify every duplicate's hash and channel; a mismatch stops the run.
