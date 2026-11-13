@@ -16,6 +16,12 @@ in full here.
 | [0008](0008-native-find-panel.md) | Accepted | Native Find Panel and central editor; supersedes the layout in ADR 0007 |
 | [0009](0009-open-vsx-publication.md) | Accepted | Manual Open VSX publication with a trusted-publishing transition |
 | [0010](0010-binary-search-exclusion.md) | Accepted | Exclude identified binary inputs from text search |
+| [0011](0011-stable-search-snapshots.md) | Accepted | Retain search snapshots across source events and bound document acquisition |
+| [0012](0012-tracked-occurrence-identity.md) | Accepted | Track occurrence identity and validate source authority and replacement ranges |
+| [0013](0013-stable-result-presentation.md) | Accepted | Stable presentation and immutable native result actions |
+| [0014](0014-replace-all-preflight.md) | Accepted | Verify the current scope against the approved snapshot before Replace All |
+| [0015](0015-beta-push-publication.md) | Accepted | Verified beta-push publication to both registries |
+| [0016](0016-search-presentation-and-approval-cost.md) | Accepted | Coalesce result presentation and reduce approval costs without weakening replacement safety |
 
 Statuses: Proposed — under discussion; Accepted — adopted; Superseded — replaced
 by another ADR; Rejected — considered and rejected. Accepted does not mean the code

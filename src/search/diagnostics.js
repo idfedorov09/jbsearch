@@ -31,7 +31,41 @@ function incompleteSearch(output) {
     classifySkips(output.stats).blocking);
 }
 
-function skipDiagnostics(stats = {}) {
+// Legacy diagnostic defaults are useful for rendering older snapshots, but are
+// not evidence that a new worker finished a complete search. Validate the raw
+// worker completion before the engine can fill in defaults, and validate the
+// returned result again at the Replace All boundary.
+function validWorkerStatistics(stats, resultCount) {
+  if (!stats || !Array.isArray(stats.errors) || !Array.isArray(stats.skippedDetails) ||
+      typeof stats.cancelled !== 'boolean' || typeof stats.timedOut !== 'boolean' ||
+      !validCount(resultCount)) return false;
+  const counts = ['filesScanned', 'filesMatched', 'matches', 'skippedFiles',
+    'excludedBinaryFiles', 'blockingSkippedFiles', 'skippedDetailsOmitted'];
+  if (counts.some(key => !validCount(stats[key]))) return false;
+  const reasons = ['tooLarge', 'binary', 'encoding', 'unreadable'];
+  if (!stats.skipped || reasons.some(key => !validCount(stats.skipped[key]))) return false;
+  if (reasons.reduce((sum, key) => sum + stats.skipped[key], 0) !== stats.skippedFiles ||
+      stats.excludedBinaryFiles > stats.skipped.binary ||
+      stats.skippedDetails.length + stats.skippedDetailsOmitted !== stats.skippedFiles ||
+      stats.matches !== resultCount || stats.filesMatched > stats.filesScanned ||
+      stats.filesMatched > stats.matches || (stats.matches > 0 && stats.filesMatched === 0))
+    return false;
+  return classifySkips(stats).consistent;
+}
+
+function validWorkerCompletion(message, resultCount) {
+  return Boolean(message && message.type === 'done' && typeof message.truncated === 'boolean' &&
+    validWorkerStatistics(message.stats, resultCount));
+}
+
+function completePreflight(output) {
+  return Boolean(output && Array.isArray(output.results) && output.truncated === false &&
+    output.reason == null && validWorkerStatistics(output.stats, output.results.length) &&
+    output.stats.cancelled === false && output.stats.timedOut === false &&
+    output.stats.errors.length === 0 && classifySkips(output.stats).blocking === 0);
+}
+
+function skipDiagnostics(stats = {}, { includeDetails = true } = {}) {
   const counts = classifySkips(stats);
   if (!counts.total && counts.consistent) return '';
   const lines = [];
@@ -41,6 +75,7 @@ function skipDiagnostics(stats = {}) {
     lines.push(counts.consistent
       ? `${counts.blocking} ${counts.blocking === 1 ? 'file could' : 'files could'} not be searched; results are incomplete.`
       : 'Some skipped inputs could not be classified; results are incomplete.');
+  if (!includeDetails) return lines.join('\n');
   const details = Array.isArray(stats.skippedDetails) ? stats.skippedDetails.slice(0, 20) : [];
   for (const detail of details) {
     const reason = detail.kind === 'enumeration' ? 'directory enumeration failed'
@@ -59,4 +94,5 @@ function skipDiagnostics(stats = {}) {
   return lines.join('\n');
 }
 
-module.exports = { classifySkips, incompleteSearch, skipDiagnostics };
+module.exports = { classifySkips, incompleteSearch, skipDiagnostics, validWorkerStatistics,
+  validWorkerCompletion, completePreflight };

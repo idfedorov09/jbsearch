@@ -1,5 +1,8 @@
 # Proposal
 
+> Historical stable-publication design. The explicit beta exception is recorded
+> in `add-beta-publication`; the stable routes described here remain unchanged.
+
 ## Why
 
 Releasing JB Search needs an automated process that takes validated source from

@@ -3,6 +3,7 @@
 const path = require('node:path');
 const { Worker } = require('node:worker_threads');
 const { compileQuery, SearchQueryError } = require('./matcher');
+const { validWorkerCompletion } = require('./diagnostics');
 
 function emptyStats() {
   return {
@@ -136,6 +137,12 @@ class SearchEngine {
             finish(undefined, error);
           }
         } else if (message.type === 'done') {
+          // Do not let emptyStats hide a missing field from a supposedly
+          // completed worker. Cancelled output is never a complete preflight.
+          if (!stopping && !validWorkerCompletion(message, results.length)) {
+            finish(undefined, new Error('Search worker returned incomplete or inconsistent statistics.'));
+            return;
+          }
           finish({
             truncated: message.truncated || stats.timedOut,
             reason: stopping ? (stats.timedOut ? 'timeout' : 'cancelled') : message.reason,

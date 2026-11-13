@@ -24,10 +24,19 @@ and verify the actual project state instead of making assumptions.
 
 ## Branches and external actions
 
-- There are two long-lived branches: `dev` is the single trunk for ordinary work;
-  `master` is the stable branch. Work in short iterations directly on `dev`,
-  without Git Flow, feature branches, or release branches. Transfer only ready,
-  verified history to `master`, and only at the user's request.
+- `dev` is the single trunk for ordinary work and `master` is the stable branch.
+  The explicitly authorized `beta` branch is reserved for pre-release publication;
+  all its changes must arrive through a reviewed `dev` → `beta` pull request,
+  linked to the relevant issue without closing it automatically. Do not make or
+  push direct beta commits. Work in short iterations on `dev`, without Git Flow.
+  Transfer only ready, verified history to `master`, and only at the user's request.
+- A non-deletion, non-force push to `beta` can publish a pre-release to both
+  registries automatically after checks; `dev` and manual `beta` dispatch do not.
+  Marketplace `master` push/manual and Open VSX `master` manual stable routes
+  remain separate. Confirm release intent and protected environment restrictions
+  before any merge; use the same extension ID and a distinct numeric version.
+  The release workflow itself does not prove a push came from a pull request;
+  enforce and review that requirement separately.
 - Do not commit, push, or change remote branches without a separate request.
   Actions directly and explicitly requested for the initial repository/branch
   setup are an exception; do not extend that authorization to subsequent tasks.
@@ -80,6 +89,8 @@ and verify the actual project state instead of making assumptions.
   Do not infer macOS/Windows or physical Remote SSH support from Linux runs.
   Do not present an untested platform or unfinished item as complete; icon work,
   publication, and external actions require a separate request.
+- Use [docs/versioning.md](docs/versioning.md) for release bump, `0.x`,
+  compatibility, and channel decisions. It does not authorize a release.
 - Before finishing, run the relevant `npm run check` and `npm test`; use
   `npm run package` to verify packaging. Record real VS Code manual checks
   separately; never claim they ran when they did not.

@@ -5,6 +5,7 @@ const test = require('node:test'),
   fs = require('node:fs/promises'),
   path = require('node:path');
 const { readTheme, themeRules, PreviewProvider } = require('../src/preview');
+const { textDocument } = require('./text-document');
 function tokenLimitFixture(tokenize) {
   const provider = new PreviewProvider({ workspace: { asRelativePath: () => 'fixture.js' } });
   provider.load = async () => ({
@@ -15,12 +16,39 @@ function tokenLimitFixture(tokenize) {
     languages: new Map([['fixture', 'source.fixture']]), foundTheme: true
   });
   const result = { id: 'one', range: { start: { line: 0, character: 0 }, end: { line: 0, character: 6 } } };
-  const document = {
-    uri: { toString: () => 'file:///fixture.js' }, fileName: '/fixture.js',
-    languageId: 'fixture', version: 1, getText: () => 'return\nnext'
-  };
+  const document = textDocument({ toString: () => 'file:///fixture.js' }, 'return\nnext',
+    { fileName: '/fixture.js', languageId: 'fixture' });
   return { provider, result, document };
 }
+
+test('modal preview bounds the actual read after asynchronous loading without materializing huge source', async () => {
+  const f = tokenLimitFixture(() => assert.fail('oversized source must not tokenize'));
+  let reads = 0;
+  Object.assign(f.document, {
+    positionAt: () => ({ line: 0, character: 1000000000 }),
+    offsetAt: position => position.character,
+    getText() { reads++; throw new Error('UNBOUNDED_READ_REQUESTED'); }
+  });
+  await assert.rejects(() => f.provider.render(f.document, f.result, [f.result], { maxBytes: 2097152 }), /size limit/);
+  assert.equal(reads, 0);
+});
+
+test('modal preview rechecks growth during theme loading and preserves bounded INVALID inspection', async () => {
+  const f = tokenLimitFixture(() => ({ stoppedEarly: false, tokens: new Uint32Array([0, 0]), ruleStack: {} }));
+  const load = f.provider.load;
+  let length = 4, reads = 0, resume;
+  f.provider.load = async () => { await new Promise(resolve => { resume = resolve; }); return load(); };
+  Object.assign(f.document, { positionAt: () => ({ line: 0, character: length }),
+    offsetAt: position => position.character, getText() { reads++; return 'cat!'; } });
+  const rendering = f.provider.render(f.document, { ...f.result, invalid: true }, [], { maxBytes: 8 });
+  length = 1000000000; resume();
+  await assert.rejects(rendering, /size limit/);
+  assert.equal(reads, 0);
+  f.provider.load = load; length = 4;
+  const preview = await f.provider.render(f.document, { ...f.result, invalid: true }, [], { maxBytes: 8 });
+  assert.equal(preview.lines[0].tokens.map(token => token.text).join(''), 'cat!');
+  assert.equal(reads, 1);
+});
 test('a stopped TextMate line retries its original stack before advancing to the next line', async () => {
   const calls = [], partial = {}, complete = {};
   const f = tokenLimitFixture((text, state, limit) => {
@@ -188,13 +216,8 @@ test('preview tokenizes grammar, retains exact match ranges and treats HTML as t
     range: { start: { line: 0, character: 7 }, end: { line: 0, character: 10 } }
   };
   const output = await provider.render(
-    {
-      uri: { toString: () => 'file:///a.js' },
-      fileName: '/a.js',
-      languageId: 'javascript',
-      version: 1,
-      getText: () => 'const x = "<script>";'
-    },
+    textDocument({ toString: () => 'file:///a.js' }, 'const x = "<script>";',
+      { fileName: '/a.js', languageId: 'javascript' }),
     result,
     [result]
   );
@@ -302,13 +325,8 @@ test('grammar injections target descendants and match highlights survive missing
     range: { start: { line: 0, character: 1 }, end: { line: 0, character: 4 } }
   };
   const output = await provider.render(
-    {
-      uri: { toString: () => 'file:///a.fixture' },
-      fileName: '/a.fixture',
-      languageId: 'fixture',
-      version: 1,
-      getText: () => 'INJECT'
-    },
+    textDocument({ toString: () => 'file:///a.fixture' }, 'INJECT',
+      { fileName: '/a.fixture', languageId: 'fixture' }),
     result,
     [result]
   );

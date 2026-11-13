@@ -6,7 +6,11 @@
   const clientId = crypto.randomUUID(),
     pending = new Map();
   let revision = 0,
-    acknowledgedRevision = 0;
+    acknowledgedRevision = 0,
+    selectionRevision = 0,
+    pendingPreviewRequest = null,
+    pendingSelectedId = null,
+    pendingSelectedRevision = null;
   let state = {
       query: '',
       results: [],
@@ -18,13 +22,14 @@
     composing = false,
     updating = false;
   let hostState = state;
+  let rerunGeneration, rerunRequestId, rerunRevision = 0;
   const previous = api.getState() || {};
   // Keep virtual positions in sync with the themed row height in search.css.
   const rowHeight =
     Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--row-height')) ||
     24;
   function patch(values) {
-    if (updating) return;
+    if (updating || state.reviewOnly) return;
     if (state.replacing) {
       render(hostState);
       return;
@@ -36,19 +41,38 @@
     send('update', { clientId, revision: nextRevision, patch: values });
   }
   function receiveState(next) {
+    if (next.id === hostState.id &&
+        (next.generation < hostState.generation ||
+         (next.generation === hostState.generation && next.previewRevision < hostState.previewRevision)))
+      return;
     const acknowledged = next.patchAcks?.[clientId] || 0;
     if (acknowledged < acknowledgedRevision) return;
     acknowledgedRevision = acknowledged;
+    if (next.generation !== rerunGeneration || (!next.scopeStale && !next.needsRerun)) {
+      rerunGeneration = undefined;
+      rerunRequestId = undefined;
+    }
     for (const [key, value] of pending) if (value.revision <= acknowledged) pending.delete(key);
+    const pendingResult = next.results.find(result => result.id === pendingSelectedId);
+    if (next.previewRequestId === pendingPreviewRequest ||
+        (pendingPreviewRequest && (!pendingResult ||
+         (pendingResult.resultRevision || 0) !== pendingSelectedRevision))) {
+      pendingPreviewRequest = null;
+      pendingSelectedId = null;
+      pendingSelectedRevision = null;
+    }
     hostState = next;
     render(next);
   }
   function replace(all = false) {
+    const targets = all ? state.results : state.results.filter(result => result.id === state.selectedId);
+    if (!targets.length || targets.some(result => result.invalid || result.pending || result.unavailable || result.identityUnknown)) return;
     if (
       pending.size ||
       state.searching ||
       state.replacing ||
       state.error ||
+      !state.actionBinding ||
       !state.results.length ||
       (all && state.partial) ||
       (!all && !state.selectedId)
@@ -56,7 +80,9 @@
       return;
     send(all ? 'replaceAll' : 'replace', {
       id: state.selectedId,
-      generation: state.generation
+      generation: state.generation,
+      resultRevision: state.results.find(result => result.id === state.selectedId)?.resultRevision || 0,
+      actionBinding: state.actionBinding
     });
   }
   function resizeInput(input) {
@@ -104,21 +130,34 @@
   $('openTab').onclick = () => send($('newTab').checked ? 'newTab' : 'openTab');
   $('replace').onclick = () => replace();
   $('replaceAll').onclick = () => replace(true);
+  $('rerunSearch').onclick = () => {
+    if (pending.size || state.searching || state.replacing || state.reviewOnly ||
+        rerunGeneration !== undefined || (!state.scopeStale && !state.needsRerun)) return;
+    rerunGeneration = state.generation;
+    rerunRequestId = `${clientId}:rerun:${++rerunRevision}`;
+    render(hostState);
+    send('refresh', { generation: rerunGeneration, requestId: rerunRequestId });
+  };
   $('query').addEventListener('compositionstart', () => (composing = true));
   $('query').addEventListener('compositionend', () => (composing = false));
   function selectedIndex() {
     return state.results.findIndex((result) => result.id === state.selectedId);
   }
   function openResult(id, generation = state.generation) {
-    if (pending.size || state.replacing || generation !== state.generation ||
+    if (pending.size || state.reviewOnly || state.replacing || generation !== state.generation ||
         !state.results.some((result) => result.id === id)) return;
-    send('openResult', { id, generation });
+    send('openResult', { id, generation, resultRevision: state.results.find(result => result.id === id).resultRevision || 0 });
   }
   function select(index, focus = false) {
     const match = state.results[Math.max(0, Math.min(index, state.results.length - 1))];
     if (!match) return;
+    if (state.reviewOnly && !state.reviewAll && match.id !== state.reviewMatchId) return;
     state.selectedId = match.id;
-    send('select', { id: match.id });
+    pendingSelectedId = match.id;
+    pendingSelectedRevision = match.resultRevision || 0;
+    pendingPreviewRequest = `${clientId}:${++selectionRevision}`;
+    send('select', { id: match.id, generation: state.generation,
+      resultRevision: match.resultRevision || 0, previewRequestId: pendingPreviewRequest });
     const top = state.results.indexOf(match) * rowHeight;
     if (top < $('results').scrollTop) $('results').scrollTop = top;
     else if (top + rowHeight > $('results').scrollTop + $('results').clientHeight)
@@ -130,7 +169,7 @@
     if (event.isComposing || composing) return;
     if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
       event.preventDefault();
-      send($('newTab').checked ? 'newTab' : 'openTab');
+      if (!state.reviewOnly) send($('newTab').checked ? 'newTab' : 'openTab');
       return;
     }
     if (event.key === 'Escape') {
@@ -222,7 +261,8 @@
       const row = entry.row;
       if (container.children[i - visibleStart] !== row)
         container.insertBefore(row, container.children[i - visibleStart] || null);
-      row.className = 'result' + (result.id === state.selectedId ? ' selected' : '');
+      row.className = 'result' + (result.id === state.selectedId ? ' selected' : '') +
+        (result.pending ? ' pending' : result.invalid ? ' invalid' : '');
       row.id = `result-${i}`;
       row.setAttribute('role', 'option');
       row.setAttribute('aria-selected', String(result.id === state.selectedId));
@@ -232,7 +272,8 @@
       row.style.right = '0';
       const signature = JSON.stringify([
         result.lineText, result.preview, result.previewMatchStart, result.previewMatchEnd,
-        result.range, result.label, result.relativePath, result.uri
+        result.range, result.label, result.relativePath, result.uri,
+        result.pending, result.invalid, result.invalidReason
       ]);
       // Selection/state echoes must retain the same click targets between the
       // two clicks of a native double click, including the snippet's children.
@@ -251,22 +292,31 @@
       );
       const location = document.createElement('span');
       location.className = 'location';
-      location.textContent = `${result.label || result.relativePath?.split('/').pop() || 'Untitled'} ${result.range.start.line + 1}`;
-      location.title = result.relativePath || result.uri;
+      location.textContent = `${result.label || result.relativePath?.split('/').pop() || 'Untitled'} ${result.range.start.line + 1}${result.pending ? ' · Checking…' : result.invalid ? ' · INVALID' : ''}`;
+      location.title = [result.relativePath || result.uri, result.invalidReason].filter(Boolean).join('\n');
       row.replaceChildren(snippet, location);
     }
-    if (state.selectedId)
-      $('results').setAttribute('aria-activedescendant', `result-${selectedIndex()}`);
+    const selectedRow = renderedRows.get(state.selectedId)?.row;
+    if (selectedRow) $('results').setAttribute('aria-activedescendant', selectedRow.id);
+    else $('results').removeAttribute('aria-activedescendant');
     $('empty').hidden = results.length > 0;
   }
   function render(next) {
     updating = true;
     const reset = next.generation !== state.generation;
+    const top = $('results').scrollTop;
+    const topIndex = Math.floor(top / rowHeight);
+    const anchor = !reset && state.results[topIndex]
+      ? { id: state.results[topIndex].id, index: topIndex, offset: top - topIndex * rowHeight }
+      : undefined;
+    const previousSelected = state.results.find(result => result.id === state.selectedId);
     state = { ...next, options: { ...next.options } };
     for (const [key, { value }] of pending) {
       if (['query', 'replacement', 'scope'].includes(key)) state[key] = value;
       else state.options[key] = value;
     }
+    if (!reset && pendingPreviewRequest && state.results.some(result => result.id === pendingSelectedId))
+      state.selectedId = pendingSelectedId;
     const pendingSearch = [...pending.keys()].some(
       (key) => !['replacement', 'preserveCase'].includes(key)
     );
@@ -277,10 +327,13 @@
       state.partial = false;
       state.error = '';
       state.notice = '';
+      state.diagnostics = '';
+      state.diagnosticsSummary = '';
+      state.scopeStale = state.needsRerun = false;
     }
     for (const control of document.querySelectorAll('input, textarea, select, button'))
-      control.disabled = Boolean(state.replacing);
-    $('heading').textContent = state.mode === 'replace' ? 'Replace in Files' : 'Find in Files';
+      control.disabled = Boolean(state.replacing || state.reviewOnly);
+    $('heading').textContent = state.reviewOnly ? 'Review Frozen Replacement' : state.mode === 'replace' ? 'Replace in Files' : 'Find in Files';
     $('replacementRow').hidden = state.mode !== 'replace';
     $('replace').hidden = $('replaceAll').hidden = state.mode !== 'replace';
     for (const id of ['query', 'replacement', 'mask', 'include', 'exclude']) {
@@ -294,7 +347,7 @@
       if (id === 'query' || id === 'replacement') resizeInput($(id));
     }
     for (const id of ['maskEnabled', 'respectExcludes']) $(id).checked = Boolean(state.options[id]);
-    $('mask').disabled = state.replacing || !state.options.maskEnabled;
+    $('mask').disabled = state.replacing || state.reviewOnly || !state.options.maskEnabled;
     for (const id of ['caseSensitive', 'wholeWord', 'regex', 'preserveCase'])
       $(id).setAttribute('aria-pressed', String(Boolean(state.options[id])));
     for (const button of document.querySelectorAll('[data-scope]')) {
@@ -321,8 +374,16 @@
     $('message').hidden = !state.error && !state.notice;
     $('message').className = state.error ? 'error' : '';
     $('message').textContent = state.error || state.notice || '';
-    $('diagnostics').hidden = !state.diagnostics;
-    $('diagnostics').textContent = state.diagnostics || '';
+    $('diagnostics').hidden = !state.diagnosticsSummary;
+    $('diagnostics').textContent = state.diagnosticsSummary || '';
+    const rerunNeeded = !state.reviewOnly && Boolean(state.scopeStale || state.needsRerun);
+    $('rerunNotice').hidden = !rerunNeeded;
+    $('rerunSearch').hidden = !rerunNeeded;
+    $('rerunMessage').textContent = state.needsRerun
+      ? 'The approved results changed. Rerun Search to review current matches.'
+      : state.scopeStale ? 'Files in this scope changed. New matches appear after Rerun Search.' : '';
+    $('rerunSearch').disabled = !rerunNeeded || pending.size > 0 || state.searching ||
+      state.replacing || rerunGeneration !== undefined;
     $('empty').textContent = state.error
       ? 'Fix the query or filters to continue'
       : !state.query
@@ -336,31 +397,65 @@
       state.partial ||
       !state.results.length ||
       state.replacing ||
-      Boolean(state.error);
+      Boolean(state.error) || !state.actionBinding || state.results.some(result => result.invalid || result.pending || result.unavailable || result.identityUnknown);
     $('replace').disabled =
       pending.size > 0 ||
       !state.selectedId ||
       state.searching ||
       state.replacing ||
-      Boolean(state.error);
+      Boolean(state.error) || !state.actionBinding || !state.results.some(result => result.id === state.selectedId && !result.invalid && !result.pending && !result.unavailable && !result.identityUnknown);
+    $('replaceAll').textContent = state.reviewOnly ? 'Replace Reviewed Snapshot' : 'Replace All';
+    $('replace').textContent = state.reviewOnly ? 'Replace Reviewed Occurrence' : 'Replace';
+    $('newTabLabel').hidden = Boolean(state.reviewOnly);
+    $('openTab').hidden = $('shortcut').hidden = Boolean(state.reviewOnly);
+    if (state.reviewOnly) {
+      $('replaceAll').hidden = !state.reviewAll;
+      $('replace').hidden = state.reviewAll;
+      $('code').replaceChildren(Object.assign(document.createElement('div'), {
+        className: 'empty',
+        textContent: 'Preview unavailable in this frozen review. Rows and replacement parameters are frozen; the source may have changed.'
+      }));
+      $('previewName').textContent = 'Frozen Snapshot';
+      $('previewPath').textContent = '';
+    }
     if (reset || pendingSearch) {
+      pendingPreviewRequest = null;
+      pendingSelectedId = null;
+      pendingSelectedRevision = null;
       $('results').scrollTop = 0;
-      if (!state.selectedId) {
-        $('code').replaceChildren(
-          Object.assign(document.createElement('div'), {
-            className: 'empty',
-            textContent: 'Select a result to preview its code'
-          })
-        );
-        $('previewName').textContent = 'Preview';
-        $('previewPath').textContent = '';
+    } else if (anchor) {
+      const index = state.results[anchor.index]?.id === anchor.id
+        ? anchor.index : state.results.findIndex(result => result.id === anchor.id);
+      if (index !== -1) {
+        $('resultRows').style.height = `${state.results.length * rowHeight}px`;
+        $('results').scrollTop = index * rowHeight + anchor.offset;
       }
     }
+    const selected = state.results.find(result => result.id === state.selectedId);
+    if (reset || pendingSearch || !selected ||
+        (selected.id === previousSelected?.id &&
+         (selected.resultRevision || 0) !== (previousSelected.resultRevision || 0)))
+      clearPreview();
     renderRows();
     updating = false;
   }
+  function clearPreview() {
+    $('code').replaceChildren(Object.assign(document.createElement('div'), {
+      className: 'empty', textContent: state.reviewOnly ? 'Preview unavailable in this frozen review. Rows and replacement parameters are frozen; the source may have changed.' : 'Select a result to preview its code'
+    }));
+    $('code').scrollTop = 0;
+    $('previewName').textContent = state.reviewOnly ? 'Frozen Snapshot' : 'Preview';
+    $('previewPath').textContent = '';
+    $('previewNote').textContent = '';
+    $('previewNote').title = '';
+  }
   function renderPreview(preview) {
-    if (preview.id !== state.selectedId) return;
+    const match = state.results.find(result => result.id === state.selectedId);
+    if (state.reviewOnly || !match || !Number.isSafeInteger(preview.previewRevision) ||
+        preview.id !== match.id || preview.generation !== state.generation ||
+        preview.resultRevision !== (match.resultRevision || 0) ||
+        preview.previewRevision !== state.previewRevision ||
+        preview.previewRequestId !== (pendingPreviewRequest || state.previewRequestId || null)) return;
     $('previewName').textContent = preview.name || 'Preview';
     $('previewPath').textContent = preview.path || '';
     $('previewNote').textContent = preview.note || '';
@@ -434,7 +529,7 @@
     }
     $('code').replaceChildren(pre);
     const selected = pre.querySelector(`[data-line="${preview.selectedLine}"]`);
-    if (selected)
+    if (selected && !preview.preserveScroll)
       $('code').scrollTop = Math.max(0, selected.offsetTop - $('code').clientHeight * 0.3);
   }
   let dragging = false;
@@ -465,6 +560,12 @@
   window.addEventListener('message', (event) => {
     const message = event.data;
     if (message.type === 'state') receiveState(message.state);
+    else if (message.type === 'refreshRejected' && message.requestId === rerunRequestId &&
+        message.generation === rerunGeneration) {
+      rerunGeneration = undefined;
+      rerunRequestId = undefined;
+      render(hostState);
+    }
     else if (message.type === 'preview') renderPreview(message.preview);
     else if (message.type === 'focus') {
       $('query').focus();

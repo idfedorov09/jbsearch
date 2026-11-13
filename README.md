@@ -130,9 +130,17 @@ Configure limits and named scopes in **Settings → JB Search**. For example:
     },
     { "name": "API", "root": "api", "include": ["src/**"] }
   ],
-  "jbsearch.search.maxResults": 5000
+  "jbsearch.search.maxResults": 5000,
+  "jbsearch.replace.prepareTimeoutMs": 60000
 }
 ```
+
+`jbsearch.search.timeoutMs` limits each worker search. The independent
+`jbsearch.replace.prepareTimeoutMs` setting limits total document and file
+preparation for a replacement, excluding the worker search. It defaults to
+60000 ms and accepts 100–300000 ms. A timeout before submission applies no edit;
+increase the preparation limit or narrow the scope when appropriate. An edit
+already submitted to VS Code cannot be cancelled by this timer.
 
 The optional `root` selects a workspace folder by its exact, case-sensitive name
 (including aliases). Patterns are relative to that folder; omit `root` to search
@@ -167,8 +175,10 @@ remove it, so the setting continues to control that binding.
   Unsupported encodings, unclassified oversized inputs, and inaccessible files
   make results incomplete. Binary detection uses content signatures and a NUL-byte
   heuristic, so arbitrary bytes cannot always be classified perfectly: a text
-  input can be mistaken for binary, and vice versa. Review the representative
-  paths and reasons in the diagnostics before replacing. Symlinks are not followed.
+  input can be mistaken for binary, and vice versa. The dialog shows aggregate
+  binary-exclusion and incomplete-input warnings, not individual skipped paths.
+  To review representative paths and reasons before replacing, use **Open in
+  Find Panel**; its bounded list is not exhaustive. Symlinks are not followed.
   Replace All requires complete results for eligible text; narrow the scope or
   adjust limits when a search is incomplete.
 - Saved searches live in memory and are cleared when the extension host restarts.

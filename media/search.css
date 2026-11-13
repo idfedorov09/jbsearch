@@ -282,7 +282,7 @@ textarea::placeholder {
 #filters input:not([type='checkbox']) {
   width: 155px;
 }
-#message, #diagnostics {
+#message, #diagnostics, #rerunNotice {
   font-size: 12px;
   padding: 6px 16px;
   color: var(--vscode-descriptionForeground);

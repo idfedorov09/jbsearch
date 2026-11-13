@@ -1,5 +1,90 @@
 # Changelog
 
+## 0.4.3 — 2026-11-13
+
+### Added
+
+- Configure replacement preparation with `jbsearch.replace.prepareTimeoutMs`.
+- Rerun a stale search from the modal and invoke Replace All from a match's
+  context menu.
+
+### Changed
+
+- Keep completed Find Panel results in a deterministic snapshot through
+  supported source changes; use **Rerun Search** to discover new matches.
+- Track occurrence identity and refuse stale, ambiguous, pending, or unverified
+  replacement actions. Replace All checks a fresh full-scope plan against the
+  reviewed snapshot before applying it.
+- Keep skipped-file warnings compact in the modal and retain bounded details in
+  **Open in Find Panel**. Binary detection remains heuristic.
+- Coalesce intermediate result updates and reduce replacement-plan processing
+  overhead without removing replacement safeguards.
+
+This stable release incorporates the 0.4.0 and 0.4.2 pre-release changes since
+0.3.2. The extension ID and bundled client 0.1.0 are unchanged. The issue #3
+Windows/WSL scenario and native VS Code acceptance of these changes remain
+unverified. See the [release notes](docs/releases/v0.4.3.md).
+
+## 0.4.2 — pre-release preparation
+
+### Changed
+
+- Keep skipped-file warnings compact in the search dialog while retaining the
+  bounded details in **Open in Find Panel**.
+- Coalesce intermediate search-result updates and avoid building replacement
+  approval models for ordinary Find sessions. First results, completion and
+  safety-state changes remain prompt.
+- Reduce repeated comparison and retained copying work for replacement plans
+  without removing full-scope preflight or stale-action checks.
+
+This preparation supersedes the unpublished 0.4.1 draft and includes its modal
+diagnostic correction. The extension ID and bundled client 0.1.0 are unchanged.
+See the [release notes](https://github.com/idfedorov09/jbsearch/blob/beta/docs/releases/v0.4.2-beta.md)
+and [performance verification](https://github.com/idfedorov09/jbsearch/blob/beta/docs/testing/search-performance.md).
+Publication and real VS Code/platform acceptance remain separate decisions.
+
+## 0.4.1 — pre-release preparation
+
+This unpublished preparation was superseded by 0.4.2 before release.
+
+### Changed
+
+- Keep binary-exclusion and incomplete-input warnings compact in the search
+  dialog, without listing skipped paths, per-file reasons, or omitted paths.
+  Use **Open in Find Panel** to review the retained, bounded representative
+  paths and reasons before replacing.
+
+This is a presentation correction to published 0.4.0: no files are deleted, and
+search eligibility, completeness classification, and replacement safeguards are
+unchanged. Binary detection is still heuristic, and the bundled client remains
+at 0.1.0. See the [release notes](https://github.com/idfedorov09/jbsearch/blob/beta/docs/releases/v0.4.1-beta.md) and
+[pending native test checklist](https://github.com/idfedorov09/jbsearch/blob/beta/docs/testing/modal-diagnostic-summary.md).
+Publication had not occurred when this entry was prepared on November 12, 2026;
+check the registry and publication record for its later status.
+
+## 0.4.0 — pre-release
+
+### Added
+
+- Configure replacement preparation with `jbsearch.replace.prepareTimeoutMs`.
+- Rerun a stale search from the modal and invoke Replace All from a match's
+  context menu.
+
+### Changed
+
+- Keep completed Find Panel results as a stable snapshot through source events;
+  new matches appear after an explicit Rerun Search.
+- Track match identity across supported edits and fail closed on stale, ambiguous,
+  pending, or unverified actions rather than silently adopting a different match.
+- Bind replacement actions to the reviewed result snapshot. Replace All performs
+  a fresh full-scope preflight and refuses when the approved plan differs.
+- Preserve result presentation where supported and retain explicit limits on
+  native TreeView handle delivery, selection, and scroll behavior.
+
+The extension ID is unchanged and the bundled client remains at 0.1.0. Automated
+Linux checks are not Windows, WSL, macOS, physical Remote, or native-editor
+acceptance; those checks remain open. See the [pre-release notes](https://github.com/idfedorov09/jbsearch/blob/beta/docs/releases/v0.4.0-beta.md).
+
 ## 0.3.2 — 2026-11-09
 
 ### Fixed

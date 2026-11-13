@@ -1,5 +1,6 @@
 'use strict';
 
+const { contentHash } = require('../src/content-hash');
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const os = require('node:os');
@@ -182,6 +183,52 @@ test('a dirty snapshot cannot bring an ignored disk file back into the workspace
   assert.equal(result.results.length, 0);
 });
 
+test('missing open file buffers do not silently produce a complete scope search', async (t) => {
+  const directory = await fixture(t, { '.gitignore': 'ignored.js\n', 'ignored.js': 'needle' });
+  const engine = new SearchEngine();
+  t.after(() => engine.dispose());
+  const missing = path.join(directory, 'missing.js');
+  const document = { fsPath: missing, uri: pathToFileURL(missing).toString(), text: 'needle', version: 3, isDirty: true };
+  for (const scope of [{ kind: 'workspace' }, { kind: 'openEditors' }]) {
+    const output = await engine.search(requestFor(directory, { scope, documents: [document] }));
+    assert.equal(output.truncated, true);
+    assert.equal(output.stats.blockingSkippedFiles, 1);
+    assert.equal(output.stats.skippedDetails[0].path, missing);
+  }
+  const explicit = await engine.search(requestFor(directory, {
+    scope: { kind: 'openEditors' }, respectExcludes: false, documents: [document]
+  }));
+  assert.equal(explicit.truncated, false);
+  assert.equal(explicit.results.length, 1);
+  const excluded = await engine.search(requestFor(directory, {
+    masksEnabled: true, fileMask: '*.ts', documents: [document]
+  }));
+  assert.equal(excluded.truncated, false, 'a path excluded by an explicit mask is not an unknown input');
+});
+
+test('untitled buffers remain searchable in Open Editors without a disk entry', async (t) => {
+  const engine = new SearchEngine();
+  t.after(() => engine.dispose());
+  const output = await engine.search({
+    query: 'needle', roots: [], scope: { kind: 'openEditors' }, respectExcludes: true,
+    documents: [{ uri: 'untitled:Untitled-1', displayName: 'Untitled-1', text: 'needle', version: 1 }]
+  });
+  assert.equal(output.truncated, false);
+  assert.equal(output.results.length, 1);
+  assert.equal(output.results[0].uri, 'untitled:Untitled-1');
+});
+
+test('conditional exclusion errors other than a missing sibling fail the search', async (t) => {
+  if (process.platform === 'win32') return t.skip('symlink creation may require elevated privileges');
+  const directory = await fixture(t, { 'entry.js': 'needle' });
+  await fs.symlink('entry.ts', path.join(directory, 'entry.ts'));
+  const engine = new SearchEngine();
+  t.after(() => engine.dispose());
+  await assert.rejects(() => engine.search(requestFor(directory, {
+    roots: [{ path: directory, name: 'fixture', exclude: { '*.js': { when: '$(basename).ts' } } }]
+  })), /ELOOP|symbolic links/i);
+});
+
 test('folder and directory scope restrict multi-root search without path-prefix leakage', async (t) => {
   const first = await fixture(t, { 'src/main.js': 'needle', 'src-other/main.js': 'needle' });
   const second = await fixture(t, { 'second.js': 'needle' });
@@ -273,9 +320,68 @@ test('the result limit distinguishes a complete exact count from truncation', as
   assert.equal(limited.results.length, 2);
   assert.equal(limited.truncated, true);
   assert.equal(limited.reason, 'limit');
+  assert.equal(limited.stats.cancelled, false);
+  assert.equal(limited.stats.timedOut, false);
+  assert.equal(limited.stats.blockingSkippedFiles, 0);
+  assert.deepEqual(limited.stats.errors, []);
   const exact = await engine.search(requestFor(directory, { maxResults: 3 }));
   assert.equal(exact.truncated, false);
 });
+
+test('enumeration accepts empty exit 1 but rejects warnings and partial records',
+  { skip: process.platform === 'win32' }, async t => {
+    const root = await fixture(t, {}), scripts = await fixture(t, {});
+    for (const [name, body, incomplete] of [
+      ['empty', 'process.exitCode = 1;', false],
+      ['warning', "process.stderr.write('ignore rules could not be read');", true],
+      ['partial', "process.stdout.write('unterminated');", true],
+      ['error', 'process.exitCode = 2;', true]
+    ]) {
+      const executable = path.join(scripts, name);
+      await fs.writeFile(executable, `#!${process.execPath}\n${body}\n`, { mode: 0o755 });
+      const result = await new SearchEngine({ rgPath: executable }).search(requestFor(root));
+      assert.equal(result.truncated, incomplete, name);
+      assert.equal(result.stats.blockingSkippedFiles, incomplete ? 1 : 0, name);
+      assert.equal(result.stats.cancelled, false, name);
+      assert.equal(result.stats.timedOut, false, name);
+    }
+  });
+
+test('an enumerated file replaced by a symlink makes the search incomplete',
+  { skip: process.platform === 'win32' }, async t => {
+    const root = await fixture(t, { 'target.txt': 'needle' }), scripts = await fixture(t, {});
+    await fs.symlink(path.join(root, 'target.txt'), path.join(root, 'swapped.txt'));
+    const executable = path.join(scripts, 'fake-rg');
+    await fs.writeFile(executable,
+      `#!${process.execPath}\nprocess.stdout.write('swapped.txt\\0');\n`, { mode: 0o755 });
+    const result = await new SearchEngine({ rgPath: executable }).search(requestFor(root));
+    assert.equal(result.truncated, true);
+    assert.equal(result.stats.blockingSkippedFiles, 1);
+    assert.match(result.stats.errors[0].message, /changed type/);
+    assert.deepEqual(result.results, []);
+  });
+
+test('intentional cancellation and timeout do not become enumeration errors',
+  { skip: process.platform === 'win32' }, async t => {
+    const root = await fixture(t, {}), scripts = await fixture(t, {});
+    const executable = path.join(scripts, 'waiting-rg');
+    await fs.writeFile(executable, `#!${process.execPath}\nsetInterval(() => {}, 1000);\n`, { mode: 0o755 });
+    const engine = new SearchEngine({ rgPath: executable });
+    t.after(() => engine.dispose());
+    const timedOut = await engine.search(requestFor(root, { timeoutMs: 200 }));
+    assert.equal(timedOut.stats.timedOut, true);
+    assert.equal(timedOut.stats.cancelled, false);
+    assert.equal(timedOut.stats.blockingSkippedFiles, 0);
+    assert.deepEqual(timedOut.stats.errors, []);
+    const abort = new AbortController();
+    const pending = engine.search(requestFor(root, { timeoutMs: 5000 }), { signal: abort.signal });
+    setTimeout(() => abort.abort(), 200);
+    const cancelled = await pending;
+    assert.equal(cancelled.stats.cancelled, true);
+    assert.equal(cancelled.stats.timedOut, false);
+    assert.equal(cancelled.stats.blockingSkippedFiles, 0);
+    assert.deepEqual(cancelled.stats.errors, []);
+  });
 
 test('invalid regex rejects before searching and empty or aborted input performs no work', async () => {
   assert.throws(() => compileQuery({ query: '[', regex: true }), { code: 'INVALID_REGEX' });
@@ -438,4 +544,15 @@ test('nested workspace roots use their own policy in either root order', async (
   );
   assert.equal(selectedParent.results.length, 4);
   assert.ok(selectedParent.results.every((match) => match.rootName === 'parent'));
+});
+
+test('worker content hashes preserve individual UTF-16 code units', async (t) => {
+  const engine = new SearchEngine();
+  t.after(() => engine.dispose());
+  const text = '\ud800 cat';
+  const output = await engine.search({ query: 'cat', scope: { kind: 'openEditors' }, roots: [],
+    documents: [{ uri: 'untitled:hash-test', text, version: 1 }] });
+  assert.equal(output.results.length, 1);
+  assert.equal(output.results[0].contentHash, contentHash(text));
+  assert.notEqual(output.results[0].contentHash, contentHash('\ud801 cat'));
 });

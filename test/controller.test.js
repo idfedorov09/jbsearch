@@ -24,6 +24,7 @@ function stub(engine) {
     sessions: new Map(),
     disposed: false,
     request: async (s) => ({ query: s.query }),
+    configuration: () => ({ get: (_key, fallback) => fallback }),
     notify() {},
     select: async () => {}
   });
@@ -119,14 +120,19 @@ test('a superseded search cannot publish its late results or overwrite a new que
   let finish;
   const controller = stub({ search: () => new Promise((resolve) => (finish = resolve)) });
   const s = session();
+  controller.sessions.set(s.id, s);
   const running = controller.search(s);
   await pause();
   s.generation++;
   s.query = 'new';
   s.results = [{ id: 'new' }];
+  s.diagnostics = 'new search details';
+  s.diagnosticsSummary = 'new search summary';
   finish({ results: [{ id: 'old' }], truncated: false, stats: { errors: [], skippedFiles: 0 } });
   await running;
   assert.deepEqual(s.results, [{ id: 'new' }]);
+  assert.equal(s.diagnostics, 'new search details');
+  assert.equal(s.diagnosticsSummary, 'new search summary');
 });
 test('replacement refuses partial results and a mismatched generation before opening files', async () => {
   const controller = stub({});
@@ -170,6 +176,7 @@ test('search reports excluded archives separately and retains bounded, plain-tex
   const controller = stub({ search: async () => ({ results: [{ id: 'match' }], truncated: false, stats }) });
   controller.configuration = () => ({ get: (_key, fallback) => fallback });
   const s = { ...session(), mode: 'replace', searching: true };
+  controller.sessions.set(s.id, s);
   await controller.search(s);
   assert.equal(s.partial, true, 'a blocker must override even an inconsistent truncated flag');
   assert.match(s.diagnostics, /binary file excluded from text search/);
@@ -177,8 +184,19 @@ test('search reports excluded archives separately and retains bounded, plain-tex
   assert.match(s.diagnostics, /legacy\.txt — unsupported encoding/);
   assert.ok(s.diagnostics.includes('<script>\\u000aarchive.docx'));
   assert.equal(controller.snapshot(s).diagnostics, s.diagnostics);
+  assert.equal(s.diagnosticsSummary, '1 binary file excluded from text search; contents are not searched or replaced.\n1 file could not be searched; results are incomplete.');
+  assert.equal(controller.snapshot(s).diagnosticsSummary, s.diagnosticsSummary);
+  assert.doesNotMatch(s.diagnosticsSummary, /workspace|archive|legacy/);
   controller.resetSearch(s);
   assert.equal(s.diagnostics, '', 'a new generation must discard old paths');
+  assert.equal(s.diagnosticsSummary, '', 'a new generation must discard the old summary');
+  s.query = '';
+  s.diagnostics = 'old details';
+  s.diagnosticsSummary = 'old summary';
+  controller.resetSearch(s);
+  assert.equal(controller.snapshot(s).diagnosticsSummary, '', 'clearing the query clears its summary');
+  assert.equal(s.diagnostics, '');
+  assert.equal(s.searching, false);
 
   const overflow = skipDiagnostics({ skippedFiles: 25, excludedBinaryFiles: 25, blockingSkippedFiles: 0,
     skippedDetailsOmitted: 5,
@@ -206,6 +224,7 @@ test('preview replies from a previously selected result are discarded', async ()
     ],
     panels: new Set([{ webview: { postMessage: (value) => delivered.push(value) } }])
   };
+  controller.sessions.set(s.id, s);
   const first = controller.select(s, 'a');
   await pause();
   const second = controller.select(s, 'b');
@@ -227,6 +246,7 @@ test('input acknowledgements preserve client order and return host-normalized fi
   controller.configuration = () => ({ get: (_key, fallback) => fallback });
   controller.notify = (value) => delivered.push(controller.snapshot(value));
   controller.schedule = (value) => controller.notify(value);
+  controller.sessions.set(s.id, s);
   await controller.message(s, {
     type: 'update',
     clientId: 'first',
@@ -235,6 +255,7 @@ test('input acknowledgements preserve client order and return host-normalized fi
   });
   assert.equal(delivered.at(-1).query.length, 20000);
   assert.deepEqual(delivered.at(-1).patchAcks, { first: 2 });
+  controller.sessions.set(s.id, s);
   await controller.message(s, {
     type: 'update',
     clientId: 'first',
@@ -242,6 +263,7 @@ test('input acknowledgements preserve client order and return host-normalized fi
     patch: { query: 'late stale input' }
   });
   assert.equal(s.query.length, 20000);
+  controller.sessions.set(s.id, s);
   await controller.message(s, {
     type: 'update',
     clientId: 'second',
@@ -259,6 +281,7 @@ test('rejected input during replacement is acknowledged with unchanged host valu
   controller.configuration = () => ({ get: (_key, fallback) => fallback });
   controller.notify = (value) => delivered.push(controller.snapshot(value));
   controller.schedule = () => assert.fail('a rejected patch must not schedule a search');
+  controller.sessions.set(s.id, s);
   await controller.message(s, {
     type: 'update',
     clientId: 'client',
@@ -270,7 +293,7 @@ test('rejected input during replacement is acknowledged with unchanged host valu
   assert.equal(delivered.at(-1).replacing, true);
 });
 
-test('Open Editors refreshes after text tabs open or close, without watching custom tabs', () => {
+test('Open Editors tab changes mark the frozen scope stale without rerunning custom or text tabs', () => {
   let tabsChanged;
   const noopEvent = () => ({ dispose() {} });
   class TabInputText {}
@@ -316,16 +339,20 @@ test('Open Editors refreshes after text tabs open or close, without watching cus
     panels: new Set([{}])
   };
   controller.sessions.set(s.id, s);
+  controller.notify = () => {};
   let scheduled = 0;
   controller.schedule = () => scheduled++;
   tabsChanged({ opened: [{ input: new TabInputText() }], closed: [], changed: [] });
   tabsChanged({ opened: [], closed: [{ input: new TabInputText() }], changed: [] });
-  assert.equal(scheduled, 2);
+  assert.equal(scheduled, 0);
+  assert.equal(s.scopeStale, true);
   tabsChanged({ opened: [{ input: {} }], closed: [], changed: [] });
-  assert.equal(scheduled, 2);
+  assert.equal(scheduled, 0);
+  assert.equal(s.scopeStale, true);
   s.scope = { kind: 'workspace' };
   tabsChanged({ opened: [{ input: new TabInputText() }], closed: [], changed: [] });
-  assert.equal(scheduled, 2);
+  assert.equal(scheduled, 0);
+  assert.equal(s.scopeStale, true);
   controller.dispose();
 });
 
@@ -345,7 +372,8 @@ test('completed search refreshes preview highlights with matches from every batc
     }
   });
   controller.select = async (s) => previewSizes.push(s.results.length);
-  await controller.search(session());
+  const s = session(); controller.sessions.set(s.id, s);
+  await controller.search(s);
   assert.deepEqual(previewSizes, [1, 2]);
 });
 
@@ -353,7 +381,7 @@ test('changing client settings does not restart workspace search or reset its se
   const controller = stub({});
   const workspaceSession = { ...session(), panels: new Set([{}]), selectedId: 'selected' };
   const openSession = { ...session(), id: 'open', panels: new Set([{}]), scope: { kind: 'openEditors' } };
-  const uri = (name, scheme = 'file') => ({ scheme, toString: () => name });
+  const uri = (name, scheme = 'file') => ({ scheme, fsPath: name, toString: () => name });
   class TabInputText { constructor(value) { this.uri = value; } }
   const external = uri('/client/settings.json'), source = uri('/workspace/Example.bl'), untitled = uri('Untitled-1', 'untitled');
   controller.v = {
@@ -369,9 +397,115 @@ test('changing client settings does not restart workspace search or reset its se
   assert.deepEqual(scheduled, []);
   assert.equal(workspaceSession.selectedId, 'selected');
   controller.documentChanged({ document: { uri: source }, contentChanges: [{}] });
-  assert.deepEqual(scheduled, ['s']);
+  assert.deepEqual(scheduled, []);
+  assert.equal(workspaceSession.scopeStale, true);
   controller.documentChanged({ document: { uri: untitled }, contentChanges: [{}] });
-  assert.deepEqual(scheduled, ['s', 'open']);
+  assert.deepEqual(scheduled, []);
+  assert.equal(openSession.scopeStale, true);
   controller.documentChanged({ document: { uri: source }, contentChanges: [] });
-  assert.deepEqual(scheduled, ['s', 'open']);
+  assert.deepEqual(scheduled, []);
+  assert.equal(openSession.scopeStale, true);
 });
+
+test('Open Editors marks snapshots stale after text tabs open or close, without restarting', () => {
+  let tabsChanged;
+  const noopEvent = () => ({ dispose() {} });
+  class TabInputText { constructor(uri) { this.uri = uri; } }
+  const tabUri = { scheme: 'file', fsPath: '/workspace/file.js', toString: () => 'file:///workspace/file.js' };
+  const textTab = { input: new TabInputText(tabUri) };
+  const vscode = {
+    TabInputText,
+    Uri: { parse: () => tabUri },
+    EventEmitter: class {
+      constructor() { this.event = noopEvent; }
+      fire() {}
+      dispose() {}
+    },
+    commands: { registerCommand: noopEvent, executeCommand: async () => {} },
+    window: {
+      createTreeView: () => ({ onDidChangeSelection: noopEvent, dispose() {} }),
+      registerCustomEditorProvider: noopEvent,
+      onDidChangeActiveColorTheme: noopEvent,
+      tabGroups: {
+        all: [{ tabs: [] }],
+        onDidChangeTabs: (callback) => {
+          tabsChanged = callback;
+          return { dispose() {} };
+        }
+      }
+    },
+    workspace: {
+      onDidChangeTextDocument: noopEvent,
+      onDidChangeConfiguration: noopEvent,
+      createFileSystemWatcher: () => ({
+        onDidChange: noopEvent,
+        onDidCreate: noopEvent,
+        onDidDelete: noopEvent,
+        dispose() {}
+      })
+    }
+  };
+  const controller = new SearchController(
+    vscode,
+    { subscriptions: [] },
+    { dispose() {} },
+    { dispose() {} }
+  );
+  const s = {
+    ...session(),
+    scope: { kind: 'openEditors' },
+    observedOpenEditorUris: new Set(),
+    panels: new Set([{}])
+  };
+  controller.sessions.set(s.id, s);
+  let scheduled = 0;
+  controller.schedule = () => scheduled++;
+  controller.notify = () => {};
+  vscode.window.tabGroups.all[0].tabs.push(textTab);
+  tabsChanged({ opened: [textTab], closed: [], changed: [] });
+  vscode.window.tabGroups.all[0].tabs = [];
+  tabsChanged({ opened: [], closed: [textTab], changed: [] });
+  assert.equal(scheduled, 0);
+  assert.equal(s.scopeEventRevision, 2);
+  assert.equal(s.scopeStale, true);
+  tabsChanged({ opened: [{ input: {} }], closed: [], changed: [] });
+  assert.equal(scheduled, 0);
+  assert.equal(s.scopeEventRevision, 2);
+  s.scope = { kind: 'workspace' };
+  tabsChanged({ opened: [{ input: new TabInputText() }], closed: [], changed: [] });
+  assert.equal(scheduled, 0);
+  assert.equal(s.scopeEventRevision, 2);
+  controller.dispose();
+});
+
+for (const end of ['cancel', 'dispose', 'detach', 'documentClose']) {
+  test(`a late modal render cannot publish after ${end}`, async () => {
+    const controller = stub({}), s = session(), delivered = [];
+    controller.select = SearchController.prototype.select;
+    controller.configuration = () => ({ get: (_key, fallback) => fallback });
+    const document = { isClosed: false };
+    controller.v = {
+      Uri: { parse: value => value },
+      workspace: { openTextDocument: async () => document }
+    };
+    let finishRender, announce;
+    const started = new Promise(resolve => { announce = resolve; });
+    controller.preview = { render: () => {
+      announce();
+      return new Promise(resolve => { finishRender = resolve; });
+    } };
+    s.results = [{ id: 'a', uri: 'one' }];
+    s.panels.add({ webview: { postMessage: value => delivered.push(value) } });
+    controller.sessions.set(s.id, s);
+    const selecting = controller.select(s, 'a');
+    await started;
+    if (end === 'cancel') s.previewAbort.abort();
+    if (end === 'dispose') controller.disposed = true;
+    if (end === 'detach') controller.sessions.delete(s.id);
+    if (end === 'documentClose') document.isClosed = true;
+    finishRender({ name: 'late' });
+    await selecting;
+    assert.deepEqual(delivered, []);
+    controller.documentOpenGate.dispose();
+  });
+}

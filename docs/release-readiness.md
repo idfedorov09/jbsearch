@@ -153,5 +153,7 @@ are recorded in a separate subsequent documentation commit without runtime or
 distribution changes.
 
 `master` remained at `b88978d771a59fbacd2492128ff3d865dc6e8ff4`.
-`dev` runs ordinary checks. Publication is restricted to `master`; after trust
-setup, pushing to that branch can publish a version publicly.
+At that historical checkpoint, `dev` ran ordinary checks and publication was
+restricted to `master`. The later, explicitly authorized `beta` push exception
+is described in [ADR 0015](adr/0015-beta-push-publication.md); it does not change
+the stable `master` route.

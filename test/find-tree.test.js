@@ -40,9 +40,14 @@ function snapshot(id = 'session-one', results = [result()], extra = {}) {
     scope: { kind: 'workspace' }, options: {}, results, selectedId: results[0]?.id, ...extra };
 }
 
+function binding(sessionId = 'find', extra = {}) {
+  return { sessionId, generation: 3, requestFingerprint: 'immutable-request',
+    resultRevision: 1, scopeEventRevision: 0, snapshotToken: 'snapshot-one', ...extra };
+}
+
 function fixture(t, callbacks = {}) {
   const commands = new Map(), calls = [], selections = [], actions = [], sessions = [];
-  const reveals = [], creations = [];
+  const reveals = [], creations = [], selectionActions = [];
   const nativeSelection = new EventEmitter();
   let pick;
   class TreeItem { constructor(label, collapsibleState) { Object.assign(this, { label, collapsibleState }); } }
@@ -77,13 +82,13 @@ function fixture(t, callbacks = {}) {
     }
   };
   const tree = new FindTree(v, {
-    onSelect: async (...args) => { selections.push(args); return callbacks.onSelect?.(...args); },
+    onSelect: async (...args) => { selections.push(args.slice(0, 2)); selectionActions.push(args[2]); return callbacks.onSelect?.(...args); },
     onAction: async (...args) => { actions.push(args); return callbacks.onAction?.(...args); },
     onSessionChange: async (...args) => { sessions.push(args); return callbacks.onSessionChange?.(...args); }
   });
   t.after(() => tree.dispose());
   const flatten = (nodes = tree.getChildren()) => nodes.flatMap(node => [node, ...flatten(tree.getChildren(node))]);
-  return { v, tree, view, calls, selections, actions, sessions, reveals, creations, flatten,
+  return { v, tree, view, calls, selections, selectionActions, actions, sessions, reveals, creations, flatten,
     selectNative,
     setPick(value) { pick = value; } };
 }
@@ -106,7 +111,8 @@ test('native provider gives file and directory URIs to workbench, including file
   assert.equal(items[2].iconPath, h.v.ThemeIcon.File);
   assert.equal(items[2].collapsibleState, h.v.TreeItemCollapsibleState.Expanded);
   assert.equal(h.tree.getParent(nodes[3]), nodes[2]);
-  assert.deepEqual(items[3].command, { command: 'jbsearch.results.select', title: 'Open Search Result', arguments: ['session-one', 'one'] });
+  assert.deepEqual(items[3].command, { command: 'jbsearch.results.select', title: 'Open Search Result', arguments: [nodes[3].action] });
+  assert.equal(Object.isFrozen(items[3].command.arguments[0]), true);
   assert.deepEqual(h.selections, []);
 });
 
@@ -134,6 +140,298 @@ test('groups preserve snapshot order, stable identities, duplicate workspace nam
   assert.deepEqual(h.flatten().map(node => node.id), nodes.map(node => node.id));
   h.tree.update(snapshot('different', results), { activate: true });
   assert.notEqual(h.flatten()[0].id, nodes[0].id, 'different searches cannot share native expansion/selection IDs');
+});
+
+test('same-structure updates notify changed nodes and their counts without a root invalidation', t => {
+  const h = fixture(t), changes = [];
+  h.tree.onDidChangeTreeData(value => changes.push(value));
+  const original = [result('one', 'src/one.bl'), result('two', 'other/two.bl')];
+  h.tree.update(snapshot('find', original));
+  const before = h.flatten(), selected = before.find(node => node.result?.id === 'two');
+  h.selectNative(selected);
+  changes.length = 0;
+
+  h.tree.update(snapshot('find', [
+    { ...original[0], pending: true, range: { start: { line: 20, character: 3 } } },
+    original[1]
+  ], { selectedId: 'one' }));
+  assert.equal(changes.length, 1);
+  assert.ok(Array.isArray(changes[0]));
+  assert.ok(changes[0].includes(before.find(node => node.kind === 'file' && node.path === 'src/one.bl')),
+    'an action-relevant row replacement refreshes its existing provider parent');
+  assert.equal(changes[0].some(node => node.result?.id === 'two'), false);
+  assert.ok(changes[0].some(node => node.kind === 'root'));
+  assert.equal(h.tree.state.selectedId, 'two');
+  assert.deepEqual(h.flatten().map(node => node.id), before.map(node => node.id));
+  const current = h.flatten().find(node => node.result?.id === 'one');
+  assert.notEqual(current, before.find(node => node.result?.id === 'one'));
+  assert.match(h.tree.getTreeItem(current).description, /^21:4 · Checking/);
+  assert.match(h.tree.getTreeItem(h.tree.getChildren()[0]).description, /1 checking/);
+  assert.equal(h.tree.actionsFor().canReplaceAll, false);
+
+  changes.length = 0;
+  h.tree.update({ ...h.tree.state, notice: 'A session notice changed.' });
+  assert.deepEqual(changes, [], 'session-only presentation does not refresh the tree');
+  assert.match(h.view.message, /A session notice changed/);
+});
+
+test('same-structure result revision changes are published without losing stored fields', t => {
+  const h = fixture(t), changes = [];
+  h.tree.onDidChangeTreeData(value => changes.push(value));
+  const original = result('one', 'src/example.bl', { resultRevision: 0 });
+  h.tree.update(snapshot('find', [original]));
+  changes.length = 0;
+  h.tree.update(snapshot('find', [{ ...original, resultRevision: 1 }]));
+  assert.ok(Array.isArray(changes[0]));
+  assert.ok(changes[0].some(node => node.kind === 'file'));
+  let current = h.flatten().find(node => node.result?.id === 'one');
+  assert.equal(current.result.resultRevision, 1);
+  changes.length = 0;
+  h.tree.update(snapshot('find', [{ ...original, resultRevision: 2, identityUnknown: true, invalid: true }]));
+  assert.ok(changes[0].some(node => node.kind === 'file'), 'action revisions refresh an existing parent');
+  assert.notEqual(h.flatten().find(node => node.result?.id === 'one'), current);
+  current = h.flatten().find(node => node.result?.id === 'one');
+  assert.equal(current.result.resultRevision, 2);
+  assert.equal(current.result.identityUnknown, true);
+});
+
+test('coordinate-only changes replace the action handle through its existing file parent', t => {
+  const h = fixture(t), changes = [];
+  h.tree.onDidChangeTreeData(value => changes.push(value));
+  const original = result('one');
+  h.tree.update(snapshot('find', [original]));
+  const selected = h.flatten().find(node => node.result?.id === 'one');
+  h.selectNative(selected);
+  changes.length = 0;
+  h.tree.update(snapshot('find', [{ ...original,
+    range: { start: { line: 12, character: 7 }, end: { line: 12, character: 11 } } }]));
+  assert.deepEqual(changes, [[h.tree.getParent(selected)]]);
+  assert.equal(h.tree.state.selectedId, 'one');
+  assert.equal(h.tree.getTreeItem(selected), undefined);
+  assert.equal(h.tree.getTreeItem(h.flatten().at(-1)).description, '13:8');
+});
+
+test('delayed frontend actions cannot acquire a newer provider revision before or after refresh', async t => {
+  const h = fixture(t), queued = [];
+  h.tree.onDidChangeTreeData(value => queued.push(value));
+  const original = result('one', 'src/example.bl', { resultRevision: 0 });
+  h.tree.update(snapshot('find', [original]));
+  const element = h.flatten().find(node => node.result?.id === 'one');
+  const oldFrontend = h.tree.getTreeItem(element);
+  queued.length = 0;
+  h.tree.update(snapshot('find', [{ ...original, resultRevision: 1,
+    range: { start: { line: 10, character: 0 }, end: { line: 10, character: 4 } } }]));
+  assert.ok(queued[0].includes(h.tree.getParent(element)), 'the existing parent is queued, not a new unmapped row');
+  assert.equal(oldFrontend.description, '5:19');
+  assert.equal(element.result.resultRevision, 0, 'old row data and action were not rebound');
+  const current = h.flatten().at(-1), item = h.tree.getTreeItem(current);
+  assert.notEqual(oldFrontend.id, item.id, 'context handles must not resolve to a newer element');
+  assert.equal(item.description, '11:1');
+  assert.equal(h.tree.getTreeItem(element), undefined);
+  assert.equal(await h.v.commands.executeCommand(SELECT_COMMAND, ...oldFrontend.command.arguments), false);
+  assert.equal(await h.tree.action('focusPreview', element), false);
+  assert.equal(await h.tree.action('replace', element), false);
+  // The extension-host map initially resolves an old handle to the old object;
+  // after refreshing the parent the same old handle is missing, never rebound.
+  const handles = new Map([[oldFrontend.id, element]]);
+  assert.equal(await h.tree.action('focusPreview', handles.get(oldFrontend.id), { provided: true }), false);
+  handles.delete(oldFrontend.id);
+  handles.set(item.id, current);
+  assert.equal(await h.tree.action('focusPreview', handles.get(oldFrontend.id), { provided: true }), false);
+  assert.deepEqual(h.selections, []);
+  assert.deepEqual(h.actions, []);
+});
+
+test('in-place input mutations do not hide a changed tree presentation', t => {
+  const h = fixture(t), changes = [];
+  h.tree.onDidChangeTreeData(value => changes.push(value));
+  const match = result('one');
+  h.tree.update(snapshot('find', [match]));
+  const current = h.flatten().find(node => node.result?.id === 'one');
+  changes.length = 0;
+  match.range.start.line = 99;
+  match.pending = true;
+  h.tree.update(snapshot('find', [match]));
+  assert.ok(changes[0].includes(h.tree.getParent(current)));
+  assert.equal(current.result.range.start.line, 4, 'input range mutation cannot rewrite an old row');
+  assert.match(h.tree.getTreeItem(h.flatten().at(-1)).description, /^100:19 · Checking/);
+  assert.match(h.tree.getTreeItem(h.tree.getChildren()[0]).description, /1 checking/);
+});
+
+test('opposite status changes retain provider objects and do not refresh unchanged ancestor counts', t => {
+  const h = fixture(t), changes = [];
+  h.tree.onDidChangeTreeData(value => changes.push(value));
+  const first = result('one', 'src/example.bl', { pending: true });
+  const second = result('two', 'src/example.bl');
+  h.tree.update(snapshot('find', [first, second]));
+  const nodes = h.flatten(), matches = nodes.filter(node => node.kind === 'match');
+  h.selectNative(matches[1]);
+  changes.length = 0;
+  h.tree.update(snapshot('find', [{ ...first, pending: false }, { ...second, pending: true, extraField: 'latest' }]));
+  assert.deepEqual(new Set(changes[0]), new Set(matches));
+  assert.equal(h.flatten().find(node => node.result?.id === 'two'), matches[1]);
+  assert.equal(matches[1].result.extraField, 'latest');
+  assert.equal(h.tree.state.selectedId, 'two');
+  assert.equal(h.tree.getChildren()[0].pending, 1);
+  changes.length = 0;
+  h.tree.update(snapshot('find', [{ ...first, pending: false }, { ...second, pending: true, extraField: 'new value' }]));
+  assert.deepEqual(changes, []);
+  assert.equal(matches[1].result.extraField, 'new value', 'nonvisual fields still receive the current result');
+});
+
+test('structural input changes and scope changes conservatively rebuild the tree', t => {
+  const h = fixture(t), changes = [];
+  h.tree.onDidChangeTreeData(value => changes.push(value));
+  const match = result('one', 'src/example.bl', { rootName: '' });
+  const state = snapshot('find', [match]);
+  h.tree.update(state);
+  let previous = h.flatten().find(node => node.kind === 'match');
+  changes.length = 0;
+  match.relativePath = 'other/example.bl'; // Mutate the previous input object itself.
+  h.tree.update(state);
+  assert.deepEqual(changes, [undefined]);
+  assert.notEqual(h.flatten().find(node => node.kind === 'match'), previous);
+  assert.equal(h.flatten().find(node => node.kind === 'directory').label, 'other');
+  previous = h.flatten().find(node => node.kind === 'match');
+  changes.length = 0;
+  h.tree.update({ ...state, scope: { kind: 'openEditors' } });
+  assert.deepEqual(changes, [undefined]);
+  assert.notEqual(h.flatten().find(node => node.kind === 'match'), previous);
+  assert.equal(h.tree.getChildren()[0].label, 'Open Editors');
+});
+
+test('in-place changes of grouping fields, result ID, and generation use a structural refresh', t => {
+  const h = fixture(t), changes = [];
+  h.tree.onDidChangeTreeData(value => changes.push(value));
+  const mutations = {
+    uri: 'file:///other/src/example.bl',
+    label: 'renamed.bl',
+    rootName: 'other-root',
+    id: 'other-id'
+  };
+  let generation = 0;
+  for (const [field, value] of Object.entries(mutations)) {
+    const match = result('one');
+    const state = snapshot('find', [match], { generation: ++generation });
+    h.tree.update(state);
+    const previous = h.flatten().find(node => node.kind === 'match');
+    changes.length = 0;
+    match[field] = value;
+    h.tree.update(state);
+    assert.deepEqual(changes, [undefined], `changed ${field} must invalidate the root`);
+    assert.notEqual(h.flatten().find(node => node.kind === 'match'), previous);
+  }
+  const previous = h.flatten().find(node => node.kind === 'match');
+  changes.length = 0;
+  h.tree.update({ ...h.tree.state, generation: ++generation });
+  assert.deepEqual(changes, [undefined]);
+  assert.notEqual(h.flatten().find(node => node.kind === 'match'), previous);
+});
+
+test('removal and reappearance of an ID rebuild nodes and do not restore a removed selection', t => {
+  const h = fixture(t), changes = [];
+  h.tree.onDidChangeTreeData(value => changes.push(value));
+  const first = result('one', 'src/one.bl'), second = result('two', 'src/two.bl');
+  h.tree.update(snapshot('find', [first, second]));
+  const original = h.flatten().find(node => node.result?.id === 'two');
+  h.selectNative(original);
+  changes.length = 0;
+  h.tree.update(snapshot('find', [first]));
+  assert.deepEqual(changes, [undefined]);
+  assert.equal(h.tree.state.selectedId, null);
+  changes.length = 0;
+  h.tree.update(snapshot('find', [first, { ...second }]));
+  const reappeared = h.flatten().find(node => node.result?.id === 'two');
+  assert.deepEqual(changes, [undefined]);
+  assert.notEqual(reappeared, original);
+  assert.equal(h.tree.state.selectedId, null);
+  changes.length = 0;
+  h.tree.update(snapshot('find', [first, { ...second, pending: true }]));
+  assert.ok(changes[0].includes(reappeared));
+  assert.equal(h.tree.getChildren()[0].pending, 1);
+  // Reusing an ID is not itself proof that a new semantic match is identical.
+});
+
+test('file identifiers are parent-qualified and duplicate result identifiers fail closed', async t => {
+  const h = fixture(t), changes = [];
+  h.tree.onDidChangeTreeData(value => changes.push(value));
+  const shared = result('one', 'src/example.bl');
+  // Two parents can contain different file objects with the same generated ID.
+  const collision = [shared, { ...shared, id: 'two', rootName: 'other-root' }];
+  h.tree.update(snapshot('find', collision));
+  assert.equal(h.tree.sessions.get('find').tree.unambiguous, true);
+  const files = h.flatten().filter(node => node.kind === 'file');
+  assert.equal(new Set(files.map(node => node.id)).size, 2);
+  changes.length = 0;
+  h.tree.update(snapshot('find', collision.map(row => ({ ...row }))));
+  assert.deepEqual(changes, [], 'unchanged parent-qualified groups can use the safe fast path');
+
+  const duplicate = [shared, { ...shared }];
+  h.tree.update(snapshot('find', duplicate, { generation: 4 }));
+  assert.equal(h.tree.sessions.get('find').tree.unambiguous, false);
+  assert.deepEqual(h.tree.getChildren(), []);
+  assert.match(h.view.message, /duplicate identifiers/);
+  assert.equal(await h.tree.action('focusPreview'), false);
+  assert.equal(await h.tree.select('find', 'one'), false);
+  assert.equal(await h.tree.action('refresh'), true, 'ambiguous input can still be explicitly rerun');
+  changes.length = 0;
+  h.tree.update(snapshot('find', duplicate.map(row => ({ ...row })), { generation: 4 }));
+  assert.deepEqual(changes, [undefined]);
+});
+
+test('structural changes and completion sorting refresh the native tree without losing selection', t => {
+  const h = fixture(t), changes = [];
+  h.tree.onDidChangeTreeData(value => changes.push(value));
+  const z = result('z', 'z.bl'), a = result('a', 'a.bl');
+  h.tree.update(snapshot('find', [z]));
+  h.selectNative(h.flatten().find(node => node.result?.id === 'z'));
+  changes.length = 0;
+  h.tree.update(snapshot('find', [z, a], { searching: true }));
+  assert.deepEqual(changes, [undefined], 'a batch changes the tree structure');
+  assert.deepEqual(h.flatten().filter(node => node.kind === 'match').map(node => node.result.id), ['z', 'a']);
+  changes.length = 0;
+  h.tree.update(snapshot('find', [a, z], { searching: false }));
+  assert.deepEqual(changes, [undefined], 'the deterministic completion sort changes the tree order');
+  assert.deepEqual(h.flatten().filter(node => node.kind === 'match').map(node => node.result.id), ['a', 'z']);
+  assert.equal(h.tree.state.selectedId, 'z');
+  const afterSort = h.flatten();
+  const aAfterSort = afterSort.find(node => node.result?.id === 'a');
+  changes.length = 0;
+  h.tree.update(snapshot('find', [{ ...a, invalid: true }, z], { searching: false }));
+  assert.ok(Array.isArray(changes[0]));
+  assert.ok(changes[0].includes(aAfterSort), 'status refresh after a structural change uses the new provider element');
+  assert.equal(h.tree.state.selectedId, 'z');
+  assert.match(h.tree.getTreeItem(h.tree.getChildren()[0]).description, /1 invalid/);
+});
+
+test('activating another existing session refreshes the visible tree even if its own structure is unchanged', t => {
+  const h = fixture(t), changes = [];
+  h.tree.onDidChangeTreeData(value => changes.push(value));
+  h.tree.update(snapshot('first'));
+  h.tree.update(snapshot('second', [result('two')]));
+  changes.length = 0;
+  h.tree.update(snapshot('second', [result('two')]), { activate: true });
+  assert.deepEqual(changes, [undefined]);
+  assert.equal(h.tree.activeId, 'second');
+});
+
+test('selecting, showing and navigating within the active session do not invalidate the tree root', async t => {
+  const h = fixture(t), changes = [];
+  h.tree.onDidChangeTreeData(value => changes.push(value));
+  h.tree.update(snapshot('first', [result('one', 'a.bl'), result('two', 'b.bl')], { mode: 'replace' }));
+  h.tree.update(snapshot('second', [result('other')]));
+  changes.length = 0;
+  assert.equal(await h.tree.selectSession('first'), true);
+  assert.equal(await h.tree.select('first', 'one'), true);
+  assert.equal(await h.tree.navigate(1), true);
+  assert.equal(await h.tree.show('first', { focus: false }), true);
+  assert.equal(await h.tree.action('replace'), true);
+  assert.deepEqual(changes, []);
+  assert.deepEqual(h.selections, [['first', 'one'], ['first', 'two']]);
+  assert.equal(h.tree.state.selectedId, 'two');
+  assert.equal(h.actions.at(-1)[1].id, 'two');
+  assert.equal(await h.tree.selectSession('second'), true);
+  assert.deepEqual(changes, [undefined], 'switching to a different session still refreshes the root');
 });
 
 test('remote resource paths and encoded filename characters remain intact without resolving icons', t => {
@@ -198,7 +496,7 @@ test('show and snapshot updates reveal native selection without opening an edito
   assert.equal(h.reveals.at(-1).node.result.id, 'one');
   assert.equal(h.reveals.at(-1).options.focus, false);
   let returned = false;
-  const selecting = h.v.commands.executeCommand(SELECT_COMMAND, 'session-one', 'one').then(() => { returned = true; });
+  const selecting = h.v.commands.executeCommand(SELECT_COMMAND, h.flatten().at(-1).action).then(() => { returned = true; });
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(returned, false);
   assert.deepEqual(h.selections, [['session-one', 'one']]);
@@ -260,7 +558,7 @@ test('native selection events synchronize controls and actions without activatin
   await h.tree.action('replace');
   assert.deepEqual(h.actions.at(-1), ['find', { type: 'replace', id: 'valid', generation: 3 }]);
   await h.tree.action('focusPreview');
-  assert.deepEqual(h.actions.at(-1), ['find', { type: 'openResult', id: 'valid' }]);
+  assert.deepEqual(h.actions.at(-1), ['find', { type: 'openResult', id: 'valid', generation: 3 }]);
   await h.tree.navigate(1);
   assert.deepEqual(h.selections.at(-1), ['find', 'next'], 'F4 starts from the actual native selection');
   assert.equal(h.view.selection[0].result.id, 'next');
@@ -316,21 +614,45 @@ test('replace actions retain generation and block invalid, pending, partial and 
   assert.equal(await h.tree.action('replace'), false);
 });
 
-test('toolbar actions use their own session and closing is delegated to controller', async t => {
+test('stale context actions cannot switch searches; toolbar lifecycle uses the active search', async t => {
   const h = fixture(t);
   h.tree.update(snapshot('first'));
   const first = h.flatten().at(-1);
   h.tree.update(snapshot('second', [result('two')]), { activate: true });
-  await h.tree.action('editSearch', first);
-  assert.deepEqual(h.actions.at(-1), ['first', { type: 'editSearch' }]);
-  assert.equal(h.tree.activeId, 'first');
-  await h.tree.action('focusPreview', first);
-  assert.deepEqual(h.actions.at(-1), ['first', { type: 'openResult', id: 'one' }]);
+  assert.equal(await h.tree.action('editSearch', first), false);
+  assert.equal(h.tree.activeId, 'second');
+  assert.equal(await h.tree.action('focusPreview', first), false);
+  assert.deepEqual(h.actions, []);
   await h.tree.action('close');
-  assert.deepEqual(h.actions.at(-1), ['first', { type: 'closeSearch' }]);
+  assert.deepEqual(h.actions.at(-1), ['second', { type: 'closeSearch' }]);
   assert.equal(h.tree.sessions.size, 2, 'controller owns the lifecycle; action itself cannot drop a search');
   h.tree.update(snapshot('first', []));
   assert.equal(await h.tree.action('replace', first), false);
+});
+
+test('switching, closing, and disposing multiple sessions release their provider-owned trees', async t => {
+  const h = fixture(t), changes = [];
+  h.tree.onDidChangeTreeData(value => changes.push(value));
+  for (const name of ['one', 'two', 'three'])
+    h.tree.update(snapshot(name, [result(`${name}-match`, `${name}.bl`)]));
+  assert.equal(h.tree.sessions.size, 3);
+  assert.equal(await h.tree.selectSession('two'), true);
+  assert.equal(h.tree.state.id, 'two');
+  changes.length = 0;
+  assert.equal(h.tree.remove('one'), true);
+  assert.equal(h.tree.sessions.has('one'), false);
+  assert.equal(h.tree.state.id, 'two');
+  assert.equal(h.tree.remove('two'), true);
+  assert.equal(h.tree.sessions.has('two'), false);
+  assert.equal(h.tree.state.id, 'three');
+  assert.ok(h.flatten().every(node => node.sessionId === 'three'));
+  assert.deepEqual(changes, [undefined, undefined]);
+  h.tree.dispose();
+  assert.equal(h.tree.sessions.size, 0);
+  assert.equal(h.tree.activeId, undefined);
+  assert.equal(h.tree.state, undefined);
+  assert.deepEqual(h.tree.getChildren(), []);
+  assert.equal(h.view.disposed, true);
 });
 
 test('a large native hierarchy is data only, and disposal releases provider/commands/session data', t => {
@@ -346,4 +668,172 @@ test('a large native hierarchy is data only, and disposal releases provider/comm
   assert.equal(h.tree.changeEmitter.disposed, true);
   assert.equal(h.v.commands.executeCommand(SELECT_COMMAND, 'large', 'row-1') instanceof Promise, true);
   assert.deepEqual(h.selections, []);
+});
+
+test('native commands carry a frozen full-manifest descriptor, not a mutable provider reference', async t => {
+  const h = fixture(t), sourceBinding = binding();
+  const state = snapshot('find', [result('one', 'a.js', { resultRevision: 7 })], {
+    mode: 'replace', actionBinding: sourceBinding
+  });
+  h.tree.update(state);
+  const node = h.flatten().at(-1), action = h.tree.getTreeItem(node).command.arguments[0];
+  assert.equal(Object.isFrozen(action), true);
+  assert.equal(Object.isFrozen(action.actionBinding), true);
+  assert.notEqual(action.actionBinding, sourceBinding);
+  sourceBinding.snapshotToken = 'mutated-after-publication';
+  assert.equal(action.actionBinding.snapshotToken, 'snapshot-one');
+  assert.equal(await h.v.commands.executeCommand(SELECT_COMMAND, action), true);
+  assert.deepEqual(h.selectionActions.at(-1), { generation: 3, resultRevision: 7,
+    actionBinding: binding() });
+  assert.equal(await h.tree.action('replace', node), true);
+  assert.deepEqual(h.actions.at(-1), ['find', { type: 'replace', id: 'one', generation: 3,
+    resultRevision: 7, actionBinding: binding() }]);
+  assert.equal(await h.tree.action('replaceAll', node), true);
+  assert.deepEqual(h.actions.at(-1)[1].actionBinding, binding());
+  await h.tree.action('replace');
+  assert.equal(Object.hasOwn(h.actions.at(-1)[1], 'actionBinding'), false,
+    'toolbar Single must use backend frozen review rather than borrowing a token');
+  await h.tree.action('replaceAll');
+  assert.equal(Object.hasOwn(h.actions.at(-1)[1], 'actionBinding'), false,
+    'toolbar All has no immutable client snapshot argument');
+});
+
+test('status-only refreshes keep provider identity and cannot upgrade a missing or stale action binding', async t => {
+  const h = fixture(t), changes = [];
+  h.tree.onDidChangeTreeData(value => changes.push(value));
+  const initial = snapshot('find', [result('one', 'a.js', { resultRevision: 1 })], {
+    mode: 'replace', actionBinding: binding()
+  });
+  h.tree.update(initial);
+  const node = h.flatten().at(-1), action = node.action, nativeId = h.tree.getTreeItem(node).id;
+  h.selectNative(node);
+  changes.length = 0;
+  h.tree.update({ ...initial, scopeStale: true, notice: 'Scope changed' });
+  assert.deepEqual(changes, []);
+  h.tree.update({ ...initial, actionBinding: null,
+    results: initial.results.map(row => ({ ...row, pending: true })) });
+  assert.equal(h.flatten().at(-1), node);
+  assert.equal(h.tree.getTreeItem(node).id, nativeId);
+  assert.equal(node.action, action);
+  assert.equal(h.tree.state.selectedId, 'one');
+  assert.equal(changes.some(value => value === undefined), false);
+  assert.equal(await h.tree.action('replace', node), false);
+  changes.length = 0;
+  h.tree.update({ ...initial, actionBinding: binding('find', { resultRevision: 2, snapshotToken: 'snapshot-two' }) });
+  const current = h.flatten().at(-1);
+  assert.notEqual(current, node);
+  assert.notEqual(h.tree.getTreeItem(current).id, nativeId);
+  assert.ok(changes[0].every(value => value.kind !== 'match'), 'new children refresh existing parents');
+  assert.equal(await h.tree.action('replace', node), false);
+  assert.equal(await h.tree.action('replace', current), true);
+  assert.equal(h.actions.at(-1)[1].actionBinding.snapshotToken, 'snapshot-two');
+});
+
+test('whole-manifest changes rotate row handles while a valid Single stays available beside INVALID', async t => {
+  const h = fixture(t);
+  const state = snapshot('find', [result('a', 'a.js'), result('b', 'b.js')], {
+    mode: 'replace', actionBinding: binding()
+  });
+  h.tree.update(state);
+  const oldA = h.flatten().find(node => node.result?.id === 'a');
+  h.tree.update({ ...state, actionBinding: binding('find', { snapshotToken: 'snapshot-two', resultRevision: 2 }),
+    results: [state.results[0], { ...state.results[1], invalid: true }] });
+  const a = h.flatten().find(node => node.result?.id === 'a');
+  assert.notEqual(a, oldA, 'a row descriptor names the full manifest, not only its own occurrence');
+  assert.equal(await h.tree.action('replace', oldA), false);
+  assert.equal(await h.tree.action('replace', a), true);
+  assert.equal(await h.tree.action('replaceAll', a), false);
+  assert.equal(h.tree.contextValues.get('canReplace'), true);
+});
+
+test('reset, reappearance and saved-session ABA never reuse an old native action handle', async t => {
+  const h = fixture(t);
+  const state = snapshot('first', [result('one')], { mode: 'replace', actionBinding: binding('first') });
+  h.tree.update(state);
+  const before = h.flatten().at(-1), action = before.action;
+  h.tree.update(snapshot('second'));
+  await h.tree.selectSession('second');
+  assert.equal(await h.tree.activate(action), false);
+  assert.equal(await h.tree.action('replace', before), false);
+  await h.tree.selectSession('first');
+  assert.equal(await h.tree.activate(action), false, 'switching back cannot revive an old handle');
+  assert.notEqual(h.flatten().at(-1).nativeId, before.nativeId);
+  const afterSwitch = h.flatten().at(-1);
+  h.tree.update({ ...state, generation: 4, actionBinding: binding('first', { generation: 4, snapshotToken: 'reset-token' }) });
+  assert.equal(await h.tree.activate(afterSwitch.action), false);
+  assert.equal(await h.tree.activate(action), false);
+  const afterReset = h.flatten().at(-1);
+  h.tree.remove('first');
+  h.tree.update({ ...state, generation: 4, actionBinding: binding('first', { generation: 4, snapshotToken: 'reset-token' }) }, { activate: true });
+  assert.equal(await h.tree.activate(afterReset.action), false, 'remove/reintroduce does not reuse even identical inputs');
+  assert.deepEqual(h.selections, []);
+  assert.deepEqual(h.actions, []);
+});
+
+test('delayed selection and replacement fail closed after a same-generation action revision', async t => {
+  const h = fixture(t), state = snapshot('find', [result('one', 'a.js', { resultRevision: 1 })], {
+    mode: 'replace', actionBinding: binding()
+  });
+  for (const type of ['select', 'replace', 'replaceAll', 'focusPreview']) {
+    h.tree.update(state);
+    const node = h.flatten().at(-1);
+    const operation = type === 'select' ? h.tree.activate(node.action) : h.tree.action(type, node);
+    h.tree.update({ ...state, results: [result('one', 'a.js', { resultRevision: 2 })],
+      actionBinding: binding('find', { resultRevision: 2, snapshotToken: 'snapshot-two' }) });
+    assert.equal(await operation, false, type);
+  }
+  assert.deepEqual(h.selections, []);
+  assert.deepEqual(h.actions, []);
+});
+
+test('malformed or mismatched backend descriptors cannot become a missing-binding review action', async t => {
+  const h = fixture(t);
+  for (const actionBinding of [binding('other'), binding('find', { generation: 2 }),
+    binding('find', { snapshotToken: '' }), binding('find', { resultRevision: -1 })]) {
+    h.tree.update(snapshot('find', [result()], { mode: 'replace', actionBinding }));
+    assert.equal(h.tree.actionsFor().canReplace, false);
+    assert.equal(h.tree.actionsFor().canReplaceAll, false);
+    assert.equal(await h.tree.action('replaceAll'), false);
+    assert.match(h.view.message, /action snapshot is invalid/);
+    h.tree.update(snapshot('other-session'));
+    await h.tree.selectSession('other-session');
+    await h.tree.selectSession('find');
+    assert.equal(await h.tree.action('replaceAll'), false,
+      'switching away and back cannot erase malformed-binding rejection');
+    assert.match(h.view.message, /action snapshot is invalid/);
+  }
+  assert.deepEqual(h.actions, []);
+});
+
+test('an in-place request change during an asynchronous toolbar boundary is refused', async t => {
+  const h = fixture(t);
+  for (const type of ['replace', 'replaceAll', 'refresh']) {
+    const state = snapshot('find', [result()], { mode: 'replace', actionBinding: binding() });
+    h.tree.update(state);
+    const operation = h.tree.action(type);
+    state.options.regex = true;
+    assert.equal(await operation, false, type);
+  }
+  assert.deepEqual(h.actions, []);
+});
+
+test('toolbar actions stay with the active session and closing is delegated to controller', async t => {
+  const h = fixture(t);
+  h.tree.update(snapshot('first'));
+  const first = h.flatten().at(-1);
+  h.tree.update(snapshot('second', [result('two')]), { activate: true });
+  assert.equal(await h.tree.action('editSearch', first), false, 'an explicit stale context cannot take toolbar ownership');
+  await h.tree.selectSession('first');
+  await h.tree.action('editSearch');
+  assert.deepEqual(h.actions.at(-1), ['first', { type: 'editSearch' }]);
+  const current = h.tree.sessions.get('first').tree.byResultId.get('one');
+  await h.tree.action('focusPreview', current);
+  assert.equal(h.actions.at(-1)[0], 'first');
+  assert.equal(h.actions.at(-1)[1].type, 'openResult');
+  assert.equal(h.actions.at(-1)[1].id, 'one');
+  await h.tree.action('closeSearch');
+  assert.deepEqual(h.actions.at(-1), ['first', { type: 'closeSearch' }]);
+  assert.equal(h.tree.sessions.size, 2, 'controller owns the lifecycle');
+  h.tree.update(snapshot('first', []));
+  assert.equal(await h.tree.action('replace', first), false);
 });
