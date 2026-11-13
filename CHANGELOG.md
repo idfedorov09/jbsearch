@@ -1,5 +1,47 @@
 # Changelog
 
+## 0.4.4 — pre-release preparation
+
+### Changed
+
+- Reduce the universal VSIX download by excluding the repository's demonstration
+  screenshots and GIF. The extension icon and runtime resources remain bundled;
+  README illustrations are loaded from HTTPS links when available.
+- Add a non-publishing build matrix for six platform-specific VSIX files and a
+  universal fallback. The existing Marketplace and Open VSX release routes still
+  publish only the universal package; platform-targeted gallery distribution
+  is not part of this pre-release.
+
+Search and replacement behavior, the extension ID, and the bundled client are
+unchanged. See the [pre-release notes](https://github.com/idfedorov09/jbsearch/blob/beta/docs/releases/v0.4.4-beta.md)
+and [packaging verification](https://github.com/idfedorov09/jbsearch/blob/beta/docs/testing/platform-packaging.md)
+for the Linux test and remaining Windows, macOS, and Remote boundaries.
+
+## 0.4.3 — 2026-11-13
+
+### Added
+
+- Configure replacement preparation with `jbsearch.replace.prepareTimeoutMs`.
+- Rerun a stale search from the modal and invoke Replace All from a match's
+  context menu.
+
+### Changed
+
+- Keep completed Find Panel results in a deterministic snapshot through
+  supported source changes; use **Rerun Search** to discover new matches.
+- Track occurrence identity and refuse stale, ambiguous, pending, or unverified
+  replacement actions. Replace All checks a fresh full-scope plan against the
+  reviewed snapshot before applying it.
+- Keep skipped-file warnings compact in the modal and retain bounded details in
+  **Open in Find Panel**. Binary detection remains heuristic.
+- Coalesce intermediate result updates and reduce replacement-plan processing
+  overhead without removing replacement safeguards.
+
+This stable release incorporates the 0.4.0 and 0.4.2 pre-release changes since
+0.3.2. The extension ID and bundled client 0.1.0 are unchanged. The issue #3
+Windows/WSL scenario and native VS Code acceptance of these changes remain
+unverified. See the [release notes](docs/releases/v0.4.3.md).
+
 ## 0.4.2 — pre-release preparation
 
 ### Changed
