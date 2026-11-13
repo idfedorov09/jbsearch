@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.4.4 — pre-release preparation
+
+### Changed
+
+- Reduce the universal VSIX download by excluding the repository's demonstration
+  screenshots and GIF. The extension icon and runtime resources remain bundled;
+  README illustrations are loaded from HTTPS links when available.
+- Add a non-publishing build matrix for six platform-specific VSIX files and a
+  universal fallback. The existing Marketplace and Open VSX release routes still
+  publish only the universal package; platform-targeted gallery distribution
+  is not part of this pre-release.
+
+Search and replacement behavior, the extension ID, and the bundled client are
+unchanged. See the [pre-release notes](https://github.com/idfedorov09/jbsearch/blob/beta/docs/releases/v0.4.4-beta.md)
+and [packaging verification](https://github.com/idfedorov09/jbsearch/blob/beta/docs/testing/platform-packaging.md)
+for the Linux test and remaining Windows, macOS, and Remote boundaries.
+
 ## 0.4.3 — 2026-11-13
 
 ### Added
