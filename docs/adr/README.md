@@ -23,6 +23,7 @@ in full here.
 | [0015](0015-beta-push-publication.md) | Accepted | Verified beta-push publication to both registries |
 | [0016](0016-search-presentation-and-approval-cost.md) | Accepted | Coalesce result presentation and reduce approval costs without weakening replacement safety |
 | [0017](0017-platform-specific-packaging.md) | Accepted | Platform-specific VSIX builds and universal fallback without publication changes |
+| [0018](0018-platform-gallery-publication.md) | Accepted for local implementation | Verified platform matrix publication with partial-failure reporting |
 
 Statuses: Proposed — under discussion; Accepted — adopted; Superseded — replaced
 by another ADR; Rejected — considered and rejected. Accepted does not mean the code

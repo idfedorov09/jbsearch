@@ -1,5 +1,8 @@
 # ADR 0009: Manual Open VSX publication with a trusted-publishing transition
 
+> [ADR 0018](0018-platform-gallery-publication.md) records the later locally
+> prepared target-aware publication design. This ADR retains its historical scope.
+
 > ADR 0015 records the later, explicitly authorized beta-push exception. The
 > stable publication routes described here remain unchanged.
 

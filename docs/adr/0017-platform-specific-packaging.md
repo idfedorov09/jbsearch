@@ -1,5 +1,8 @@
 # ADR 0017: Platform-specific VSIX packages with a universal fallback
 
+> [ADR 0018](0018-platform-gallery-publication.md) records the later locally
+> prepared target-aware publication design. This ADR retains its historical scope.
+
 - Status: Accepted
 - Date: 2026-11-13
 - Relates to: [ADR 0003](0003-search-engine-and-session.md),

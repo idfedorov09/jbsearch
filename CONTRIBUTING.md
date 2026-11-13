@@ -84,9 +84,10 @@ not overwritten. The matrix consists of `win32-x64`, `win32-arm64`,
 `darwin-x64`, `darwin-arm64`, `linux-x64`, `linux-arm64`, and a universal
 fallback. It retains the extension ID, source version, and bundled UI client.
 Neither these commands nor the separate GitHub Actions build matrix publish to
-either registry. The matrix is not a gate for the existing publication routes,
-which still use their existing universal artifact. Modifying those routes or
-publishing platform-specific packages requires separate authorization.
+either registry. The build-only workflow is not a publication gate; the
+publication jobs build their own verified matrices.
+Building artifacts never publishes them. Committing, transferring branches,
+and publishing any release each require separate authorization.
 
 Select the VSIX for the **workspace extension host**, not necessarily the local
 UI host: in Remote SSH, WSL, or a container that can be the remote environment.

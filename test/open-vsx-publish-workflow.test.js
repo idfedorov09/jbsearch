@@ -41,32 +41,27 @@ test('Open VSX checks and authentication jobs enforce actual event, ref and repo
   assert.doesNotMatch(header, /^  (?:pull_request|schedule|workflow_call):/m);
 });
 
-test('validation, reproducible beta packaging and verification gate both publication routes', () => {
+test('checks, reproducible timestamps and verified matrix builds gate both publication modes', () => {
   const commands = ['npm ci --ignore-scripts', 'npm run check', 'npm test', 'npm run spec:check'];
   let previous = -1;
   for (const command of commands) {
     const index = jobs.check.indexOf(`- run: ${command}`, previous + 1);
     assert.ok(index > previous); previous = index;
   }
-  for (const mode of ['token', 'trusted']) {
-    const job = jobs[`publish-${mode}`];
-    assert.match(job, /^    needs: check\s*$/m);
-    assert.match(job, /^    environment: open-vsx\s*$/m);
-    assert.ok(job.indexOf('npm ci --ignore-scripts') < job.indexOf('npm run package'));
-    const publishCommand = mode === 'token' ? 'node scripts/publish-open-vsx.js' : './node_modules/.bin/ovsx --registryUrl https://open-vsx.org publish';
-    assert.ok(job.indexOf('npm run package') < job.indexOf(publishCommand));
-  }
-  for (const job of [jobs.check, jobs['publish-token']]) {
+  for (const name of ['check', 'publish-token', 'publish-trusted']) {
+    const job = jobs[name];
+    if (name !== 'check') {
+      assert.match(job, /^    needs: check\s*$/m);
+      assert.match(job, /^    environment: open-vsx\s*$/m);
+    }
     assert.ok(job.indexOf('SOURCE_DATE_EPOCH=') > job.indexOf('npm ci --ignore-scripts'));
-    assert.ok(job.indexOf('SOURCE_DATE_EPOCH=') < job.indexOf('run: npm run package:pre-release'));
+    assert.ok(job.indexOf('SOURCE_DATE_EPOCH=') < job.indexOf('run: npm run package:matrix'));
     assert.match(job, /git show -s --format=%ct "\$GITHUB_SHA"/);
+    if (name !== 'check') assert.ok(job.indexOf('run: npm run package:matrix') < job.indexOf('node scripts/publish-platforms.js'));
   }
   const token = jobs['publish-token'];
-  assert.match(token, /- name: Publish verified stable VSIX with bootstrap token\s*\n\s+if: github\.ref == 'refs\/heads\/master'/);
-  assert.match(token, /- name: Publish and verify pre-release with token\s*\n\s+if: github\.ref == 'refs\/heads\/beta'/);
-  const beta = token.indexOf('node scripts/publish-open-vsx.js "$package" --skip-duplicate');
-  assert.ok(beta >= 0 && token.indexOf('node scripts/verify-published-beta.js open-vsx "$package"') > beta);
-  assert.doesNotMatch(token, /ovsx[^\n]*--pre-release/);
+  assert.match(token, /if: github\.ref == 'refs\/heads\/master'[\s\S]+?node scripts\/publish-platforms\.js open-vsx stable token/);
+  assert.match(token, /if: github\.ref == 'refs\/heads\/beta'[\s\S]+?node scripts\/publish-platforms\.js open-vsx pre-release token/);
   assert.equal(manifest.devDependencies.ovsx, '1.3.0');
   assert.equal(lockfile.packages['node_modules/ovsx'].version, '1.3.0');
   assert.equal(lockfile.packages['node_modules/@vscode/vsce'].version, '4.1.0');
@@ -81,7 +76,7 @@ test('the beta token route is explicit, master trusted mode is preserved, and ne
   assert.equal((token.match(/OVSX_PAT: \$\{\{ secrets\.OVSX_PAT \}\}/g) || []).length, 2);
   assert.equal((token.match(/if \[ -z "\$OVSX_PAT" \]/g) || []).length, 2);
   assert.match(trusted, /^    permissions:\s*\n      contents: read\s*\n      id-token: write\s*$/m);
-  assert.match(trusted, /publish "\$package" --trusted-publishing/);
+  assert.match(trusted, /node scripts\/publish-platforms\.js open-vsx stable trusted/);
   assert.doesNotMatch(trusted, /OVSX_PAT|secrets\./);
   assert.doesNotMatch(workflow, /npm version|git (?:push|tag|commit)/);
 });

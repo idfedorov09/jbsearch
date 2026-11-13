@@ -61,9 +61,10 @@ The new GitHub Actions workflow is configured to build each target in a separate
 uploads the verified VSIX as a run artifact. Automated tests exercise its
 branch/channel selection and isolation, but this workflow has not been run on
 GitHub as part of this local verification. Its results are not a publication
-gate. The existing publication workflows and registry routes were not changed:
-they continue to build and publish their existing universal package. No package
-was published to Marketplace or Open VSX by these checks.
+gate. At the time of these checks, the publication workflows were unchanged and
+published only the universal package. The later target-aware workflow is a
+separate change documented in [ADR 0018](../adr/0018-platform-gallery-publication.md).
+No package was published to Marketplace or Open VSX by these local checks.
 
 ## Installed VSIX checks: Linux x64, 2026-11-13
 
@@ -92,6 +93,10 @@ CLI/editor version, not for other editors or gallery selection. Choose the
 VSIX for the workspace host, or the universal fallback, rather than relying on
 an incompatible manual installation being rejected. All three checks used
 local artifacts; none published or contacted a gallery for installation.
+
+The later target-aware workflow preparation and its independent local build
+checks are recorded in [platform publication validation](platform-publication.md).
+Those checks did not publish the matrix.
 
 ## Manual and external checks still pending
 
