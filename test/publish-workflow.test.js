@@ -42,7 +42,7 @@ test('a dev-to-beta pull request runs the ordinary checks without triggering pub
   assert.ok(validationWorkflow.indexOf('SOURCE_DATE_EPOCH=') < validationWorkflow.indexOf('- run: npm run package'));
 });
 
-test('checks gate publication, and beta build timestamps precede both package builds', () => {
+test('checks gate publication and commit timestamp precedes both channel matrix builds', () => {
   const commands = ['npm ci --ignore-scripts', 'npm run check', 'npm test', 'npm run spec:check'];
   let previous = -1;
   for (const command of commands) {
@@ -53,26 +53,23 @@ test('checks gate publication, and beta build timestamps precede both package bu
   for (const name of ['check', 'publish']) {
     const job = jobs[name];
     assert.ok(job.indexOf('SOURCE_DATE_EPOCH=') > job.indexOf('npm ci --ignore-scripts'));
-    assert.ok(job.indexOf('SOURCE_DATE_EPOCH=') < job.indexOf('run: npm run package:pre-release'));
+    assert.ok(job.indexOf('SOURCE_DATE_EPOCH=') < job.indexOf('run: npm run package:matrix'));
     assert.match(job, /git show -s --format=%ct "\$GITHUB_SHA"/);
-    assert.match(job, /if: github\.ref == 'refs\/heads\/master'\s*\n\s+run: npm run package\s*$/m);
-    assert.match(job, /if: github\.ref == 'refs\/heads\/beta'\s*\n\s+run: npm run package:pre-release\s*$/m);
+    assert.match(job, /if: github\.ref == 'refs\/heads\/master'\s*\n\s+run: npm run package:matrix -- --out-dir/);
+    assert.match(job, /if: github\.ref == 'refs\/heads\/beta'\s*\n\s+run: npm run package:matrix -- --pre-release --out-dir/);
   }
   assert.equal(manifest.scripts.package, 'npm run prepare:client && vsce package && node scripts/verify-package.js');
   assert.equal(manifest.scripts['package:pre-release'], 'npm run prepare:client && vsce package --pre-release && node scripts/verify-package.js && node scripts/verify-release-channel.js pre-release');
 });
 
-test('stable OIDC behavior is preserved and beta duplicate success requires exact remote verification', () => {
+test('stable and beta retain OIDC, environment, and require matrix publication with exact checks', () => {
   assert.match(header, /^permissions:\s*\n  contents: read\s*$/m);
   assert.doesNotMatch(jobs.check, /id-token:\s*write|secrets\./);
   assert.match(jobs.publish, /^    environment: marketplace\s*$/m);
   assert.match(jobs.publish, /^    permissions:\s*\n      contents: read\s*\n      id-token: write\s*$/m);
   assert.doesNotMatch(workflow, /VSCE_PAT|--pat(?:\s|=)|secrets\./);
-  assert.match(jobs.publish, /if: github\.ref == 'refs\/heads\/master'\s*\n\s+run: \.\/node_modules\/\.bin\/vsce publish --oidc --skip-duplicate --packagePath \.\/\*\.vsix/m);
-  assert.match(jobs.publish, /- name: Publish and verify pre-release\s*\n\s+if: github\.ref == 'refs\/heads\/beta'/);
-  const beta = jobs.publish.indexOf('vsce publish --oidc --pre-release --skip-duplicate --packagePath "$package"');
-  const verify = jobs.publish.indexOf('node scripts/verify-published-beta.js marketplace "$package"');
-  assert.ok(beta >= 0 && verify > beta, 'beta verification must follow publication including a duplicate skip');
-  assert.doesNotMatch(jobs.publish, /npm version|git (?:push|tag|commit)/);
+  assert.match(jobs.publish, /if: github\.ref == 'refs\/heads\/master'\s*\n\s+run: node scripts\/publish-platforms\.js marketplace stable oidc/);
+  assert.match(jobs.publish, /if: github\.ref == 'refs\/heads\/beta'\s*\n\s+run: node scripts\/publish-platforms\.js marketplace pre-release oidc/);
+  assert.doesNotMatch(jobs.publish, /npm version|git (?:push|tag|commit)|\.\/\*\.vsix/);
   assert.match(header, /^concurrency:\s*\n  group: marketplace-publication\s*\n  queue: max\s*$/m);
 });

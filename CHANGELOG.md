@@ -1,5 +1,75 @@
 # Changelog
 
+## 0.4.7 — 2026-11-14
+
+### Changed
+
+- Distribute smaller platform-specific VSIX packages for Windows, macOS and
+  Linux on x64 and ARM64, alongside a universal fallback. The icon and
+  required runtime resources remain bundled.
+- Preflight all packages and verify each gallery's exact extension identity,
+  version, target, channel and SHA-256. Publication reports partial or
+  uncertain outcomes instead of accepting an unverified duplicate.
+- Allow bounded registry verification to overlap sequential platform uploads,
+  and expose safe process and retry timing for publication diagnostics.
+
+This stable release promotes the distribution changes from pre-releases 0.4.4,
+0.4.5 and 0.4.6. Search and replacement behavior, the extension ID and the
+bundled client source and protocol are unchanged. Local packaging and registry
+checks do not establish platform-specific client selection or native execution
+on untested systems. See the [release notes](docs/releases/v0.4.7.md).
+
+## 0.4.6 — pre-release preparation
+
+### Changed
+
+- Retain universal-first confirmation and sequential platform uploads while
+  allowing bounded, exact registry checks to overlap later uploads.
+- Distinguish publisher completion from registry verification, report safe
+  retry categories, and account for every target after a partial failure.
+- Require an explicit Marketplace publisher acknowledgement and resolve failed
+  or conflicting upload attempts through an exact record and digest check.
+
+This is a publication-workflow change relative to pre-release 0.4.5, without a
+change to search or replacement behavior. The actual time saving depends on the
+registries and has not been established by local tests. See the
+[pre-release notes](https://github.com/idfedorov09/jbsearch/blob/beta/docs/releases/v0.4.6-beta.md)
+for validation and remaining limits.
+
+## 0.4.5 — pre-release preparation
+
+### Changed
+
+- Prepare the Marketplace and Open VSX publication routes to distribute six
+  platform-specific VSIX files for Windows, macOS, and Linux on x64 and ARM64,
+  with a universal fallback retaining the existing ripgrep binary inventory.
+- Verify each target's identity, version, release channel, and SHA-256 after
+  publication, and report partial or uncertain publication rather than treating
+  a skipped duplicate as proof of success.
+
+This is a distribution change relative to pre-release 0.4.4; search and
+replacement behavior, the extension ID, and the bundled client source and
+protocol are unchanged. Platform gallery publication and client selection still
+require their own checks. See the [pre-release notes](https://github.com/idfedorov09/jbsearch/blob/beta/docs/releases/v0.4.5-beta.md)
+for release and platform-testing boundaries.
+
+## 0.4.4 — pre-release preparation
+
+### Changed
+
+- Reduce the universal VSIX download by excluding the repository's demonstration
+  screenshots and GIF. The extension icon and runtime resources remain bundled;
+  README illustrations are loaded from HTTPS links when available.
+- Add a non-publishing build matrix for six platform-specific VSIX files and a
+  universal fallback. The existing Marketplace and Open VSX release routes still
+  publish only the universal package; platform-targeted gallery distribution
+  is not part of this pre-release.
+
+Search and replacement behavior, the extension ID, and the bundled client are
+unchanged. See the [pre-release notes](https://github.com/idfedorov09/jbsearch/blob/beta/docs/releases/v0.4.4-beta.md)
+and [packaging verification](https://github.com/idfedorov09/jbsearch/blob/beta/docs/testing/platform-packaging.md)
+for the Linux test and remaining Windows, macOS, and Remote boundaries.
+
 ## 0.4.3 — 2026-11-13
 
 ### Added

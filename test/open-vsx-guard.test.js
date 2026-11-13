@@ -15,10 +15,10 @@ const manifest = require('../package.json');
 const runner = path.join(__dirname, 'helpers/guarded-ovsx-runner.js');
 const marker = 'synthetic-private-test-marker';
 
-async function fixture(t) {
+async function fixture(t, target) {
   const directory = await fsp.mkdtemp(path.join(os.tmpdir(), 'jbsearch-guarded-ovsx-'));
   t.after(() => fsp.rm(directory, { recursive: true, force: true }));
-  const filename = path.join(directory, `${manifest.name}-${manifest.version}.vsix`);
+  const filename = path.join(directory, `${manifest.name}-${manifest.version}${target ? `-${target}` : ""}.vsix`);
   const zip = new ZipFile();
   zip.addBuffer(Buffer.from(JSON.stringify({ publisher: manifest.publisher, name: manifest.name, version: manifest.version })), 'extension/package.json');
   zip.end(); await pipeline(zip.outputStream, fs.createWriteStream(filename));
@@ -60,9 +60,9 @@ async function mockRegistry(t, mode) {
   return { url: `http://127.0.0.1:${server.address().port}`, requests };
 }
 
-function runCli(registry, filename) {
+function runCli(registry, filename, skipDuplicate = true) {
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [runner, registry, filename, '--skip-duplicate'], {
+    const child = spawn(process.execPath, [runner, registry, filename, ...(skipDuplicate ? ['--skip-duplicate'] : [])], {
       env: { PATH: process.env.PATH, HOME: os.tmpdir(), CI: 'true', OVSX_PAT: marker },
     });
     let output = '';
@@ -81,6 +81,27 @@ test('modern registry uses the actual CLI with header-only PAT and exact VSIX by
   assert.ok(publish); assert.equal(publish.auth, `Bearer ${marker}`);
   assert.deepEqual(publish.body, await fsp.readFile(filename));
   assert.equal(registry.requests.some(request => request.tokenQuery), false);
+  assert.doesNotMatch(result.output, /synthetic-private-test-marker/);
+});
+
+for (const target of ['universal', 'win32-x64', 'win32-arm64', 'darwin-x64', 'darwin-arm64', 'linux-x64', 'linux-arm64']) {
+  test(`allowlisted ${target} filename keeps the CLI token guard`, async t => {
+    const filename = await fixture(t, target); const registry = await mockRegistry(t, 'modern');
+    const result = await runCli(registry.url, filename);
+    assert.equal(result.code, 0, result.output);
+    const publish = registry.requests.find(request => request.pathname === '/api/-/publish');
+    assert.ok(publish); assert.equal(publish.auth, `Bearer ${marker}`);
+    assert.deepEqual(publish.body, await fsp.readFile(filename));
+    assert.equal(registry.requests.some(request => request.tokenQuery), false);
+    assert.doesNotMatch(result.output, /synthetic-private-test-marker/);
+  });
+}
+
+test('unknown matrix filename is rejected before contacting the registry', async t => {
+  const filename = await fixture(t, 'linux-unknown'); const registry = await mockRegistry(t, 'modern');
+  const result = await runCli(registry.url, filename);
+  assert.notEqual(result.code, 0);
+  assert.equal(registry.requests.length, 0);
   assert.doesNotMatch(result.output, /synthetic-private-test-marker/);
 });
 
@@ -121,6 +142,24 @@ test('a duplicate CLI skip does not claim remote identity or hash verification',
   assert.equal(result.code, 0, result.output);
   assert.match(result.output, /verify the exact registry version separately/);
   assert.equal(registry.requests.some(request => request.tokenQuery), false);
+});
+
+test('without duplicate skipping the guarded CLI reports a duplicate as failure', async t => {
+  const filename = await fixture(t); const registry = await mockRegistry(t, 'duplicate');
+  const result = await runCli(registry.url, filename, false);
+  assert.notEqual(result.code, 0, result.output);
+  assert.equal(registry.requests.filter(request => request.pathname === '/api/-/publish').length, 1);
+  assert.doesNotMatch(result.output, /synthetic-private-test-marker|raw-url|\?token=/);
+});
+
+test('without duplicate skipping the guarded CLI still publishes using its token guard', async t => {
+  const filename = await fixture(t); const registry = await mockRegistry(t, 'modern');
+  const result = await runCli(registry.url, filename, false);
+  assert.equal(result.code, 0, result.output);
+  const request = registry.requests.find(item => item.pathname === '/api/-/publish');
+  assert.equal(request.auth, `Bearer ${marker}`);
+  assert.equal(registry.requests.some(item => item.tokenQuery), false);
+  assert.doesNotMatch(result.output, /synthetic-private-test-marker/);
 });
 
 test('CLI errors are sanitized even if registry error text echoes the credential', async t => {

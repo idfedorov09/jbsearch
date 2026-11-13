@@ -1,0 +1,66 @@
+name: Build Platform Packages
+
+on:
+  push:
+    branches: [dev, master, beta]
+  pull_request:
+    branches: [dev, master, beta]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [win32-x64, win32-arm64, darwin-x64, darwin-arm64, linux-x64, linux-arm64, universal]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Select build channel
+        id: channel
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          SOURCE_REF: ${{ github.ref }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          if [[ "$SOURCE_REF" == 'refs/heads/beta' || ( "$EVENT_NAME" == 'pull_request' && "$BASE_REF" == 'beta' ) ]]; then
+            epoch="$(git show -s --format=%ct "$GITHUB_SHA")"
+            case "$epoch" in
+              ''|*[!0-9]*)
+                printf '%s\n' '::error::Commit timestamp must be nonempty and numeric.' >&2
+                exit 1
+                ;;
+            esac
+            printf 'SOURCE_DATE_EPOCH=%s\n' "$epoch" >> "$GITHUB_ENV"
+            printf 'channel=pre-release\n' >> "$GITHUB_OUTPUT"
+          else
+            printf 'channel=stable\n' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Build stable package
+        if: steps.channel.outputs.channel == 'stable'
+        env:
+          PACKAGE_TARGET: ${{ matrix.target }}
+        run: npm run package:matrix -- --target "$PACKAGE_TARGET" --out-dir "$RUNNER_TEMP/jbsearch-packages"
+      - name: Build pre-release package
+        if: steps.channel.outputs.channel == 'pre-release'
+        env:
+          PACKAGE_TARGET: ${{ matrix.target }}
+        run: npm run package:matrix -- --target "$PACKAGE_TARGET" --pre-release --out-dir "$RUNNER_TEMP/jbsearch-packages"
+      - name: Upload verified package
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: jbsearch-${{ steps.channel.outputs.channel }}-${{ matrix.target }}-${{ github.sha }}
+          path: ${{ runner.temp }}/jbsearch-packages/*.vsix
+          if-no-files-found: error
+          compression-level: 0

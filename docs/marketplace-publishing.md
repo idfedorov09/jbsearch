@@ -41,26 +41,49 @@ is not needed. Do not substitute another publisher on an access failure.
 
 ## Package and verify
 
-Both routes run install, code checks, tests, strict OpenSpec validation, and
-packaging before publication. The separate publishing runner rebuilds and checks
-its own main VSIX, including its nested UI client and runtime resources. Stable
-packaging uses `npm run package`. The beta route sets `SOURCE_DATE_EPOCH` from
-the triggering commit before running `npm run package:pre-release`; this builds
-the outer VSIX with the pre-release marker, checks its contents and identity,
-and verifies the marker before passing the finished file to `vsce`. A failed
-commit lookup or an empty or nonnumeric timestamp stops the job before packaging.
+The target-aware workflow prepared on `dev` validates source, tests, strict
+OpenSpec, and a complete package matrix before publication. The separate
+publishing runner rebuilds the same seven verified artifacts. Both stable and
+beta routes set `SOURCE_DATE_EPOCH` from the checked-out commit before preparing
+the nested client and outer VSIX files. The nested client cache is rebuilt when
+the epoch changes. A failed lookup or an empty or nonnumeric timestamp stops
+packaging. This assumes clean build inputs, identical pinned
+dependencies, Node and tooling; the timestamp alone cannot guarantee equality.
 
-The beta job uses the prebuilt file and verifies the registry's exact ID,
-version, pre-release marker, and SHA-256 after publication or a duplicate skip.
-A `--skip-duplicate` result alone does not establish that the existing version
-contains the intended bytes. Bounded retries account for propagation. A mismatch
-or unavailable response fails the job, and publication may already have
-occurred; investigate the immutable artifact and run before retrying. Do not
-replace, unpublish, force, or change publisher as a recovery shortcut. Bytewise
-reproducibility assumes the same source, pinned tools, and clean build inputs.
+For either channel, publication preflights every file and uses OIDC to publish
+universal first. It must verify that exact universal record before uploading
+`win32-x64`, `win32-arm64`, `darwin-x64`, `darwin-arm64`, `linux-x64`, and
+`linux-arm64`, one upload at a time. Their exact checks can overlap later
+uploads; the shared limit is three simultaneous verification attempts, including
+response consumption, and does not occupy a slot during retry delays. Every
+target must match the Marketplace ID, version, target, channel, validated flag
+and SHA-256 before the matrix succeeds. Bounded retries allow for propagation.
 
-The stable route retains its previous duplicate-skip behavior and does not gain
-a new stable publishing trigger. Neither route creates commits, tags, or releases.
+Matrix uploads do not use `--skip-duplicate`: a duplicate or any other failed
+or inconclusive upload blocks the next write until the exact record is confirmed.
+The pinned `vsce` CLI can report a cancellation with exit code zero, so the
+Marketplace publisher uses its public `publishVSIX` API in a child process and
+requires an explicit acknowledgement after the API resolves. A process exit
+alone never proves the final registry record. In the 0.4.6 beta, this loop ran
+in about 13 minutes versus about 45 minutes for the prior 0.4.5 run. These are
+individual observations, not a guarantee of future latency; the gallery controls
+its own processing.
+
+### Partial failure and retry
+
+Publishing seven files is not atomic. A failed job may already have published
+multiple uncertain targets as well as confirmed targets. A failure discovered
+during an upload cannot cancel it safely; started checks are drained and the
+log lists confirmed, uncertain and not-attempted targets. Publisher completion
+and verification times are separate; neither is a measurement of registry-only
+processing. Preserve the commit, package digests and
+run output, inspect each exact target in both registries, and allow for metadata
+propagation before deciding whether to retry. A retry must rebuild the same
+bytes and verify every duplicate's hash and channel; a mismatch stops the run.
+Do not overwrite, unpublish, force, switch publisher or silently reuse a
+published version as a shortcut. A new release number and any rerun capable of
+publication require separate authorization. Existing event guards and protected
+environments still apply, and no commits, tags or releases are created.
 
 ## External checks
 

@@ -1,5 +1,8 @@
 # ADR 0015: Verified beta-push publication
 
+> [ADR 0018](0018-platform-gallery-publication.md) records the later locally
+> prepared target-aware publication design. This ADR retains its historical scope.
+
 - Status: Accepted
 - Date: 2026-11-12
 - Amends: [ADR 0005](0005-marketplace-trusted-publishing.md),

@@ -31,34 +31,55 @@ in source, command arguments, logs, screenshots, or issue comments.
 
 ## Package and publication checks
 
-Each route validates, prepares the nested client, builds the main VSIX and checks
-its contents on the publishing runner. The beta route first fixes
-`SOURCE_DATE_EPOCH` to the triggering commit timestamp, then builds the outer
-package with `vsce package --pre-release` and verifies its ID, numeric version,
-and pre-release XML marker. A failed commit lookup or an empty or nonnumeric
-timestamp stops the job before packaging. `ovsx` ignores `--pre-release` for an already
-packaged VSIX, so adding the flag at upload time cannot repair an unmarked file.
+The target-aware workflow prepared on `dev` validates a complete matrix, then
+rebuilds and verifies all seven packages on the publishing runner. Before
+preparing either the nested client or outer files, both channels set
+`SOURCE_DATE_EPOCH` from the checked-out commit; a failed or malformed lookup
+stops the build, and the nested client cache is rebuilt if its epoch differs.
+Bytewise reproduction also depends on the same clean inputs,
+Node and pinned tools. `ovsx` ignores `--pre-release` for a prebuilt VSIX: the
+marker must already be present and checked in the archive.
 
-The token routes run the pinned `ovsx` CLI through a process-local HTTP/HTTPS
-credential guard. The CLI can otherwise fall back to sending a token in the URL
-query when its registry-version request fails. The guard accepts only the
-expected request form, the fixed `https://open-vsx.org` origin, and the safe
-size-limit query; it rejects token/userinfo URLs, cross-origin redirects, and
-unknown forms before sending. CLI messages are suppressed because registry
-responses can echo credentials. An outage or protocol change can therefore
-produce a generic failure: investigate without logging the token and do not
-bypass the guard. Synthetic-token local tests are not proof of a real upload.
-The `master` trusted job remains separate and does not read `OVSX_PAT`. It is
-unchanged by this beta work and is not covered by the token-route guard; the
-pinned CLI's version-failure URL fallback can also affect an exchanged temporary
-publishing token. Do not infer that this separate route was hardened or tested.
+Each eligible route preflights all files, publishes universal and verifies its
+exact record, then uploads the six platform files sequentially. Exact checks
+for the platform files may overlap later uploads; at most three verification
+attempts are in flight, including response consumption, and a retry sleep does
+not occupy a slot. Every record must match the registry identity, version,
+target, channel and SHA-256. A universal fallback cannot satisfy a platform
+check. Bounded retries allow for propagation, and the matrix succeeds only
+after every target is confirmed.
 
-The beta job verifies the exact public version, `preRelease` flag, and VSIX
-SHA-256 after publication or a duplicate skip. A skipped duplicate alone is not
-success. Bounded retries address propagation; on mismatch or timeout the job
-fails even though the upload may have occurred. Preserve the artifact and run
-record and investigate instead of unpublishing, overwriting, or using a different
-publisher. Stable token/trusted jobs retain their prior duplicate-error behavior.
+Matrix uploads do not use `--skip-duplicate`: a duplicate or another failed or
+inconclusive upload blocks the next write until its exact record is confirmed.
+The 0.4.6 beta loop ran in about 4 minutes 10 seconds versus about 17 minutes
+for the preceding 0.4.5 run. These individual observations do not guarantee
+future latency or imply that gallery processing itself was accelerated.
+
+The token routes run pinned `ovsx` through a process-local HTTP/HTTPS credential
+guard. The CLI can otherwise fall back to a token-bearing URL query when its
+registry-version request fails. The guard permits only the expected request
+form, the fixed `https://open-vsx.org` origin and safe size-limit query, and
+rejects token/userinfo URLs, cross-origin redirects and unknown forms. CLI
+messages are suppressed because a registry response could echo credentials.
+An outage or protocol change may therefore give a generic failure: investigate
+without logging the token and never bypass the guard. Synthetic-token local
+tests are not real publication evidence. The separate master trusted route does
+not read `OVSX_PAT` and remains outside this guard; the pinned CLI's fallback can
+also affect its exchanged temporary token, so that route is not represented as
+hardened.
+
+### Partial failure and retry
+
+The matrix is not atomic. A failure discovered during a later upload cannot
+safely cancel it, and multiple targets may be uncertain. The run drains started
+checks and reports confirmed, uncertain and unattempted targets. Publisher
+completion and verification times are distinct; neither isolates registry-only
+processing. Preserve the exact commit, package digests
+and logs, inspect each target on both registries and allow for propagation before
+choosing a recovery. A retry must rebuild identical bytes and verify each
+duplicate's target, channel and hash. A mismatch or timeout is a failure, not
+permission to overwrite, unpublish, change publisher, or hide a conflict. A new
+release number and any rerun capable of publication require separate approval.
 
 ## Registry `latest` and version ordering
 

@@ -20,10 +20,15 @@ async function main() {
     digest.update(dependency).update(installed.version);
   }
   const build = digest.digest('hex');
+  // A nested VSIX generated under a different timestamp cannot be reused for
+  // a reproducible release, even when its client source digest is unchanged.
+  const sourceDateEpoch = process.env.SOURCE_DATE_EPOCH || null;
+  if (sourceDateEpoch !== null && !/^[0-9]+$/.test(sourceDateEpoch))
+    throw new Error('SOURCE_DATE_EPOCH must be numeric when set');
   await fs.mkdir(output, { recursive: true });
   try {
     const existing = JSON.parse(await fs.readFile(path.join(output, 'client.json'), 'utf8'));
-    if (existing.build === build) {
+    if (existing.build === build && (existing.sourceDateEpoch ?? null) === sourceDateEpoch) {
       await fs.access(path.join(output, 'jbsearch-client.vsix'));
       console.log('JB Search client support is up to date.');
       return;
@@ -45,7 +50,7 @@ async function main() {
     const temporary = path.join(output, 'jbsearch-client.pending.vsix');
     await createVSIX({ cwd: staging, packagePath: temporary, dependencies: true, skipLicense: false });
     await fs.rename(temporary, path.join(output, 'jbsearch-client.vsix'));
-    await fs.writeFile(path.join(output, 'client.json'), JSON.stringify({ protocol: 1, build, version: manifest.version }, null, 2) + '\n');
+    await fs.writeFile(path.join(output, 'client.json'), JSON.stringify({ protocol: 1, build, version: manifest.version, sourceDateEpoch }, null, 2) + '\n');
     console.log('Built bundled JB Search client support.');
   } finally {
     await fs.rm(staging, { recursive: true, force: true });
