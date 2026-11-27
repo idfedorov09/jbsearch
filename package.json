@@ -229,6 +229,11 @@
           "maximum": 128,
           "description": "Maximum size for searchable text. Unclassified oversized files make results incomplete; inputs identified as binary are excluded from text search."
         },
+        "jbsearch.search.ripgrepPrefilter": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Let ripgrep select the files that contain a literal (non-regex) query before JB Search reads them. Much faster on large workspaces (about 35 s to 3 s on 150k files in a measured case) with identical matches. Trade-off: files without a ripgrep match are not read, so oversized, unreadable or non-UTF-8 files no longer mark such results incomplete, and a non-ASCII query is not found in non-UTF-8 files. Regex queries always use the full scan."
+        },
         "jbsearch.search.timeoutMs": {
           "type": "number",
           "default": 10000,

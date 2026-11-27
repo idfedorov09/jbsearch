@@ -157,6 +157,7 @@ class SearchController {
           event.affectsConfiguration('jbsearch.search.maxResults') ||
           event.affectsConfiguration('jbsearch.search.maxFileSizeMiB') ||
           event.affectsConfiguration('jbsearch.search.timeoutMs') ||
+          event.affectsConfiguration('jbsearch.search.ripgrepPrefilter') ||
           event.affectsConfiguration('search') ||
           event.affectsConfiguration('files.exclude')
         )
@@ -1357,6 +1358,9 @@ class SearchController {
       maxResults: config.get('search.maxResults', 5000),
       maxFileSizeMiB: config.get('search.maxFileSizeMiB', 2),
       timeoutMs: config.get('search.timeoutMs', 10000),
+      // Only present when enabled: default requests (and their replace
+      // fingerprints) stay unchanged, and toggling it requires a rerun.
+      ...(config.get('search.ripgrepPrefilter', false) === true ? { ripgrepPrefilter: true } : {}),
       roots: roots.map((root) => {
         const search = v.workspace.getConfiguration('search', root.uri),
           files = v.workspace.getConfiguration('files', root.uri);

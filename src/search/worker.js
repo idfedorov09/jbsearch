@@ -398,9 +398,28 @@ async function checkUnenumeratedDocument(document, root, filePath) {
   }
 }
 
-function enumerationArgs(root) {
+// Optional ripgrep prefilter (jbsearch.search.ripgrepPrefilter): ripgrep lists
+// only files containing a literal query (any of its lines, fixed strings), and
+// the JS pipeline below runs on those candidates alone, so matches, previews and
+// replace checks are unchanged. Trade-off: enumerated files without a ripgrep
+// match are not read here, so they cannot contribute blocking skips (oversized,
+// unsupported encoding, unreadable). Regex queries keep the full scan because
+// ECMAScript and ripgrep regular expressions differ.
+function prefilterArgs() {
+  if (!request.ripgrepPrefilter || request.regex || request.scope?.kind === 'openEditors') return undefined;
+  const parts = String(request.query || '').split(/\r\n|\r|\n/).filter(Boolean);
+  if (!parts.length) return undefined;
+  return [
+    '--files-with-matches',
+    '--fixed-strings',
+    request.caseSensitive ? '--case-sensitive' : '--ignore-case',
+    ...parts.flatMap((part) => ['-e', part])
+  ];
+}
+
+function enumerationArgs(root, prefilter) {
   const args = [
-    '--files',
+    ...(prefilter || ['--files']),
     '--null',
     '--hidden',
     '--no-config',
@@ -431,9 +450,9 @@ function enumerationArgs(root) {
   return args;
 }
 
-async function enumerate(root, visit) {
+async function enumerate(root, visit, prefilter) {
   if (cancelled || limit) return;
-  const process = spawn(rgPath, enumerationArgs(root), {
+  const process = spawn(rgPath, enumerationArgs(root, prefilter), {
     cwd: root.path,
     shell: false,
     windowsHide: true,
@@ -519,14 +538,24 @@ async function main() {
     for (const root of roots) {
       if (cancelled || limit) break;
       if (request.scope?.kind === 'folder' && !insideScope(root.path, root)) continue;
-      await enumerate(root, (filePath) => {
+      const visitFile = (filePath) => {
         // Nested workspace folders have their own configuration and ignore
         // policy. Let their own enumeration own the file; a parent listing
         // must not bypass a child folder's excludes. An explicit Folder scope
         // intentionally uses that selected folder's relative paths/settings.
         if (request.scope?.kind !== 'folder' && rootFor(filePath) !== root) return;
         return scanDisk(filePath, root);
-      });
+      };
+      const prefilter = prefilterArgs();
+      await enumerate(root, visitFile, prefilter);
+      if (prefilter) {
+        // Unsaved buffers are searched as edited, so their disk content may
+        // not contain the query. A plain listing applies the ignore rules.
+        const unsaved = new Set([...snapshots.keys()]
+          .filter((filePath) => !seen.has(filePath) && isPathWithin(filePath, root.path)));
+        if (unsaved.size)
+          await enumerate(root, (filePath) => (unsaved.has(filePath) ? visitFile(filePath) : undefined));
+      }
     }
     if (!cancelled && !limit) {
       for (const document of request.documents) {
